@@ -1,2 +1,30 @@
-# fundslink-system
-The purpose of this system is to assist the institution in registering, tracking, updating, and disposing of laptops and computers. The users of the system will be administrative staff and IT personnel. The system ensures accurate and consistent records of all assets, promotes accountability, and simplifies auditing and reporting processes.
+# FundsLink
+
+A platform connecting students to bursaries, scholarships, and funding opportunities.
+
+## 🚀 Overview
+FundsLink aims to simplify access to education funding by providing a centralized application system and intelligent matching.
+
+## 🧠 Current Status
+🚧 MVP in development
+
+## 🏗️ Planned Architecture
+- Frontend: Next.js
+- Backend: API Routes / Node.js
+- Database: PostgreSQL + Prisma
+- AI Service: Python (FastAPI)
+
+## 📌 Goals
+- Centralized bursary application system
+- Intelligent funding matching
+- Scalable architecture for national use
+
+## ⚙️ Tech Stack
+- Next.js
+- TypeScript
+- PostgreSQL
+- Prisma
+- Python (AI)
+
+## 📄 Notes
+This project is under active development. Features and structure may evolve.
