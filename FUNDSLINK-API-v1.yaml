@@ -1,0 +1,547 @@
+openapi: 3.1.0
+info:
+  title: FundsLink Academy API
+  version: "1.1.0"
+  description: >
+    Contract-first API (S2.7) for FundsLink v1 — locked WITH ERD-PACKAGE v1.0.
+    Governed by FUNDSLINK-MASTER-SPEC v1.0, TAD v1.1, DB-DOCTRINE v1.1.
+    FastAPI's generated schema is CI-diffed against this file; drift fails the build.
+  contact: { name: "Maluleke Kurhula Success — Founder, KSDRILL SA" }
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/register:
+    post:
+      operationId: authRegister
+      security: []
+      summary: Register a new student account (consent recorded — MASTER-SPEC §15.4)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/AuthTokens' } } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Validation' }
+  /auth/login:
+    post:
+      operationId: authLogin
+      security: []
+      summary: Login (rate-limited; lockout per TAD §3.1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AuthTokens' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /auth/refresh:
+    post:
+      operationId: authRefresh
+      security: []
+      summary: Rotate refresh token (family revocation on reuse)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AuthTokens' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      operationId: authLogout
+      summary: Revoke session (deny-list jti)
+      responses:
+        '204': { description: Logged out }
+
+  /students/me/profile:
+    get:
+      operationId: getMyProfile
+      summary: Get my student profile
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/StudentProfile' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      operationId: putMyProfile
+      summary: Create/update my profile (re-embeds on change — BR-M04)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StudentProfileInput' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/StudentProfile' } } } }
+        '422': { $ref: '#/components/responses/Validation' }
+
+  /students/me/documents:
+    post:
+      operationId: uploadDocument
+      summary: Upload a document (magic-byte validated, AV-scanned — ST-2.4)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [doc_type, file]
+              properties:
+                doc_type: { type: string }
+                application_id: { type: string }
+                file: { type: string, format: binary }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Document' } } } }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '422': { $ref: '#/components/responses/Validation' }
+
+  /applications:
+    post:
+      operationId: createApplication
+      summary: Create funding application (DRAFT)
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApplicationInput' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
+        '422': { $ref: '#/components/responses/Validation' }
+    get:
+      operationId: listMyApplications
+      summary: List my applications
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ApplicationPage' } } } }
+
+  /applications/{id}:
+    get:
+      operationId: getApplication
+      summary: Get one application (ownership enforced in repository scope — ST-2.3)
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /applications/{id}/submit:
+    post:
+      operationId: submitApplication
+      summary: Submit (state machine guard BR-S04; enqueues notification BR-N01)
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: Submitted, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /applications/{id}/resubmit:
+    post:
+      operationId: resubmitApplication
+      summary: Resubmit after RETURNED_FOR_INFO (cycle tracked — BR-E04; 3 cycles → human outreach)
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: Re-queued for pre-screening, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /applications/{id}/appeal:
+    post:
+      operationId: appealDecision
+      summary: One appeal per decision, with new information; reviewed by a different human (BR-E07)
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_information]
+              properties:
+                new_information: { type: string, minLength: 20 }
+      responses:
+        '201': { description: Appeal registered, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /matches/run:
+    post:
+      operationId: runMatching
+      summary: Enqueue AI matching job (202 pattern — TAD §6.2, queued, spend-guarded)
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
+      responses:
+        '202': { description: Queued, content: { application/json: { schema: { $ref: '#/components/schemas/JobAccepted' } } } }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /matches/me:
+    get:
+      operationId: getMyMatches
+      summary: My match results (advisory; includes mode LIVE|FALLBACK — S8.51)
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/MatchPage' } } } }
+
+  /bursaries:
+    get:
+      operationId: browseBursaries
+      summary: Browse ALL bursaries (equal-prominence path — MASTER-SPEC §17.2)
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { name: level, in: query, schema: { type: string } }
+        - { name: field, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/BursaryPage' } } } }
+
+  /tracked-applications:
+    post:
+      operationId: registerTracked
+      summary: Register an external application I made (BR-T01)
+      parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TrackedInput' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Tracked' } } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+    get:
+      operationId: listTracked
+      summary: My dashboard — all tracked applications with status source labels
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/TrackedPage' } } } }
+
+  /tracked-applications/{id}/status:
+    post:
+      operationId: selfReportStatus
+      summary: Self-report a status change (source=SELF_REPORT — BR-T03/T04)
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to_status]
+              properties:
+                to_status: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Tracked' } } } }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /admin/applications:
+    get:
+      operationId: adminListApplications
+      summary: Review queue (ADMIN_REVIEWER — S3.21 deny-by-default)
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ApplicationPage' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/applications/{id}/review:
+    post:
+      operationId: adminReview
+      summary: Record review outcome (audit-logged; APPROVED requires second authorizer at v2 — BR-S05)
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [UNDER_REVIEW, INTERVIEW_SCHEDULED, APPROVED_PROPOSED, REJECTED] }
+                note: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /notifications/me:
+    get:
+      operationId: listMyNotifications
+      summary: My notification history
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/NotificationPage' } } } }
+
+  /notifications/preferences:
+    put:
+      operationId: putPreferences
+      summary: Update channel preferences (SMS upgrades per trigger — MASTER-SPEC §18.1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Preferences' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Preferences' } } } }
+
+  /students/me/data-export:
+    get:
+      operationId: dataExport
+      summary: POPIA subject-rights export (MASTER-SPEC §15.6)
+      responses:
+        '200':
+          description: Export bundle
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, maxLength: 128 }
+
+  responses:
+    Unauthorized: { description: Unauthorized, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Forbidden:    { description: Forbidden, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    NotFound:     { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Conflict:     { description: Business-rule conflict (stable error.code), content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Validation:   { description: Validation failure, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    RateLimited:  { description: Rate limited (Retry-After set), content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    TooLarge:     { description: Payload too large, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            request_id: { type: string }
+            details: { type: object, additionalProperties: true }
+
+    RegisterRequest:
+      type: object
+      required: [email, password, consents]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 10 }
+        consents:
+          type: array
+          items:
+            type: object
+            required: [purpose, wording_version]
+            properties:
+              purpose: { type: string }
+              wording_version: { type: string }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+        mfa_code: { type: string, description: Required for privileged roles }
+
+    AuthTokens:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, const: bearer }
+        expires_in: { type: integer }
+
+    StudentProfileInput:
+      type: object
+      required: [first_name, last_name, level, field_of_study]
+      properties:
+        first_name: { type: string }
+        last_name: { type: string }
+        phone: { type: string, description: TEXT — leading-zero rule DB-D17 }
+        level: { type: string, enum: [UG, HONOURS, MASTERS, PHD, PGDIP] }
+        field_of_study: { type: string }
+        id_number: { type: string, description: Encrypted at rest; blind-indexed for uniqueness }
+        hardship_narrative: { type: string }
+
+    StudentProfile:
+      allOf:
+        - $ref: '#/components/schemas/StudentProfileInput'
+        - type: object
+          required: [id, verification_level, created_at]
+          properties:
+            id: { type: string }
+            verification_level: { type: string, enum: [BRONZE, SILVER, GOLD, PLATINUM] }
+            created_at: { type: string, format: date-time }
+
+    Document:
+      type: object
+      required: [id, doc_type, av_status, created_at]
+      properties:
+        id: { type: string }
+        doc_type: { type: string }
+        application_id: { type: string }
+        av_status: { type: string }
+        created_at: { type: string, format: date-time }
+
+    ApplicationInput:
+      type: object
+      required: [application_type, academic_year]
+      properties:
+        application_type: { type: string, enum: [POSTGRAD, UG_CAT_A, UG_CAT_B, UG_CAT_C, OTHER] }
+        academic_year: { type: string }
+        requested_amount: { type: string, description: Decimal string ZAR — never float (DB-D29) }
+        motivation:
+          type: object
+          description: REQUIRED when application_type=OTHER (MASTER-SPEC §5.6, BR-E05)
+          properties:
+            situation: { type: string }
+            why_not_categories: { type: string }
+            support_needed: { type: string }
+            language: { type: string, default: en, description: Any SA official language — E11 }
+
+    Application:
+      allOf:
+        - $ref: '#/components/schemas/ApplicationInput'
+        - type: object
+          required: [id, status, created_at]
+          properties:
+            id: { type: string }
+            status: { type: string }
+            currency: { type: string, const: ZAR }
+            pre_screen:
+              type: object
+              description: Latest pre-screen report (MASTER-SPEC §5.7) — annotations, never judgments
+              properties:
+                outcome: { type: string, enum: [READY, RETURNED, UNSCREENED] }
+                fix_list: { type: array, items: { type: string } }
+                cycle_no: { type: integer }
+            created_at: { type: string, format: date-time }
+
+    JobAccepted:
+      type: object
+      required: [job_id, status]
+      properties:
+        job_id: { type: string }
+        status: { type: string, const: QUEUED }
+
+    Match:
+      type: object
+      required: [id, bursary, score, mode, created_at]
+      properties:
+        id: { type: string }
+        bursary: { $ref: '#/components/schemas/Bursary' }
+        score: { type: number, minimum: 0, maximum: 1 }
+        mode: { type: string, enum: [LIVE, FALLBACK] }
+        reasoning_summary: { type: string }
+        created_at: { type: string, format: date-time }
+
+    Bursary:
+      type: object
+      required: [id, name, provider, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        provider: { type: string }
+        status: { type: string }
+        level_eligibility: { type: array, items: { type: string } }
+        field_tags: { type: array, items: { type: string } }
+        next_deadline: { type: string, format: date }
+        source_url: { type: string }
+
+    TrackedInput:
+      type: object
+      required: [external_bursary_id]
+      properties:
+        external_bursary_id: { type: string }
+        applied_on: { type: string, format: date }
+
+    Tracked:
+      type: object
+      required: [id, bursary, status, status_source, last_activity_at]
+      properties:
+        id: { type: string }
+        bursary: { $ref: '#/components/schemas/Bursary' }
+        status: { type: string }
+        status_source: { type: string, enum: [SELF_REPORT, EMAIL_CAPTURE, PARTNER_API], description: Freshness label — MASTER-SPEC §12.4 }
+        last_activity_at: { type: string, format: date-time }
+
+    Notification:
+      type: object
+      required: [id, trigger, channels, state, created_at]
+      properties:
+        id: { type: string }
+        trigger: { type: string }
+        channels: { type: array, items: { type: string } }
+        state: { type: string }
+        created_at: { type: string, format: date-time }
+
+    Preferences:
+      type: object
+      properties:
+        per_trigger:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string, enum: [EMAIL, SMS, IN_APP] }
+
+    PageMeta:
+      type: object
+      properties:
+        next_cursor: { type: [string, "null"] }
+
+    ApplicationPage:
+      type: object
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Application' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    MatchPage:
+      type: object
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Match' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    BursaryPage:
+      type: object
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Bursary' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    TrackedPage:
+      type: object
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Tracked' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+    NotificationPage:
+      type: object
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Notification' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
