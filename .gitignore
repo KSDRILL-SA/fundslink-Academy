@@ -1,0 +1,33 @@
+# --- Local-only session briefs (contain live tokens — NEVER commit) ---
+FUNDSLINK-SESSION-00-BRIEF.md
+FUNDSLINK-SESSION-00-BRIEF*.md
+*SESSION-00-BRIEF*.md
+
+# --- Vendored governance repo (read-only clone — NEVER commit) ---
+.ksdrill/
+_governance/
+
+# --- Secrets / env ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# --- Node / Angular ---
+node_modules/
+dist/
+.angular/
+coverage/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db

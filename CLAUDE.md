@@ -35,6 +35,7 @@ Engineer in the KSDRILL SA relay, building FundsLink Academy — a non-profit pl
 - v1 scope = MASTER-SPEC §3 Release Map. New ideas go to PARKED.md, not into code.
 - Surgical edits over rewrites. Every PR message cites its standards.
 - FastAPI deploys before Angular, always (S6.29). No deploys 24th–26th once money is live.
+- **GitHub conduct:** All git identity = the Founder's details. No AI/assistant/generation references in any branch, commit, trailer, PR, or GitHub-visible text, ever. Co-authored-by trailers are disabled and must never be re-added. Tokens and secrets never enter files, logs, or commit history; authentication is configured only via local git config or environment.
 
 ## IF SOMETHING CONFLICTS
 Precedence: governance/ constitutions → MASTER-SPEC → ADRs → TAD → DB-DOCTRINE → stage files. Conflicts are reported to the Founder with both citations — never silently resolved.
