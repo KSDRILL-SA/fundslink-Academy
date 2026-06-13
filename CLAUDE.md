@@ -37,5 +37,14 @@ Engineer in the KSDRILL SA relay, building FundsLink Academy — a non-profit pl
 - FastAPI deploys before Angular, always (S6.29). No deploys 24th–26th once money is live.
 - **GitHub conduct:** All git identity = the Founder's details. No AI/assistant/generation references in any branch, commit, trailer, PR, or GitHub-visible text, ever. Co-authored-by trailers are disabled and must never be re-added. Tokens and secrets never enter files, logs, or commit history; authentication is configured only via local git config or environment.
 
+## GITHUB WORKFLOW (every task, every PR — no exceptions)
+Founder standing order. Auto squash-merge is an explicit, Founder-authorized (L4) deviation from the strict S10.8 manual-merge gate, taken for solo velocity. Full detail: docs/50-process/github-workflow.md.
+1. **Issue first.** Every task opens a GitHub Issue (before the branch) describing the task. Assign the Founder (MALULEKE-KS); set labels + the stage milestone.
+2. **Branch** off `main` — Conventional, kebab-case (`docs/…`, `chore/…`, `feat/…`, `ci/…`, `fix/…`). One task = one branch = one PR.
+3. **PR** links its issue with `Closes #N` (merge auto-closes it), is assigned to the Founder, and carries labels + the stage milestone. Body = What / Why / How verified, citing standard IDs.
+4. **Self-review** documented on the PR (S10.27 / S1.45 four quadrants) before merge.
+5. **Squash-merge** (Claude Code is authorized to auto squash-merge), then delete the branch.
+Labels in use: `documentation`, `scaffold`, `ci`, `env`, `governance`, `security`, `stage:NN-…`. Milestones track stages (`Stage 00 — Bootstrap`, …).
+
 ## IF SOMETHING CONFLICTS
 Precedence: governance/ constitutions → MASTER-SPEC → ADRs → TAD → DB-DOCTRINE → stage files. Conflicts are reported to the Founder with both citations — never silently resolved.

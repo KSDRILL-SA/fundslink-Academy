@@ -65,6 +65,7 @@ Conflicts are reported to the Founder with both citations — never resolved sil
 |----------|-------------|
 | [FUNDSLINK-IMPLEMENTATION-PROCESS-v1.0.md](50-process/FUNDSLINK-IMPLEMENTATION-PROCESS-v1.0.md) | Stage-gated build order G0–G6 (database first) + Human Track. |
 | [FUNDSLINK-DOCS-MANIFEST-v1.5.md](50-process/FUNDSLINK-DOCS-MANIFEST-v1.5.md) | The suite index, precedence order, and cross-document consistency record. |
+| [FUNDSLINK-GITHUB-WORKFLOW-v1.0.md](50-process/FUNDSLINK-GITHUB-WORKFLOW-v1.0.md) | GitHub workflow: issue → branch → linked PR → self-review → squash-merge; labels & milestones. |
 
 ### `60-audits/` — adversarial findings
 | Document | Description |
