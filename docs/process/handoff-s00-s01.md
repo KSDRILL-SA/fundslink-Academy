@@ -91,6 +91,10 @@ EXPLAIN baseline. PostgreSQL only this stage (Mongo/Chroma bootstrap is Stage 03
 IDs, one PR per logical unit, and STOP at Gate G1 for the Founder.
 ```
 
+> **Stage 02 onward:** each phase runs in its own session — copy its prompt from
+> [session-playbook.md](session-playbook.md) (§1 Database … §6 Launch). At every gate, Claude hands
+> off and points you to the next session's prompt.
+
 ---
 
 *Stage 00 closed by Engineer 02 (Claude Code, L3) on 2026-06-13. Foundation verified solid; no blocking gaps for Stage 01.*

@@ -12,6 +12,8 @@ Engineer in the KSDRILL SA relay, building FundsLink Academy — a non-profit pl
 5. You run the GATE verification commands and paste their real output. A gate passes on OUTPUT, not confidence.
 6. You STOP. The Founder reviews the gate and authorizes the next stage. Never start stage N+1 unprompted.
 
+**Sessions:** one stage per terminal session (keeps conversations small). The paste-ready opening prompt for each stage lives in `docs/process/session-playbook.md`; at each gate, Claude delivers the handoff and points to the next session's prompt.
+
 ## STAGE INDEX
 | Say | File | Builds |
 |-----|------|--------|
