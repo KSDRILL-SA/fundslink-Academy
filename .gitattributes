@@ -1,0 +1,14 @@
+# Normalise line endings — LF in the repo, so shell scripts and CI stay correct on Linux.
+* text=auto eol=lf
+
+# Shell scripts MUST be LF (they run on Linux/containers).
+*.sh text eol=lf
+
+# Treat lockfiles/binaries appropriately.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary

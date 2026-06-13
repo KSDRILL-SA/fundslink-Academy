@@ -6,6 +6,7 @@ FUNDSLINK-SESSION-00-BRIEF*.md
 # --- Vendored governance repo (read-only clone — NEVER commit) ---
 .ksdrill/
 _governance/
+governance/system-design-template/
 
 # --- Secrets / env ---
 .env

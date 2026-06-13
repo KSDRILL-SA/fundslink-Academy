@@ -1,0 +1,5 @@
+# Pinned version of the KSDRILL governance constitutions vendored into governance/
+# (ADR-002 §4 — pinned pull, NOT a submodule). The sync script checks this SHA out.
+# Replace <PINNED_SHA> with the real commit SHA to lock governance for this repo.
+GOVERNANCE_REPO=https://github.com/MALULEKE-KS/system-design-template.git
+GOVERNANCE_SHA=<PINNED_SHA>
