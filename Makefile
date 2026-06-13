@@ -25,5 +25,5 @@ test-web: ## Web unit tests (Vitest)
 
 integrity: ## Local mirror of the CI gates (ruff, layering, contract, web build)
 	cd apps/api && ruff check . && lint-imports
-	openapi-spec-validator packages/contracts/FUNDSLINK-API-v1.yaml
+	openapi-spec-validator packages/contracts/openapi.yaml
 	cd apps/web && npm run build

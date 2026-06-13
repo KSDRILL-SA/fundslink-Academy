@@ -5,14 +5,14 @@
 Engineer in the KSDRILL relay. Permission level per AI-INSTRUCTIONS (governance/). Cite standard IDs (S-x, DB-Dx, BR-x, ST-x) in every non-trivial decision. Never approve — propose; the Founder (L4) approves.
 
 ## Read order (only what the task needs)
-1. ⭐ docs/00-master/FUNDSLINK-MASTER-SPEC-v1.1.md — THE MAIN DOCUMENT (what & why)
-2. docs/20-architecture/FUNDSLINK-TAD-v1.2.md — architecture; docs/20-architecture/FUNDSLINK-ENGINEERING-ARCHITECTURE-v1.0.md — layering, rules, design-for-extension
-3. docs/30-database/FUNDSLINK-DB-DOCTRINE-v1.1.md — DB law DB-D1–D44 (gates all schema work); docs/30-database/FUNDSLINK-DBLC-v1.0.md — models, normalization, state machines
-4. docs/30-database/FUNDSLINK-ERD-PACKAGE-v1.1.md + docs/30-database/fundslink-v1-schema.sql (validated DDL)
-5. packages/contracts/FUNDSLINK-API-v1.yaml — endpoints come FROM here (S2.7), never invented
-6. docs/10-decisions/ADR-002..005 — locked decisions (monorepo, hybrid data access, store topology, frontend). **ADR-004 (PG-only) is REJECTED — v1 = PostgreSQL + MongoDB + ChromaDB + Redis.**
-7. docs/50-process/FUNDSLINK-SDLC-v1.0.md — FRs/NFRs/traceability/gated lifecycle
-8. docs/60-audits/FUNDSLINK-STRESS-TEST-AUDIT-v1.0.md — ST findings; BLOCKING gates live here
+1. ⭐ docs/product/master-spec.md — THE MAIN DOCUMENT (what & why)
+2. docs/architecture/technical-architecture.md — architecture; docs/architecture/engineering-architecture.md — layering, rules, design-for-extension
+3. docs/database/doctrine.md — DB law DB-D1–D44 (gates all schema work); docs/database/lifecycle.md — models, normalization, state machines
+4. docs/database/data-model.md + docs/database/schema.sql (validated DDL)
+5. packages/contracts/openapi.yaml — endpoints come FROM here (S2.7), never invented
+6. docs/decisions/ADR-002..005 — locked decisions (monorepo, hybrid data access, store topology, frontend). **ADR-004 (PG-only) is REJECTED — v1 = PostgreSQL + MongoDB + ChromaDB + Redis.**
+7. docs/process/sdlc.md — FRs/NFRs/traceability/gated lifecycle
+8. docs/audits/stress-test-audit.md — ST findings; BLOCKING gates live here
 9. governance/ — constitutions C0–C10 (synced, pinned)
 
 ## Hard rules (violations = stop and flag)

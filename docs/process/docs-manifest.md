@@ -11,18 +11,18 @@ Per Founder directive, the documentation set is versioned **as a suite: Suite v1
 
 | # | Document | Doc Version | Status | Role |
 |---|----------|------------|--------|------|
-| 1 | ⭐ FUNDSLINK-MASTER-SPEC-v1.0.md | **v1.0 MASTER (Founder ruling: renamed from v4.0)** | LOCKED | **THE MAIN DOCUMENT** — description of operations |
-| 2 | ADR-002-fundslink-monorepo.md | — | accepted | Repo strategy + app topology |
-| 3 | ADR-003-fundslink-data-access.md | — | accepted | PostgreSQL hybrid data access |
-| 4 | ADR-004-v1-store-consolidation.md | — | **REJECTED (L4, 2026-06-13)** | declined — v1 keeps the 3 constitutional stores (PG + MongoDB + ChromaDB) |
-| 5 | FUNDSLINK-TAD-v1.1.md | v1.1 | PROPOSED → lock on L4 | HOW — architecture |
-| 6 | FUNDSLINK-DB-DOCTRINE-v1.1.md | v1.1 | PROPOSED → lock on L4 | Database law (DB-D1–D44) — gates the ERD |
-| 7 | FUNDSLINK-STRESS-TEST-AUDIT-v1.0.md | v1.0 | ACCEPTED | Adversarial findings register (ST-1…ST-6) |
+| 1 | ⭐ master-spec.md | **v1.0 MASTER (Founder ruling: renamed from v4.0)** | LOCKED | **THE MAIN DOCUMENT** — description of operations |
+| 2 | adr-0002-monorepo.md | — | accepted | Repo strategy + app topology |
+| 3 | adr-0003-data-access.md | — | accepted | PostgreSQL hybrid data access |
+| 4 | adr-0004-store-consolidation.md | — | **REJECTED (L4, 2026-06-13)** | declined — v1 keeps the 3 constitutional stores (PG + MongoDB + ChromaDB) |
+| 5 | technical-architecture.md | v1.1 | PROPOSED → lock on L4 | HOW — architecture |
+| 6 | doctrine.md | v1.1 | PROPOSED → lock on L4 | Database law (DB-D1–D44) — gates the ERD |
+| 7 | stress-test-audit.md | v1.0 | ACCEPTED | Adversarial findings register (ST-1…ST-6) |
 | 18a | CLAUDE.md (repo root) | v1.0 | ready | Claude Code auto-read master instructions: stage workflow, hard rules, precedence |
 | 18b | claude-instructions/00–06 (7 files) | v1.0 | ready | Self-contained stage briefs — Founder says "execute stage NN", nothing more |
-| 16 | FUNDSLINK-UX-SCREEN-MAP-v1.0.md | v1.0 | PROPOSED → L4 lock | 21 screens, emotional design law (P1–P8), the kind rejection spec |
-| 17 | FUNDSLINK-IMPLEMENTATION-PROCESS-v1.0.md | v1.0 | PROPOSED → L4 lock | Stage-gated build order G0–G6 (database first) + Human Track |
-| 8 | FUNDSLINK-DOCS-MANIFEST-v1.0.md | v1.0 | this document | Index + precedence + order |
+| 16 | ux-screen-map.md | v1.0 | PROPOSED → L4 lock | 21 screens, emotional design law (P1–P8), the kind rejection spec |
+| 17 | implementation-process.md | v1.0 | PROPOSED → L4 lock | Stage-gated build order G0–G6 (database first) + Human Track |
+| 8 | docs-manifest.md | v1.0 | this document | Index + precedence + order |
 
 Superseded & retired: SPEC v3.0 (fully superseded by v4.0); TAD v1.0 and DOCTRINE v1.0 (superseded by v1.1 — do not circulate).
 
@@ -46,16 +46,16 @@ When documents disagree, higher wins; the lower document must be amended, never 
 ✅ 02 ADR-002 (was SKIPPED, now done) ✅ 06 STRESS-TEST-AUDIT v1.0
 ✅ 03 ADR-003 (was SKIPPED, now done) ✅ 07 DOCS-MANIFEST v1.0
 ✅ 04 TAD v1.1                        ✅ 08 ADR-004 REJECTED (L4 2026-06-13 — v1 keeps 3 stores)
-                                      ✅ 09 ERD PACKAGE v1.0 + fundslink-v1-schema.sql (DDL VALIDATED
+                                      ✅ 09 ERD PACKAGE v1.0 + schema.sql (DDL VALIDATED
                                                                       against live PostgreSQL 16;
                                                                       append-only & uniqueness constraints
                                                                       proven by violation tests)
-                                      ✅ 10 FUNDSLINK-API-v1.yaml — VALIDATED (openapi-spec-validator: 19 paths, 22 schemas)
+                                      ✅ 10 openapi.yaml — VALIDATED (openapi-spec-validator: 19 paths, 22 schemas)
                                       ✅ 11 C5 AMENDMENT approved (GOVERNANCE-PATCHES v1.0)
                                       ✅ 12 context patch drafted (GOVERNANCE-PATCHES v1.0 — apply in repo)
-                                      ✅ 13 CONSTITUTION-INDEX-fundslink.md
+                                      ✅ 13 constitution-index.md
                                       ✅ 14 runbook-disbursement.md + runbook-jwt-key-rotation.md
-                                      ✅ 15 FUNDSLINK-LAUNCH-CHECKLIST-v1.0.md
+                                      ✅ 15 launch-checklist.md
    ━━━ DESIGN PIPELINE 01–15: COMPLETE ━━━
    then → CODE (repo scaffold per ADR-002 → auth module first)
 ```

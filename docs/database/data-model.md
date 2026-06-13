@@ -12,8 +12,8 @@
 | Pipeline position | Item 09 (DOCS-MANIFEST §3) |
 | Inputs | MASTER-SPEC v1.0 · TAD v1.1 · DB-DOCTRINE v1.1 (DB-D1–D44) · ADR-002/003/004 |
 | Store decision | **Constitutional 3-store polyglot (ADR-004 REJECTED, Founder L4 2026-06-13):** PostgreSQL (auth, applications, tracking, match records) + MongoDB (AI reasoning — S5.33) + ChromaDB (embeddings — S5.45) + Redis (token deny-list / cache) |
-| Scope | **[BUILD]** = v1 tables, full DDL shipped in `fundslink-v1-schema.sql`. **[FWD]** = v1.5/v2 tables, logical model locked now, DDL arrives as Alembic migrations in their phase |
-| Companion file | `fundslink-v1-schema.sql` — executable PostgreSQL DDL for all [BUILD] tables |
+| Scope | **[BUILD]** = v1 tables, full DDL shipped in `schema.sql`. **[FWD]** = v1.5/v2 tables, logical model locked now, DDL arrives as Alembic migrations in their phase |
+| Companion file | `schema.sql` — executable PostgreSQL DDL for all [BUILD] tables |
 | Method | Top-down from MASTER-SPEC v1.0 (DB-D27), bottom-up field-walk verification at §6 |
 
 ---
@@ -316,7 +316,7 @@ Legend: 🔑 PK · 🔗 FK · ⭐ UNIQUE · ⏱ timestamptz · all PKs cuid (DB-
 
 # PART 4 — PHYSICAL DDL
 
-Shipped as **`fundslink-v1-schema.sql`** (companion file): all [BUILD] tables, lookup seeds, partitioning (native declarative, monthly, with 12 months pre-created + maintenance note for pg_partman), the two approved triggers only (append-only guard + updated_at, DB-D21), full index plan (DB-D28: every FK indexed, partial index on outbox PENDING, composite (student_id, created_at DESC) on event partitions, blind-index UNIQUE), and role grants (app role: no UPDATE/DELETE on append-only tables — DB-D30; no grants on future `counselling` schema).
+Shipped as **`schema.sql`** (companion file): all [BUILD] tables, lookup seeds, partitioning (native declarative, monthly, with 12 months pre-created + maintenance note for pg_partman), the two approved triggers only (append-only guard + updated_at, DB-D21), full index plan (DB-D28: every FK indexed, partial index on outbox PENDING, composite (student_id, created_at DESC) on event partitions, blind-index UNIQUE), and role grants (app role: no UPDATE/DELETE on append-only tables — DB-D30; no grants on future `counselling` schema).
 
 ---
 

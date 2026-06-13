@@ -17,7 +17,7 @@ shared `packages/contracts` (the OpenAPI source of truth).
 ```
 apps/api/            FastAPI service (router -> service -> repository)
 apps/web/            Angular workspace + libs/{ui,auth,data-access,util}
-packages/contracts/  FUNDSLINK-API-v1.yaml — the API source of truth (S2.7)
+packages/contracts/  openapi.yaml — the API source of truth (S2.7)
 infra/               docker-compose.dev.yml (postgres, mongo, chroma, redis, api)
 governance/          pinned-SHA sync of the KSDRILL constitutions (ADR-002 §4)
 docs/                governing documents (master spec, ADRs, TAD, DB doctrine, …)
@@ -51,4 +51,4 @@ make down        # stop the dev stack
 ## Conduct
 All git identity is the Founder's; no AI/assistant references in any GitHub-visible text;
 secrets never enter files, logs, or history (S3.20 / CF-04). Workflow: every task is an
-Issue → branch → linked PR → squash-merge (see [docs/50-process](docs/50-process/)).
+Issue → branch → linked PR → squash-merge (see [docs/process](docs/process/)).

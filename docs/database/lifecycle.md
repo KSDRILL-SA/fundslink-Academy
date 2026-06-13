@@ -2,8 +2,8 @@
 
 The database foundation, end to end, **bounded to FundsLink**. This document is diagram-first:
 the visuals carry the model; prose only connects them. It **derives from** (never duplicates)
-[ERD-PACKAGE v1.1](FUNDSLINK-ERD-PACKAGE-v1.1.md), [DB-DOCTRINE v1.1](FUNDSLINK-DB-DOCTRINE-v1.1.md),
-and the validated [schema](fundslink-v1-schema.sql).
+[ERD-PACKAGE v1.1](data-model.md), [DB-DOCTRINE v1.1](doctrine.md),
+and the validated [schema](schema.sql).
 
 | Attribute | Value |
 |-----------|-------|

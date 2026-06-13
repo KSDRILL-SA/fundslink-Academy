@@ -12,7 +12,7 @@
 |-----------|-------|
 | Purpose | Convert every database good practice from the Ch01–Ch09 canon into FundsLink-specific rules: **what** the canon teaches → **why** it matters → **how/where** it applies in FundsLink → the **enforceable rule** |
 | Sources | Rob & Coronel, *Database Systems: Design, Implementation & Management* — Ch01 Database Systems · Ch02 Data Models · Ch03 Relational Model · Ch04 ER Modeling · Ch05 Normalization · Ch06 Intro SQL · Ch07 Advanced SQL · Ch08 Advanced Data Modeling · Ch09 Database Design |
-| Binds | FUNDSLINK MASTER-SPEC v1.0 · FUNDSLINK-TAD v1.0 · the forthcoming ERD package and all DDL |
+| Binds | master-spec · technical-architecture · the forthcoming ERD package and all DDL |
 | Rule IDs | `DB-D1 … DB-D40` — every rule is citable in reviews, exactly like constitutional S-standards |
 | Gate | **The ERD deliverable may not be locked until it passes the DB-D checklist in §11** |
 
@@ -41,7 +41,7 @@ FundsLink's entire trust promise ("every rand accounted for, 100% audit trail") 
 Business rules are *precisely written, unambiguous statements derived from a detailed description of operations*. When written properly they define entities, relationships, attributes, connectivities, cardinalities, and constraints. **Every relationship requires TWO business rules** (one in each direction). Some rules cannot be expressed in an ERD (e.g., "credit line over $10,000 only with satisfactory history") — these are handled at the application level, *but they must still be written down*.
 
 ## FundsLink Translation
-FUNDSLINK MASTER-SPEC v1.0 **is** our "description of operations" — Ch02 tells us the schema must be *derived* from it, sentence by sentence, not invented at the keyboard. Examples of FundsLink business rule pairs, exactly in canon form:
+master-spec **is** our "description of operations" — Ch02 tells us the schema must be *derived* from it, sentence by sentence, not invented at the keyboard. Examples of FundsLink business rule pairs, exactly in canon form:
 
 - An Institution receives many DisbursementBatches / each DisbursementBatch is paid to exactly one Institution.
 - A DisbursementBatch contains many AllowanceAllocations / each AllowanceAllocation belongs to exactly one DisbursementBatch.
