@@ -1,6 +1,9 @@
 # FundsLink Academy — dev stack (S8.17: full stack in one command).
-# v1 store topology = PostgreSQL only (JSONB + pgvector) + Redis — ADR-004 (ACCEPTED L4 2026-06-12).
-# Mongo/Chroma are deferred to v2.5; do not add them here at v1.
+# v1 store topology = constitutional polyglot (ADR-001; ADR-004 REJECTED 2026-06-13):
+#   PostgreSQL  — auth, roles, applications, funding amounts (S5.3 / S5.4)
+#   MongoDB     — AI-generated reasoning, tags (S5.33)
+#   ChromaDB    — scholarship embeddings, RAG context (S5.45)
+#   Redis       — token deny-list, circuit breaker (cache, not a store of record)
 name: fundslink-dev
 
 services:
@@ -13,9 +16,15 @@ services:
     environment:
       ENVIRONMENT: development
       DATABASE_URL: postgresql+asyncpg://fundslink:fundslink@db:5432/fundslink
+      MONGODB_URL: mongodb://fundslink:fundslink@mongo:27017/fundslink?authSource=admin
+      CHROMADB_URL: http://chroma:8000
       REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      chroma:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -31,7 +40,7 @@ services:
       retries: 5
 
   db:
-    image: pgvector/pgvector:pg16
+    image: postgres:16
     environment:
       POSTGRES_USER: fundslink
       POSTGRES_PASSWORD: fundslink
@@ -44,6 +53,38 @@ services:
       test: ["CMD-SHELL", "pg_isready -U fundslink -d fundslink"]
       interval: 5s
       timeout: 3s
+      retries: 10
+
+  mongo:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: fundslink
+      MONGO_INITDB_ROOT_PASSWORD: fundslink
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  chroma:
+    image: chromadb/chroma:0.5.5
+    ports:
+      - "8001:8000" # host 8001 (8000 is taken by the api)
+    volumes:
+      - chromadata:/chroma/chroma
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/heartbeat').status==200 else 1)
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
       retries: 10
 
   redis:
@@ -60,4 +101,6 @@ services:
 
 volumes:
   pgdata:
+  mongodata:
+  chromadata:
   redisdata:
