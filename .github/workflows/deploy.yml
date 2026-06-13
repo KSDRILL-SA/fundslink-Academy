@@ -1,0 +1,23 @@
+name: deploy
+
+# Ordered deploy choreography (S6.29): FastAPI (Railway) deploys BEFORE Angular (Vercel).
+# Both jobs are STUBBED/DISABLED until the Railway/Vercel secrets exist — the ordering and
+# gating are armed now so they cannot be wired the wrong way later.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-api:
+    runs-on: ubuntu-latest
+    if: ${{ false }} # enable once RAILWAY_TOKEN is configured
+    steps:
+      - run: echo "TODO deploy FastAPI to Railway (deploys first — S6.29)"
+
+  deploy-web:
+    runs-on: ubuntu-latest
+    needs: deploy-api
+    if: ${{ false }} # enable once VERCEL_TOKEN is configured
+    steps:
+      - run: echo "TODO deploy Angular to Vercel (after the API — S6.29)"

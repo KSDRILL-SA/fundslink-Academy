@@ -1,0 +1,35 @@
+name: api
+
+on:
+  push:
+    paths:
+      - "apps/api/**"
+      - ".github/workflows/api.yml"
+  pull_request:
+    paths:
+      - "apps/api/**"
+      - ".github/workflows/api.yml"
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Layering (import-linter — routers/services may not import DB drivers)
+        run: lint-imports
+      - name: Permission lint (placeholder — S3.21)
+        run: echo "TODO S3.21 deny-by-default permission lint — activates when endpoints exist"
+      - name: Contract diff (placeholder — S2.7)
+        run: echo "TODO S2.7 FastAPI OpenAPI vs packages/contracts yaml — activates when endpoints exist"
+      - name: Test (pytest)
+        run: pytest -q

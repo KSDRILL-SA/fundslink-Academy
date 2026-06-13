@@ -1,0 +1,21 @@
+name: security
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks (free CLI — the org-licensed Action is not used)
+        run: |
+          GL=8.18.4
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GL}/gitleaks_${GL}_linux_x64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+      - name: Secret scan (S3.20 / CF-04)
+        run: gitleaks detect --redact --no-banner

@@ -1,0 +1,24 @@
+name: contract
+
+on:
+  push:
+    paths:
+      - "packages/contracts/**"
+      - ".github/workflows/contract.yml"
+  pull_request:
+    paths:
+      - "packages/contracts/**"
+      - ".github/workflows/contract.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install validator
+        run: pip install openapi-spec-validator
+      - name: Validate OpenAPI contract (S2.7 — single source of truth)
+        run: openapi-spec-validator packages/contracts/FUNDSLINK-API-v1.yaml
