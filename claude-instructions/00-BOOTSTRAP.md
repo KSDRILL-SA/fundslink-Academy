@@ -1,5 +1,5 @@
 # STAGE 00 — BOOTSTRAP: FILE THE DOCS, RAISE THE SCAFFOLD, ARM THE GATES
-**Read first (full):** FUNDSLINK-DOCS-MANIFEST-v1.4.md · ADR-002 · FUNDSLINK-IMPLEMENTATION-PROCESS-v1.0.md §2. **Skim:** MASTER-SPEC §1–3 (know what this system is before touching it).
+**Read first (full):** FUNDSLINK-DOCS-MANIFEST-v1.5.md · ADR-002 · FUNDSLINK-IMPLEMENTATION-PROCESS-v1.0.md §2. **Skim:** MASTER-SPEC §1–3 (know what this system is before touching it).
 
 ## TASK 1 — File the 18 documents (they are loose in repo root)
 Create and move:

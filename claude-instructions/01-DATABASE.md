@@ -1,5 +1,6 @@
 # STAGE 01 — THE DATABASE, ALONE, PERFECTLY (Founder's first focus)
-**Read first (full):** docs/30-database/ all three files · IMPLEMENTATION-PROCESS §3. **Reference:** TAD §4, ADR-003/004, MASTER-SPEC §5.6–5.8 + §14.6 (the rules your schema enforces).
+**Read first (full):** docs/30-database/ (DBLC, DB-DOCTRINE, ERD-PACKAGE, fundslink-v1-schema.sql) · IMPLEMENTATION-PROCESS §3. **Reference:** TAD §4, ADR-003 (data access), MASTER-SPEC §5.6–5.8 + §14.6 (the rules your schema enforces).
+**Store note:** ADR-004 (PG-only) is **REJECTED** — v1 is 3-store (PostgreSQL + MongoDB + ChromaDB + Redis). This stage builds the **PostgreSQL** schema + constraints only; the MongoDB/ChromaDB collection bootstrap and the DB-D35 cross-store integrity job arrive with the matching module (Stage 03), behind repository seams (its first consumer).
 **Forbidden this stage:** endpoints, services, Angular, auth logic, "quick stubs". The database exists alone until G1.
 
 ## TASKS (in order)
