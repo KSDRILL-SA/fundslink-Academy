@@ -8,12 +8,18 @@ FUNDSLINK-SESSION-00-BRIEF*.md
 _governance/
 governance/system-design-template/
 
-# --- Secrets / env ---
+# --- Secrets / env (S3.20 / CF-04) ---
+# Secrets live in .env (local) or the platform's secret store — NEVER in git.
+# Auth is configured via local git config / gh credentials, never a committed token.
 .env
 .env.*
 !.env.example
 *.pem
 *.key
+
+# --- Logs ---
+*.log
+npm-debug.log*
 
 # --- Python ---
 __pycache__/
@@ -32,3 +38,4 @@ coverage/
 # --- OS / editor ---
 .DS_Store
 Thumbs.db
+.idea/
