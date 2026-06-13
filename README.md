@@ -33,7 +33,7 @@ cd fundslink-Academy
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 
-# 2) Bring up the dev stack (postgres+pgvector, redis, api with /healthz)
+# 2) Bring up the dev stack (postgres, mongo, chroma, redis, api with /healthz)
 make dev          # = docker compose -f infra/docker-compose.dev.yml up
 curl localhost:8000/healthz   # -> {"success": true, "data": {"status": "ok"}, ...}
 
