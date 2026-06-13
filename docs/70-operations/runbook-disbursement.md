@@ -1,6 +1,29 @@
 # FUNDSLINK ACADEMY — RUNBOOK: Monthly Disbursement (the 25th) | v1.0 [activates at v2]
 **Window:** 24th 00:00 – 26th 23:59 SAST. Deploy freeze. FINANCE_ADMIN + AUTHORIZER on standby.
 
+## Flow
+
+```mermaid
+sequenceDiagram
+  participant FA as FINANCE_ADMIN
+  participant AU as AUTHORIZER
+  participant SYS as System
+  participant BANK as Bank portal
+  participant INST as Institution
+  Note over FA,INST: Window 24th–26th SAST · deploy freeze
+  FA->>SYS: reconciliation clean (7d) · BR-F07 totals green
+  FA->>SYS: generate batch proposal
+  AU->>SYS: review & approve (proposer ≠ authorizer — DB CHECK)
+  FA->>SYS: release batches (two-step UI)
+  SYS->>BANK: pay batches
+  BANK-->>SYS: payment refs
+  SYS->>SYS: verify ledger balanced per journal
+  Note over SYS,INST: 26th–15th: per-student confirm · +7d/+21d/+45d escalation
+  alt partial payment / ledger-bank mismatch
+    SYS-->>FA: SEV0 — financial-freeze, halt all, page Founder
+  end
+```
+
 ## Pre-flight (24th)
 1. Reconciliation clean for trailing 7 days (zero variance) — else STOP: financial-freeze runbook.
 2. Batch proposal generated; per-institution totals vs AllowanceAllocation sums verified (BR-F07 job green).
