@@ -14,5 +14,10 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     environment: str = "development"
 
+    # PostgreSQL — the async runtime path uses asyncpg (ADR-003 / infra compose).
+    # Dev default mirrors infra/docker-compose.dev.yml; real value comes from the
+    # environment (DATABASE_URL) and is never a committed secret (S3.20).
+    database_url: str = "postgresql+asyncpg://fundslink:fundslink@localhost:5432/fundslink"
+
 
 settings = Settings()
