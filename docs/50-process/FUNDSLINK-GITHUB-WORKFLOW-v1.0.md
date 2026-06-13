@@ -17,7 +17,9 @@
 1. **Open an Issue first** — before the branch.
    - Title: `Stage NN · TASK X — <summary>` (or a plain task title outside stages).
    - Body: what the task is, the branch name, the gate/spec it satisfies, and `Refs:` standard IDs.
-   - **Assignee:** `MALULEKE-KS`. **Labels:** type + `stage:NN-…`. **Milestone:** the stage milestone.
+   - **Type:** `Task` (or `Bug` / `Feature`) — the org-level issue type.
+   - **Assignee:** `MALULEKE-KS`. **Labels:** a type label + `stage:NN-…`. **Milestone:** the stage milestone.
+   - **Project:** `FundsLink Academy`, with the **Status** field set (`Todo` → `In Progress` → `Done`).
 
 2. **Create the branch** off `main` — Conventional Commits naming, kebab-case:
    `docs/…`, `chore/…`, `feat/…`, `ci/…`, `fix/…`.
@@ -28,6 +30,7 @@
 4. **Open the PR** into `main`:
    - **First line of the body:** `Closes #N` (links the issue; merge auto-closes it).
    - **Assignee:** `MALULEKE-KS`. **Labels:** same type + `stage:NN-…`. **Milestone:** the stage milestone.
+   - **Project:** `FundsLink Academy`, with the **Status** field set (`In Progress`, then `Done` on merge).
    - Body sections: **What / Why / How verified**, citing standard IDs.
 
 5. **Document the self-review** as a PR comment — `S10.27` (AI as second reviewer in solo mode) /
@@ -54,6 +57,28 @@
 
 One milestone per stage: `Stage 00 — Bootstrap`, `Stage 01 — Database`, … Every issue and PR
 for a stage is attached to that stage's milestone, giving a burn-down per stage.
+
+## 3.5 Issue types & the project board
+
+**Issue Type** (org-level GitHub feature) is set on every issue:
+
+| Type | Use |
+|------|-----|
+| `Task` | a specific piece of build/setup work (default for stage tasks) |
+| `Bug` | an unexpected problem or defect |
+| `Feature` | a request, idea, or new functionality |
+
+**Project:** every issue *and* PR is added to the org project **`FundsLink Academy`**
+(`https://github.com/orgs/KSDRILL-SA/projects/1`). Set the **Status** field as work moves:
+
+| Status | Meaning |
+|--------|---------|
+| `Todo` | issue opened, not started |
+| `In Progress` | branch open / work underway |
+| `Done` | PR merged / issue closed |
+
+So the complete furniture is: **Issues** → type + assignee + labels + milestone + project + status;
+**PRs** → `Closes #N` + assignee + labels + milestone + project + status.
 
 ## 4. Branch protection (known gap)
 
