@@ -42,6 +42,7 @@ Conflicts are reported to the Founder with both citations — never resolved sil
 | [ADR-002-fundslink-monorepo.md](10-decisions/ADR-002-fundslink-monorepo.md) | Single-system monorepo + application topology (two apps + worker). **accepted**. |
 | [ADR-003-fundslink-data-access.md](10-decisions/ADR-003-fundslink-data-access.md) | PostgreSQL hybrid data access — raw SQL for money paths, SQLAlchemy for CRUD. **accepted**. |
 | [ADR-004-v1-store-consolidation.md](10-decisions/ADR-004-v1-store-consolidation.md) | Proposed v1 PostgreSQL-only consolidation — **REJECTED (L4, 2026-06-13)**; v1 keeps the 3-store polyglot. |
+| [ADR-005-frontend-component-strategy.md](10-decisions/ADR-005-frontend-component-strategy.md) | Angular-native frontend — Tailwind + custom CSS + spartan/ui (shadcn-for-Angular); Magic/Aceternity effects reproduced in Angular. **accepted (L4, 2026-06-13)**. |
 
 ### `20-architecture/` — how
 | Document | Description |
