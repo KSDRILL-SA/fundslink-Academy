@@ -5,7 +5,8 @@
 -- Migration 0001 (Alembic wraps this content).
 -- ============================================================
 
-CREATE EXTENSION IF NOT EXISTS vector;       -- ADR-004: pgvector
+-- Vectors live in ChromaDB (S5.45) and AI match reasoning in MongoDB (S5.33) — NOT in Postgres.
+-- ADR-004 (PG-only consolidation) was REJECTED (Founder L4, 2026-06-13); no pgvector here.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ---------- The two approved triggers (DB-D21) ----------
@@ -210,35 +211,26 @@ CREATE TABLE tracked_status_event (                      -- append-only, partiti
 CREATE INDEX ix_tse_tracked ON tracked_status_event(tracked_application_id, created_at DESC);
 CREATE TRIGGER tg_tse_guard BEFORE UPDATE OR DELETE ON tracked_status_event FOR EACH ROW EXECUTE FUNCTION fn_block_mutation();
 
--- ---------- Matching (ADR-004) ----------
+-- ---------- Matching — constitutional 3-store form (ADR-004 rejected) ----------
+-- PostgreSQL holds the structured, queryable match record (score + provenance).
+-- AI reasoning text  -> MongoDB (S5.33), keyed by match_result.id (cross-store cuid, S5.5).
+-- Profile/bursary embeddings -> ChromaDB collections (S5.45), keyed by the owner's cuid.
 CREATE TABLE match_result (
   id text PRIMARY KEY,
   student_profile_id text NOT NULL REFERENCES student_profile ON DELETE RESTRICT,
   external_bursary_id text NOT NULL REFERENCES external_bursary ON DELETE RESTRICT,
   score numeric(5,4) NOT NULL CHECK (score >= 0 AND score <= 1),
   model_version text NOT NULL, prompt_version text NOT NULL,
-  reasoning jsonb NOT NULL,                              -- ADR-004 (was MongoDB)
+  -- reasoning document lives in MongoDB (S5.33), keyed by this row's id (S5.5) — not stored in PG
   mode text NOT NULL DEFAULT 'LIVE' CHECK (mode IN ('LIVE','FALLBACK')),  -- S8.51
   created_at timestamptz NOT NULL DEFAULT now(), created_by text,
   CONSTRAINT uq_match UNIQUE (student_profile_id, external_bursary_id, model_version)
 );
 CREATE INDEX ix_match_student ON match_result(student_profile_id, created_at DESC);
 
-CREATE TABLE profile_embedding (
-  student_profile_id text PRIMARY KEY REFERENCES student_profile ON DELETE RESTRICT,
-  embedding vector(1536) NOT NULL,
-  source_hash text NOT NULL,                             -- BR-M04 recompute trigger
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE TABLE bursary_embedding (
-  external_bursary_id text NOT NULL REFERENCES external_bursary ON DELETE RESTRICT,
-  chunk_no int NOT NULL,
-  embedding vector(1536) NOT NULL,
-  source_hash text NOT NULL,
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (external_bursary_id, chunk_no)
-);
-CREATE INDEX ix_be_ann ON bursary_embedding USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+-- profile_embedding / bursary_embedding are NOT Postgres tables. Embeddings (1536-d),
+-- their source_hash recompute marker (BR-M04), and ANN search live in ChromaDB (S5.45),
+-- keyed by student_profile_id and (external_bursary_id, chunk_no) respectively.
 
 -- ---------- Notifications, Audit, Config ----------
 CREATE TABLE notification_outbox (                       -- queue, partitioned

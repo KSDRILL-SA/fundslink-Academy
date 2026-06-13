@@ -25,7 +25,7 @@ Durations are honest solo-dev estimates with Claude Code as pair — they flex; 
 
 ## 2. STAGE 0 — SCAFFOLD (~3 days)
 
-**Scope:** monorepo per ADR-002 (`apps/api`, `apps/web`, `packages/contracts`, `docs/`, `governance/` pinned-sync, `infra/`); docker-compose dev stack (PostgreSQL 16 + pgvector, Redis); CI skeleton with ALL gates wired from day one even while empty — pytest, Vitest, contract-diff, permission-lint, import-linter, path filters; Railway + Vercel projects created (deploy order api→web encoded); Sentry DSNs; the full doc suite committed under `docs/`.
+**Scope:** monorepo per ADR-002 (`apps/api`, `apps/web`, `packages/contracts`, `docs/`, `governance/` pinned-sync, `infra/`); docker-compose dev stack (PostgreSQL 16 + MongoDB + ChromaDB + Redis); CI skeleton with ALL gates wired from day one even while empty — pytest, Vitest, contract-diff, permission-lint, import-linter, path filters; Railway + Vercel projects created (deploy order api→web encoded); Sentry DSNs; the full doc suite committed under `docs/`.
 **Forbidden:** any feature code.
 **GATE G0:** `docker compose up` gives a working empty stack; CI runs green on an empty commit; a deliberate import violation (router importing sqlalchemy) FAILS CI — the gate must be seen rejecting before it's trusted.
 
@@ -56,7 +56,7 @@ Module order follows data dependency, one module = one PR = one gate check:
 1. **profile** (+ documents upload pipeline: magic-byte, AV hook, signed URLs, separate origin)
 2. **application** (state machine service over the transition tables; status events + outbox enqueue in-transaction; E1 duplicate guard surfaced as friendly 409)
 3. **eligibility** (ruleset evaluator over eligibility_ruleset JSONB; pre_screen_result writes; return-cycle logic + cycle-3 outreach flag; UNSCREENED degradation path)
-4. **matching** (queued job, cached embeddings, pgvector ANN per ADR-004, spend breaker, FALLBACK mode, MatchResult + reasoning JSONB, browse-all endpoint)
+4. **matching** (queued job, cached embeddings, ChromaDB ANN per S5.45, spend breaker, FALLBACK mode, MatchResult in PG + reasoning in MongoDB per S5.33, browse-all endpoint)
 5. **tracking** (tracked_application CRUD, self-report transitions, deadline engine, 30/45/60 scheduler)
 6. **notification** (outbox workers SKIP LOCKED, email adapter live, SMS adapter stubbed, preference + consent checks at enqueue)
 

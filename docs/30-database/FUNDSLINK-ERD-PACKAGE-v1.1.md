@@ -9,9 +9,9 @@
 
 | Attribute | Value |
 |-----------|-------|
-| Pipeline position | Item 09 (DOCS-MANIFEST §3) — follows ADR-004 ACCEPTED |
+| Pipeline position | Item 09 (DOCS-MANIFEST §3) |
 | Inputs | MASTER-SPEC v1.0 · TAD v1.1 · DB-DOCTRINE v1.1 (DB-D1–D44) · ADR-002/003/004 |
-| Store decision | **ADR-004 accepted:** PostgreSQL only at v1 — match reasoning as JSONB, embeddings as pgvector. MongoDB/ChromaDB return at v2.5+ behind unchanged repository seams |
+| Store decision | **Constitutional 3-store polyglot (ADR-004 REJECTED, Founder L4 2026-06-13):** PostgreSQL (auth, applications, tracking, match records) + MongoDB (AI reasoning — S5.33) + ChromaDB (embeddings — S5.45) + Redis (token deny-list / cache) |
 | Scope | **[BUILD]** = v1 tables, full DDL shipped in `fundslink-v1-schema.sql`. **[FWD]** = v1.5/v2 tables, logical model locked now, DDL arrives as Alembic migrations in their phase |
 | Companion file | `fundslink-v1-schema.sql` — executable PostgreSQL DDL for all [BUILD] tables |
 | Method | Top-down from MASTER-SPEC v1.0 (DB-D27), bottom-up field-walk verification at §6 |
@@ -79,9 +79,9 @@ Every rule traces to MASTER-SPEC v1.0. Relationships state both directions (DB-D
 | ID | Rule | Source |
 |----|------|--------|
 | BR-M01 | A StudentProfile receives many MatchResults; each MatchResult pairs one StudentProfile with one ExternalBursary. (Bridge with score) | Spec §11/§17 |
-| BR-M02 | Every MatchResult stores score, model version, prompt version, and reasoning (JSONB per ADR-004); matches are advisory and never filter the browse-all path. | Spec §17.2 |
+| BR-M02 | Every MatchResult stores score, model version and prompt version in PostgreSQL; the reasoning document lives in MongoDB (S5.33), keyed by the match id (S5.5). Matches are advisory and never filter the browse-all path. | Spec §17.2 |
 | BR-M03 | Expired-deadline bursaries cannot produce new MatchResults. (Query predicate, DB-D6) | Spec §17.5 |
-| BR-M04 | Profile embeddings are recomputed only on profile change; bursary embeddings on bursary change. (pgvector per ADR-004) | TAD §6.2 |
+| BR-M04 | Profile embeddings are recomputed only on profile change; bursary embeddings on bursary change. Embeddings are stored in ChromaDB (S5.45). | TAD §6.2 |
 
 ## 1E. Notifications (BR-N)
 
@@ -149,8 +149,7 @@ erDiagram
 
     STUDENT_PROFILE ||--o{ MATCH_RESULT : "receives"
     EXTERNAL_BURSARY ||--o{ MATCH_RESULT : "matched via"
-    EXTERNAL_BURSARY ||--o{ BURSARY_EMBEDDING : "vectorized as"
-    STUDENT_PROFILE ||--o| PROFILE_EMBEDDING : "vectorized as"
+    %% Embeddings (profile/bursary) live in ChromaDB (S5.45); each MATCH_RESULT's reasoning lives in MongoDB (S5.33) — not PostgreSQL entities
 
     CONFIG ||--o{ CONFIG_HISTORY : "versioned by"
 ```
@@ -198,6 +197,43 @@ erDiagram
 
 ---
 
+## 2.5 Polyglot Store Assignment (ADR-001; ADR-004 rejected)
+
+Each datum lives in exactly one store of record. Cross-store links carry the PostgreSQL cuid (S5.5); DB-D35's nightly job reports dangling references.
+
+```mermaid
+graph LR
+  subgraph PG["PostgreSQL — system of record"]
+    direction TB
+    pg1["auth · RBAC · consent · tokens"]
+    pg2["applications · status events · documents"]
+    pg3["bursaries · tracking · status events"]
+    pg4["match_result: score + provenance"]
+    pg5["outbox · audit · config"]
+  end
+  subgraph MG["MongoDB · S5.33"]
+    mg1["match reasoning documents"]
+  end
+  subgraph CH["ChromaDB · S5.45"]
+    ch1["profile + bursary embeddings · ANN"]
+  end
+  subgraph RD["Redis"]
+    rd1["token deny-list · circuit breaker"]
+  end
+  pg4 -. "match id (S5.5)" .-> mg1
+  pg2 -. "profile / bursary text" .-> ch1
+  classDef pg fill:#0e7490,color:#fff,stroke:#155e75;
+  classDef mg fill:#15803d,color:#fff,stroke:#166534;
+  classDef ch fill:#7c3aed,color:#fff,stroke:#5b21b6;
+  classDef rd fill:#b45309,color:#fff,stroke:#92400e;
+  class pg1,pg2,pg3,pg4,pg5 pg;
+  class mg1 mg;
+  class ch1 ch;
+  class rd1 rd;
+```
+
+---
+
 # PART 3 — LOGICAL MODEL (key tables; full column detail in DDL)
 
 Legend: 🔑 PK · 🔗 FK · ⭐ UNIQUE · ⏱ timestamptz · all PKs cuid (DB-D23) · all tables carry created_at/updated_at/created_by unless append-only (DB-D32)
@@ -236,12 +272,13 @@ Legend: 🔑 PK · 🔗 FK · ⭐ UNIQUE · ⏱ timestamptz · all PKs cuid (DB-
 | recusal | append-only: 🔑id · 🔗application_id · 🔗reviewer_id · reason · created_at ⏱ |
 | eligibility_ruleset | 🔑id · application_type(FK) · version ⭐(type,version) · rules JSONB · effective_from ⏱ — config-as-data (BR-E02) |
 
-## 3.3 [BUILD] Matching (ADR-004 form)
+## 3.3 [BUILD] Matching (constitutional 3-store form)
 
-| Table | Essentials |
-|-------|-----------|
-| match_result | 🔑id · 🔗student_profile_id · 🔗external_bursary_id · score NUMERIC(5,4) · model_version · prompt_version · reasoning JSONB · mode(LIVE/FALLBACK) · ⭐(student,bursary,model_version) |
-| profile_embedding / bursary_embedding | 🔑id=🔗owner_id · embedding vector(1536) · source_hash (recompute trigger per BR-M04) · ivfflat index |
+| Table / Store | Essentials |
+|---------------|-----------|
+| match_result (**PostgreSQL**) | 🔑id · 🔗student_profile_id · 🔗external_bursary_id · score NUMERIC(5,4) · model_version · prompt_version · mode(LIVE/FALLBACK) · ⭐(student,bursary,model_version) |
+| match reasoning (**MongoDB**, S5.33) | document keyed by match_result.id (cross-store cuid, S5.5): full LLM reasoning, prompt trace, advisory notes |
+| profile / bursary embeddings (**ChromaDB**, S5.45) | collections keyed by student_profile_id and (external_bursary_id, chunk_no) · 1536-d vectors · source_hash recompute marker (BR-M04) · ANN search in Chroma — not PG tables |
 
 ## 3.4 [BUILD] Notifications, Audit, Config
 
@@ -279,7 +316,7 @@ Legend: 🔑 PK · 🔗 FK · ⭐ UNIQUE · ⏱ timestamptz · all PKs cuid (DB-
 
 # PART 4 — PHYSICAL DDL
 
-Shipped as **`fundslink-v1-schema.sql`** (companion file): all [BUILD] tables, lookup seeds, partitioning (native declarative, monthly, with 12 months pre-created + maintenance note for pg_partman), the two approved triggers only (append-only guard + updated_at, DB-D21), full index plan (DB-D28: every FK indexed, partial index on outbox PENDING, composite (student_id, created_at DESC) on event partitions, ivfflat on embeddings, blind-index UNIQUE), and role grants (app role: no UPDATE/DELETE on append-only tables — DB-D30; no grants on future `counselling` schema).
+Shipped as **`fundslink-v1-schema.sql`** (companion file): all [BUILD] tables, lookup seeds, partitioning (native declarative, monthly, with 12 months pre-created + maintenance note for pg_partman), the two approved triggers only (append-only guard + updated_at, DB-D21), full index plan (DB-D28: every FK indexed, partial index on outbox PENDING, composite (student_id, created_at DESC) on event partitions, blind-index UNIQUE), and role grants (app role: no UPDATE/DELETE on append-only tables — DB-D30; no grants on future `counselling` schema).
 
 ---
 

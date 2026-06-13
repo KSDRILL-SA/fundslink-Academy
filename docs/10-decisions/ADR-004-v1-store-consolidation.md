@@ -7,6 +7,10 @@
 | **Status** | **REJECTED — Founder (L4), 2026-06-13** |
 | **Relates To** | ADR-001, S5.33, S5.45–S5.52, ST-AUDIT Q5/Q6 |
 
+> ⚠️ **REJECTED — retained only as the record of a rejected proposal.** The v1 design uses the
+> constitutional 3-store polyglot (PostgreSQL + MongoDB + ChromaDB + Redis). Do **not** implement
+> the PostgreSQL-only consolidation described below; see the Decision section.
+
 ## Context
 ADR-001 assigns three stores (PostgreSQL + MongoDB for AI reasoning + ChromaDB for vectors). At v1 scale with a solo operator, three stateful services means 3× backups, monitoring, upgrade surface, and cost — identified by the Stress-Test Audit as v1 ops weight without v1 benefit.
 

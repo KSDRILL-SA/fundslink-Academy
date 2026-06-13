@@ -6,7 +6,7 @@ conflicts between them. Stage briefs live in [`/claude-instructions`](../claude-
 master Claude Code instructions live in [`/CLAUDE.md`](../CLAUDE.md).
 
 > Suite v1.5 — Design phase complete (+ v1.1 Eligibility Wave). The store topology is
-> **v1 = PostgreSQL only (JSONB + pgvector)** per **ADR-004 (ACCEPTED, L4, 2026-06-12)**.
+> **v1 store topology = PostgreSQL + MongoDB + ChromaDB + Redis** (constitutional polyglot). ADR-004's PostgreSQL-only consolidation was **REJECTED (L4, 2026-06-13)**.
 
 ---
 
@@ -41,7 +41,7 @@ Conflicts are reported to the Founder with both citations — never resolved sil
 |----------|-------------|
 | [ADR-002-fundslink-monorepo.md](10-decisions/ADR-002-fundslink-monorepo.md) | Single-system monorepo + application topology (two apps + worker). **accepted**. |
 | [ADR-003-fundslink-data-access.md](10-decisions/ADR-003-fundslink-data-access.md) | PostgreSQL hybrid data access — raw SQL for money paths, SQLAlchemy for CRUD. **accepted**. |
-| [ADR-004-v1-store-consolidation.md](10-decisions/ADR-004-v1-store-consolidation.md) | v1 = PostgreSQL only (JSONB + pgvector); MongoDB/ChromaDB deferred to v2.5. **ACCEPTED (L4, 2026-06-12)**. |
+| [ADR-004-v1-store-consolidation.md](10-decisions/ADR-004-v1-store-consolidation.md) | Proposed v1 PostgreSQL-only consolidation — **REJECTED (L4, 2026-06-13)**; v1 keeps the 3-store polyglot. |
 
 ### `20-architecture/` — how
 | Document | Description |
@@ -53,7 +53,7 @@ Conflicts are reported to the Founder with both citations — never resolved sil
 |----------|-------------|
 | [FUNDSLINK-DB-DOCTRINE-v1.1.md](30-database/FUNDSLINK-DB-DOCTRINE-v1.1.md) | Database law DB-D1–D44 — gates all schema work. |
 | [FUNDSLINK-ERD-PACKAGE-v1.1.md](30-database/FUNDSLINK-ERD-PACKAGE-v1.1.md) | Entity-relationship package (+ BR-E01–E10, eligibility tables). |
-| [fundslink-v1-schema.sql](30-database/fundslink-v1-schema.sql) | Validated DDL — proven against live PostgreSQL 16 + pgvector. |
+| [fundslink-v1-schema.sql](30-database/fundslink-v1-schema.sql) | PostgreSQL DDL — auth, applications, tracking, match records. Embeddings → ChromaDB; AI reasoning → MongoDB. |
 
 ### `40-experience/` — UX
 | Document | Description |

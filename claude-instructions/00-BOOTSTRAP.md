@@ -22,7 +22,7 @@ Write docs/README.md: one-line description per doc + the precedence order from t
 apps/api/        FastAPI skeleton: app/{core,common,modules}/, main.py with /healthz, pyproject, pytest config
 apps/web/        Angular 17+ workspace, strict TS, libs/{ui,auth,data-access,util} as projects, /healthz route
 packages/contracts/  the yaml + codegen script (openapi-typescript) -> generated client into libs/data-access
-infra/           docker-compose.dev.yml: postgres:16 + pgvector, redis:7, volumes, healthchecks
+infra/           docker-compose.dev.yml: postgres:16 + mongo:7 + chromadb + redis:7, volumes, healthchecks
 governance/      sync script pulling system-design-template at a pinned SHA + GOVERNANCE_VERSION file
 .github/workflows/  api.yml, web.yml (path-filtered), contract.yml
 PARKED.md        empty, with header "Ideas wait here. The Release Map decides."

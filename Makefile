@@ -6,7 +6,7 @@ COMPOSE = docker compose -f infra/docker-compose.dev.yml
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-12s %s\n", $$1, $$2}'
 
-dev: up ## Start the full dev stack in the foreground (postgres+pgvector, redis, api)
+dev: up ## Start the full dev stack in the foreground (postgres, mongo, chroma, redis, api)
 	$(COMPOSE) up
 
 up: ## Start the dev stack detached
