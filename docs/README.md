@@ -115,6 +115,7 @@ graph LR
 | [implementation-process.md](process/implementation-process.md) | Stage-gated build order G0–G6 (database first) + Human Track. |
 | [docs-manifest.md](process/docs-manifest.md) | The suite index, precedence order, and cross-document consistency record. |
 | [github-workflow.md](process/github-workflow.md) | GitHub workflow: issue → branch → linked PR → self-review → squash-merge; labels & milestones. |
+| [handoff-s00-s01.md](process/handoff-s00-s01.md) | Relay handoff — Stage 00 build history, completed-vs-to-complete status, how-we-work, Stage 01 brief + paste-ready terminal prompt. |
 
 ### `audits/` — adversarial findings
 | Document | Description |
