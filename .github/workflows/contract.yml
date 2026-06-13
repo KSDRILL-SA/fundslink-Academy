@@ -21,4 +21,4 @@ jobs:
       - name: Install validator
         run: pip install openapi-spec-validator
       - name: Validate OpenAPI contract (S2.7 — single source of truth)
-        run: openapi-spec-validator packages/contracts/FUNDSLINK-API-v1.yaml
+        run: openapi-spec-validator packages/contracts/openapi.yaml

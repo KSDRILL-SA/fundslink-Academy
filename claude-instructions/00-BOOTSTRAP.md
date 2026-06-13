@@ -1,19 +1,19 @@
 # STAGE 00 — BOOTSTRAP: FILE THE DOCS, RAISE THE SCAFFOLD, ARM THE GATES
-**Read first (full):** FUNDSLINK-DOCS-MANIFEST-v1.5.md · ADR-002 · FUNDSLINK-IMPLEMENTATION-PROCESS-v1.0.md §2. **Skim:** MASTER-SPEC §1–3 (know what this system is before touching it).
+**Read first (full):** docs-manifest.md · ADR-002 · implementation-process.md §2. **Skim:** MASTER-SPEC §1–3 (know what this system is before touching it).
 
 ## TASK 1 — File the 18 documents (they are loose in repo root)
 Create and move:
 ```
-docs/00-master/        FUNDSLINK-MASTER-SPEC-v1.1.md
-docs/10-decisions/     ADR-002*.md ADR-003*.md ADR-004*.md
-docs/20-architecture/  FUNDSLINK-TAD-v1.2.md
-docs/30-database/      FUNDSLINK-DB-DOCTRINE-v1.1.md  FUNDSLINK-ERD-PACKAGE-v1.1.md  fundslink-v1-schema.sql
-docs/40-experience/    FUNDSLINK-UX-SCREEN-MAP-v1.0.md
-docs/50-process/       FUNDSLINK-IMPLEMENTATION-PROCESS-v1.0.md  FUNDSLINK-DOCS-MANIFEST-v1.4.md
-docs/60-audits/        FUNDSLINK-STRESS-TEST-AUDIT-v1.0.md
-docs/70-operations/    runbook-disbursement.md  runbook-jwt-key-rotation.md  FUNDSLINK-LAUNCH-CHECKLIST-v1.0.md
-docs/80-governance/    FUNDSLINK-GOVERNANCE-PATCHES-v1.1.md  CONSTITUTION-INDEX-fundslink.md
-packages/contracts/    FUNDSLINK-API-v1.yaml
+docs/product/        master-spec.md
+docs/decisions/     ADR-002*.md ADR-003*.md ADR-004*.md
+docs/architecture/  technical-architecture.md
+docs/database/      doctrine.md  data-model.md  schema.sql
+docs/experience/    ux-screen-map.md
+docs/process/       implementation-process.md  docs-manifest.md
+docs/audits/        stress-test-audit.md
+docs/operations/    runbook-disbursement.md  runbook-jwt-key-rotation.md  launch-checklist.md
+docs/governance/    governance-patches.md  constitution-index.md
+packages/contracts/    openapi.yaml
 ```
 Write docs/README.md: one-line description per doc + the precedence order from the Manifest. Commit: `chore: file documentation suite v1.4`.
 

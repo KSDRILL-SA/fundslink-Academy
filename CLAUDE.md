@@ -26,7 +26,7 @@ Engineer in the KSDRILL SA relay, building FundsLink Academy — a non-profit pl
 ## HARD RULES (every stage, every session — violations = stop and flag to Founder)
 - Layering: router → service → repository. ONLY repositories import DB drivers (import-linter enforces).
 - Money paths: raw parameterised SQL, NUMERIC, append-only. CRUD: SQLAlchemy. (ADR-003)
-- Every endpoint comes FROM packages/contracts/FUNDSLINK-API-v1.yaml — never invented (S2.7). CI diffs it.
+- Every endpoint comes FROM packages/contracts/openapi.yaml — never invented (S2.7). CI diffs it.
 - Every endpoint declares a permission; deny-by-default lint fails CI otherwise (S3.21).
 - Status changes: transition-table validated + status event + outbox row, ONE transaction.
 - The SYSTEM principal can NEVER approve/reject an application — the DB trigger will reject you; do not work around it (MASTER-SPEC §5.8).
@@ -38,7 +38,7 @@ Engineer in the KSDRILL SA relay, building FundsLink Academy — a non-profit pl
 - **GitHub conduct:** All git identity = the Founder's details. No AI/assistant/generation references in any branch, commit, trailer, PR, or GitHub-visible text, ever. Co-authored-by trailers are disabled and must never be re-added. Tokens and secrets never enter files, logs, or commit history; authentication is configured only via local git config or environment.
 
 ## GITHUB WORKFLOW (every task, every PR — no exceptions)
-Founder standing order. Auto squash-merge is an explicit, Founder-authorized (L4) deviation from the strict S10.8 manual-merge gate, taken for solo velocity. Full detail: docs/50-process/github-workflow.md.
+Founder standing order. Auto squash-merge is an explicit, Founder-authorized (L4) deviation from the strict S10.8 manual-merge gate, taken for solo velocity. Full detail: docs/process/github-workflow.md.
 1. **Issue first.** Every task opens a GitHub Issue (before the branch). Set the **Type** (`Task`/`Bug`/`Feature`); assign the Founder (MALULEKE-KS); set labels + the stage milestone; add it to the **`FundsLink Academy` project** with its **Status** field (`Todo`→`In Progress`→`Done`).
 2. **Branch** off `main` — Conventional, kebab-case (`docs/…`, `chore/…`, `feat/…`, `ci/…`, `fix/…`). One task = one branch = one PR.
 3. **PR** links its issue with `Closes #N` (merge auto-closes it), is assigned to the Founder, and carries labels + the stage milestone + the project (Status set). Body = What / Why / How verified, citing standard IDs.

@@ -1,5 +1,5 @@
 # STAGE 06 — LAUNCH
-**Read first:** FUNDSLINK-LAUNCH-CHECKLIST-v1.0 (the gate IS the checklist) · runbooks · S6.29.
+**Read first:** launch-checklist (the gate IS the checklist) · runbooks · S6.29.
 
 1. Work the checklist line by line; human items (MFA on all admins, continuity pack, legal status, 50+ bursaries seeded) are confirmed BY the Founder, evidenced in the checklist file via PR.
 2. Production env audit: secrets present, keys generated fresh (never reused from staging), Sentry prod DSN, cost alerts armed, partition horizon verified, Cloudflare in front.

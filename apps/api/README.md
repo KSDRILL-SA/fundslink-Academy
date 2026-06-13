@@ -2,7 +2,7 @@
 
 Stage-00 scaffold: liveness only (`GET /healthz`). Layering is **router → service →
 repository**; only repositories may import DB drivers (import-linter enforces this in CI).
-Endpoints are added FROM `packages/contracts/FUNDSLINK-API-v1.yaml` (`S2.7`) — never invented.
+Endpoints are added FROM `packages/contracts/openapi.yaml` (`S2.7`) — never invented.
 
 ## Local (without Docker)
 ```bash

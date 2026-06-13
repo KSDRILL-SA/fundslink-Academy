@@ -3,8 +3,8 @@
 The build foundation, **bounded to FundsLink**: what we build (FRs), how well it must behave
 (NFRs), how each requirement traces to design + standard + stage, and the gated lifecycle that
 delivers it. Diagram-first; derived from MASTER-SPEC, the constitutions, the
-[STRESS-TEST-AUDIT](../60-audits/FUNDSLINK-STRESS-TEST-AUDIT-v1.0.md), and the
-[IMPLEMENTATION-PROCESS](FUNDSLINK-IMPLEMENTATION-PROCESS-v1.0.md).
+[STRESS-TEST-AUDIT](../audits/stress-test-audit.md), and the
+[IMPLEMENTATION-PROCESS](implementation-process.md).
 
 | Attribute | Value |
 |-----------|-------|

@@ -5,7 +5,7 @@
   "description": "FundsLink OpenAPI contract — the single source of truth (S2.7) + TypeScript codegen for the Angular data-access lib.",
   "type": "module",
   "scripts": {
-    "generate": "openapi-typescript FUNDSLINK-API-v1.yaml -o ../../apps/web/projects/data-access/src/lib/generated/api-types.ts"
+    "generate": "openapi-typescript openapi.yaml -o ../../apps/web/libs/data-access/src/lib/generated/api-types.ts"
   },
   "devDependencies": {
     "openapi-typescript": "^7.4.0"

@@ -14,7 +14,7 @@
 | v1.1 changes | Stress-Test Audit (ST-AUDIT v1.0) folded in: MFA on privileged roles, queued matching, typed ledger FKs, day-one partitioning, PgBouncer, timestamptz+currency, webhook signatures, spend circuit breaker, multi-worker outbox, hardening additions |
 | Status | PROPOSED — awaiting Founder (L4) approval |
 | Author | Engineer 01 — Claude (Principal Architect, L1/L2) |
-| Inputs | FUNDSLINK-MASTER-SPEC-v1.0.md · `fundslink-context.md` · ADR-001 · C0–C10 |
+| Inputs | master-spec.md · `fundslink-context.md` · ADR-001 · C0–C10 |
 | Scope | Full architecture for **v1** (build now) + **forward design** for v1.5/v2 (money features) so nothing built in v1 must be torn out later |
 | Build phase | Phase 1 — Core Architecture (Q2 2026, SOLO mode, solo-dev overlay active) |
 
@@ -275,7 +275,7 @@ Webhook idempotency = `gateway_txn_id UNIQUE` + upsert-noop pattern: a replay ca
 
 ## 5.1 Contract-First (S2.7)
 
-The OpenAPI 3.1 contract (`FUNDSLINK-API-v1.yaml` — next deliverable) is written and Founder-approved **before** any endpoint code. FastAPI's generated schema is diffed against the contract in CI; drift fails the build.
+The OpenAPI 3.1 contract (`openapi.yaml` — next deliverable) is written and Founder-approved **before** any endpoint code. FastAPI's generated schema is diffed against the contract in CI; drift fails the build.
 
 ## 5.2 Conventions
 
@@ -473,7 +473,7 @@ TLS everywhere; CORS locked to the Vercel origin; security headers (CSP, HSTS, X
 
 # APPROVAL
 
-**Status: PROPOSED.** Per AI-INSTRUCTIONS, Engineer 01 (Claude, L1/L2) submits this TAD for Founder (L4) approval. On approval: (1) TAD becomes locked v1.0; (2) next deliverable is the OpenAPI contract `FUNDSLINK-API-v1.yaml` (S2.7 gate); (3) R1–R4 decisions scheduled.
+**Status: PROPOSED.** Per AI-INSTRUCTIONS, Engineer 01 (Claude, L1/L2) submits this TAD for Founder (L4) approval. On approval: (1) TAD becomes locked v1.0; (2) next deliverable is the OpenAPI contract `openapi.yaml` (S2.7 gate); (3) R1–R4 decisions scheduled.
 
 _________________________
 **Maluleke Kurhula Success** — Founder, L4

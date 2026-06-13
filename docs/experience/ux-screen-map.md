@@ -107,6 +107,6 @@ Loading (skeletons, not spinners) · Empty (warm, instructive — an empty track
 WCAG 2.1 AA · 4.5:1 contrast · full keyboard nav · screen-reader labels on status timelines · ≤200KB first load on student routes · system font stack · works on a 3-year-old Android on 3G.
 
 ## 6. TRACEABILITY
-Every screen lists its API operations from FUNDSLINK-API-v1.yaml; no screen may require an endpoint that isn't in the contract (S2.7 applies to pixels too). Angular feature areas per ADR-002: S01–S03 shell/public, S04–S07 libs/auth, S08–S21 student area, A01–A04 admin area.
+Every screen lists its API operations from openapi.yaml; no screen may require an endpoint that isn't in the contract (S2.7 applies to pixels too). Angular feature areas per ADR-002: S01–S03 shell/public, S04–S07 libs/auth, S08–S21 student area, A01–A04 admin area.
 
 **Lock:** _________________ Maluleke Kurhula Success (L4)

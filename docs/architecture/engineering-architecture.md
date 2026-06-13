@@ -2,7 +2,7 @@
 
 How the system is layered, where shared code lives, the rules that are **enforced** (not just
 hoped for), and how every layer is **designed for extension** so v1.5/v2 slot in without rework.
-Diagram-first; companion to the [TAD](FUNDSLINK-TAD-v1.2.md), derived from ADR-002/003, the
+Diagram-first; companion to the [TAD](technical-architecture.md), derived from ADR-002/003, the
 constitutions (C1–C6), and the CLAUDE.md hard rules.
 
 ---
@@ -63,7 +63,7 @@ Nothing shared is copy-pasted; it has one home. Cross-cutting concerns live in `
 ```mermaid
 graph TB
   subgraph PKG["packages/contracts"]
-    yaml["FUNDSLINK-API-v1.yaml — source of truth (S2.7)"]
+    yaml["openapi.yaml — source of truth (S2.7)"]
   end
   subgraph API["apps/api · FastAPI"]
     core["app/core — config · security · DB session · logging · middleware"]

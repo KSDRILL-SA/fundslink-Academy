@@ -34,7 +34,7 @@ Durations are honest solo-dev estimates with Claude Code as pair — they flex; 
 The Founder's first focus. Nothing else exists until this is finished.
 
 **Scope:**
-1. Alembic migration 0001 generated from `fundslink-v1-schema.sql` (validated content, now under migration control).
+1. Alembic migration 0001 generated from `schema.sql` (validated content, now under migration control).
 2. Full seed suite: roles/permissions matrix (TAD §3.4), all lookups, both transition tables, config (allowance, SLA, budgets), eligibility_ruleset v1 per category (BR-E02), lk_theme_tag starter set.
 3. **Constraint test suite (DB-D37): every constraint and trigger gets a pytest that attempts the violation and asserts rejection** — re-creating in CI, permanently, all six manual proofs (append-only guard, ID uniqueness, human-final, duplicate-active-application, appeal-fairness, two-step CHECK when fin arrives) plus every CHECK/UNIQUE/FK not yet proven.
 4. Integrity job suite skeleton (DB-D39): allocation-sum check (dormant until v2), status-cache consistency check, dangling-reference scan — runnable via one command.
@@ -74,7 +74,7 @@ E2E suite (Playwright) over the golden journey + the painful journeys (return-cy
 
 ## 8. STAGE 6 — LAUNCH (~3 days)
 
-Work FUNDSLINK-LAUNCH-CHECKLIST-v1.0 line by line — every box, including the human ones. Prod cutover per S6.29. Then the only definition of done that matters (MASTER-SPEC §3): **one real student — register → profile → apply → matched → tracked — end-to-end in production.**
+Work launch-checklist line by line — every box, including the human ones. Prod cutover per S6.29. Then the only definition of done that matters (MASTER-SPEC §3): **one real student — register → profile → apply → matched → tracked — end-to-end in production.**
 
 ---
 
@@ -90,7 +90,7 @@ Work FUNDSLINK-LAUNCH-CHECKLIST-v1.0 line by line — every box, including the h
 
 ## 10. RULES OF ENGAGEMENT (all stages)
 
-1. Claude Code sessions start at CONSTITUTION-INDEX-fundslink.md, always.
+1. Claude Code sessions start at constitution-index.md, always.
 2. Every PR cites the standards it satisfies (S-x / DB-Dx / BR-x / E-x) — uncited non-trivial changes are returned.
 3. A failing gate stops the line — we fix, we never gate-shop.
 4. Scope additions mid-stage go to a PARKED.md, triaged at stage end — the Release Map (MASTER-SPEC §3) defends v1 from our own enthusiasm.
