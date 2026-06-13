@@ -447,7 +447,7 @@ TLS everywhere; CORS locked to the Vercel origin; security headers (CSP, HSTS, X
 | R4 | Disbursement-day runbook | Add `runbooks/disbursement-runbook.md` before v2 | AWAITING L4 |
 | R5 | Document storage | Railway volume for v1; S3-compatible move triggered at 1,000 students | RECOMMENDED |
 | R7 | **Second human authorizer** | Two-step approval needs a named, trained, MFA'd second person (co-founder/board) before ANY money release — a CHECK constraint cannot conjure a colleague [ST-6] | **BLOCKING for v1.5+ — Founder** |
-| R8 | ADR-004: v1 store consolidation (Mongo→JSONB, Chroma→pgvector behind existing seams) | Proposed — reduces v1 ops weight & cost; polyglot returns at scale per constitution | OPEN — Founder |
+| R8 | ADR-004: v1 store consolidation (Mongo→JSONB, Chroma→pgvector) | **REJECTED — Founder (L4) 2026-06-13.** v1 runs the full constitutional polyglot (PostgreSQL + MongoDB + ChromaDB + Redis); see ADR-004. | CLOSED |
 | R9 | Continuity pack (access escrow + runbook index held by board) — bus factor 1 | Before public launch [ST-6] | OPEN — Founder |
 | R10 | Restore drill + k6 load baseline on staging | Before launch, not after [ST-6] | OPEN |
 | R6 | Counselling store hosting | Same PG instance/separate schema at v2.5; separate instance if counselling volume grows | RECOMMENDED |

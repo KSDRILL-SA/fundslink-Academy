@@ -45,9 +45,9 @@ When documents disagree, higher wins; the lower document must be amended, never 
 ✅ 01 MASTER-SPEC v1.0                      ✅ 05 DB-DOCTRINE v1.1
 ✅ 02 ADR-002 (was SKIPPED, now done) ✅ 06 STRESS-TEST-AUDIT v1.0
 ✅ 03 ADR-003 (was SKIPPED, now done) ✅ 07 DOCS-MANIFEST v1.0
-✅ 04 TAD v1.1                        ✅ 08 ADR-004 ACCEPTED
+✅ 04 TAD v1.1                        ✅ 08 ADR-004 REJECTED (L4 2026-06-13 — v1 keeps 3 stores)
                                       ✅ 09 ERD PACKAGE v1.0 + fundslink-v1-schema.sql (DDL VALIDATED
-                                                                      against live PostgreSQL 16 + pgvector;
+                                                                      against live PostgreSQL 16;
                                                                       append-only & uniqueness constraints
                                                                       proven by violation tests)
                                       ✅ 10 FUNDSLINK-API-v1.yaml — VALIDATED (openapi-spec-validator: 19 paths, 22 schemas)
@@ -68,16 +68,16 @@ When documents disagree, higher wins; the lower document must be amended, never 
 | C-2 | TAD v1.0 matching was synchronous; ST-1.2 showed cost/rate failure | TAD v1.1 §6.2 queued. RESOLVED |
 | C-3 | TAD v1.0 "a worker" (singular) vs ST-1.3 | TAD v1.1: N workers SKIP LOCKED. RESOLVED |
 | C-4 | No MFA anywhere vs two-step money approval | TAD v1.1 §3.1 MFA mandatory privileged roles. RESOLVED |
-| C-5 | Doctrine D35 nightly cross-store job vs ADR-004 (if accepted, no cross-store at v1) | Conditional: D35 becomes no-op until v2.5 if ADR-004 accepted. PENDING L4 |
+| C-5 | Doctrine D35 nightly cross-store job vs ADR-004 (if accepted, no cross-store at v1) | RESOLVED: ADR-004 **rejected** (L4 2026-06-13) → v1 runs the 3-store polyglot, so DB-D35's cross-store consistency job is **active**, not a no-op. |
 | C-6 | MASTER-SPEC v1.0 vs locked 5-feature context | Resolved by Spec §3 Release Map (v1 = the 5). Already consistent |
 | C-7 | Canon "numeric PKs" vs constitutional cuid | Doctrine §8 written ruling: cuid honors intent. RESOLVED |
 | C-8 | Doc version naming ("all docs v1") vs Spec's v4.0 lineage | Suite-level v1.0 (this manifest); Spec keeps lineage with explanation. RESOLVED |
 
-No unresolved contradictions remain except C-5, which resolves automatically with the ADR-004 decision.
+No unresolved contradictions remain. C-5 is resolved: ADR-004 was **rejected** (L4 2026-06-13), so DB-D35's cross-store consistency job is active.
 
 ## 5. OPEN L4 DECISIONS (the only things blocking the ERD)
 
-1. **ADR-004** — accept or reject v1 store consolidation (changes two ERD storage notes, nothing structural).
+1. ~~**ADR-004** — accept or reject v1 store consolidation~~ — **RESOLVED: REJECTED (L4 2026-06-13);** v1 keeps the 3-store polyglot.
 2. **Lock TAD v1.1 + DB-DOCTRINE v1.1** (both carry your signature block).
 3. C5 immutable-ledger amendment (can ride alongside the ERD).
 
