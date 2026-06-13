@@ -51,6 +51,7 @@ Conflicts are reported to the Founder with both citations — never resolved sil
 ### `30-database/` — database law & schema
 | Document | Description |
 |----------|-------------|
+| [FUNDSLINK-DBLC-v1.0.md](30-database/FUNDSLINK-DBLC-v1.0.md) | Database lifecycle — conceptual/logical/physical models, normalization (1NF→BCNF), status state machines, store assignment (diagram-first). |
 | [FUNDSLINK-DB-DOCTRINE-v1.1.md](30-database/FUNDSLINK-DB-DOCTRINE-v1.1.md) | Database law DB-D1–D44 — gates all schema work. |
 | [FUNDSLINK-ERD-PACKAGE-v1.1.md](30-database/FUNDSLINK-ERD-PACKAGE-v1.1.md) | Entity-relationship package (+ BR-E01–E10, eligibility tables). |
 | [fundslink-v1-schema.sql](30-database/fundslink-v1-schema.sql) | PostgreSQL DDL — auth, applications, tracking, match records. Embeddings → ChromaDB; AI reasoning → MongoDB. |
