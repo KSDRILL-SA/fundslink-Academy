@@ -48,6 +48,7 @@ Conflicts are reported to the Founder with both citations — never resolved sil
 | Document | Description |
 |----------|-------------|
 | [FUNDSLINK-TAD-v1.2.md](20-architecture/FUNDSLINK-TAD-v1.2.md) | Technical Architecture Document — topology, queued matching, MFA, eligibility module. |
+| [FUNDSLINK-ENGINEERING-ARCHITECTURE-v1.0.md](20-architecture/FUNDSLINK-ENGINEERING-ARCHITECTURE-v1.0.md) | Layering (router→service→repository), shared/common homes, enforced hard rules, and design-for-extension seams (diagram-first). |
 
 ### `30-database/` — database law & schema
 | Document | Description |
