@@ -29,6 +29,28 @@ Conflicts are reported to the Founder with both citations — never resolved sil
 
 ---
 
+## Doc map
+
+```mermaid
+graph LR
+  ROOT["CLAUDE.md<br/>governs every session"]
+  ROOT --> CI["claude-instructions/<br/>stage briefs 00–06"]
+  ROOT --> DOCS["docs/"]
+  ROOT --> PKG["packages/contracts<br/>OpenAPI (S2.7)"]
+  ROOT --> GV["governance/<br/>C0–C10 (synced, pinned)"]
+  DOCS --> M["00-master · MASTER-SPEC"]
+  DOCS --> DEC["10-decisions · ADR-002…005"]
+  DOCS --> ARCH["20-architecture · TAD · Engineering Arch"]
+  DOCS --> DB["30-database · DBLC · Doctrine · ERD · schema"]
+  DOCS --> UX["40-experience · UX screen map"]
+  DOCS --> PROC["50-process · SDLC · Impl · Workflow · Manifest"]
+  DOCS --> AUD["60-audits · Stress-test"]
+  DOCS --> OPS["70-operations · runbooks · launch"]
+  DOCS --> GOV["80-governance · Constitution-index · Patches"]
+  classDef r fill:#1d4ed8,color:#fff,stroke:#1e3a8a;
+  class ROOT r;
+```
+
 ## Document index
 
 ### `00-master/` — what & why
