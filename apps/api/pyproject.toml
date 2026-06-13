@@ -37,3 +37,21 @@ select = ["E", "F", "I", "UP", "B"]
 pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+# Layering enforcement (CLAUDE.md hard rule): router -> service -> repository.
+# ONLY repositories may import DB drivers. Routers and services may not.
+[tool.importlinter]
+root_package = "app"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Routers and services must not import DB drivers (only repositories may)"
+type = "forbidden"
+source_modules = [
+    "app.modules.*.router",
+    "app.modules.*.service",
+]
+forbidden_modules = [
+    "sqlalchemy",
+    "asyncpg",
+]

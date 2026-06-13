@@ -1,0 +1,14 @@
+# Pre-commit hooks. Install: pip install pre-commit && pre-commit install
+# Secrets must never enter a commit (S3.20 / CF-04) — gitleaks is the local gate.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        files: ^apps/api/
+        args: [--fix]
