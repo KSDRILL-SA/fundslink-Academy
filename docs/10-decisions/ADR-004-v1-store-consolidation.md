@@ -4,7 +4,7 @@
 |-----------|-------|
 | **ID** | ADR-004 |
 | **Date** | 2026-06-12 |
-| **Status** | **proposed — awaiting Founder (L4) decision** |
+| **Status** | **REJECTED — Founder (L4), 2026-06-13** |
 | **Relates To** | ADR-001, S5.33, S5.45–S5.52, ST-AUDIT Q5/Q6 |
 
 ## Context
@@ -17,4 +17,9 @@ For v1 ONLY: AI match reasoning → PostgreSQL **JSONB** (same repository interf
 For: ~40% infra cost cut, one backup/restore drill, one upgrade path, PITR covers everything including vectors. Against: deviates from the locked context's three-store assignment (requires an Approved Deviation entry in fundslink-context.md); pgvector index tuning differs from ChromaDB defaults.
 
 ## Decision
-*Pending — Founder to accept or reject. If accepted: record as Approved Deviation in `system-contexts/fundslink-context.md`, TAD topology note updated; doctrine DB-D35 cross-store job simplifies to a no-op until v2.5.*
+**Rejected (Founder, L4, 2026-06-13).** v1 keeps the constitutional polyglot stores —
+**PostgreSQL + MongoDB + ChromaDB + Redis** — per ADR-001 and the locked `fundslink-context.md`
+(Approved Deviations: *None*). The system is not time-constrained, so the solo-ops cost saving did
+not justify deviating from the locked architecture. The polyglot assignment stands in full
+(S5.33 MongoDB for reasoning, S5.45 ChromaDB for vectors); doctrine DB-D35's cross-store job
+remains **active**, not a no-op. MongoDB and ChromaDB are present from v1, not deferred.

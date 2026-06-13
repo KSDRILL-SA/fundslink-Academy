@@ -9,7 +9,7 @@ A student creates a profile, submits an application, and receives AI-matched fun
 > [docs/README.md](docs/README.md)).
 
 ## Stack
-Angular 18 + FastAPI · PostgreSQL 16 + pgvector · Redis · RS256 JWT auth.
+Angular 18 + FastAPI · PostgreSQL + MongoDB + ChromaDB + Redis · RS256 JWT auth.
 Monorepo per ADR-002: `apps/api` (FastAPI, Railway) + `apps/web` (Angular, Vercel),
 shared `packages/contracts` (the OpenAPI source of truth).
 
@@ -18,7 +18,7 @@ shared `packages/contracts` (the OpenAPI source of truth).
 apps/api/            FastAPI service (router -> service -> repository)
 apps/web/            Angular workspace + libs/{ui,auth,data-access,util}
 packages/contracts/  FUNDSLINK-API-v1.yaml — the API source of truth (S2.7)
-infra/               docker-compose.dev.yml (postgres+pgvector, redis, api)
+infra/               docker-compose.dev.yml (postgres, mongo, chroma, redis, api)
 governance/          pinned-SHA sync of the KSDRILL constitutions (ADR-002 §4)
 docs/                governing documents (master spec, ADRs, TAD, DB doctrine, …)
 claude-instructions/ stage briefs 00–06

@@ -14,7 +14,7 @@ Per Founder directive, the documentation set is versioned **as a suite: Suite v1
 | 1 | ⭐ FUNDSLINK-MASTER-SPEC-v1.0.md | **v1.0 MASTER (Founder ruling: renamed from v4.0)** | LOCKED | **THE MAIN DOCUMENT** — description of operations |
 | 2 | ADR-002-fundslink-monorepo.md | — | accepted | Repo strategy + app topology |
 | 3 | ADR-003-fundslink-data-access.md | — | accepted | PostgreSQL hybrid data access |
-| 4 | ADR-004-v1-store-consolidation.md | — | **ACCEPTED (L4, 2026-06-12)** | v1 = PostgreSQL only (JSONB + pgvector) |
+| 4 | ADR-004-v1-store-consolidation.md | — | **REJECTED (L4, 2026-06-13)** | declined — v1 keeps the 3 constitutional stores (PG + MongoDB + ChromaDB) |
 | 5 | FUNDSLINK-TAD-v1.1.md | v1.1 | PROPOSED → lock on L4 | HOW — architecture |
 | 6 | FUNDSLINK-DB-DOCTRINE-v1.1.md | v1.1 | PROPOSED → lock on L4 | Database law (DB-D1–D44) — gates the ERD |
 | 7 | FUNDSLINK-STRESS-TEST-AUDIT-v1.0.md | v1.0 | ACCEPTED | Adversarial findings register (ST-1…ST-6) |
