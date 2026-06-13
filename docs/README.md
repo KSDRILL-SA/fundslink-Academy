@@ -116,6 +116,7 @@ graph LR
 | [docs-manifest.md](process/docs-manifest.md) | The suite index, precedence order, and cross-document consistency record. |
 | [github-workflow.md](process/github-workflow.md) | GitHub workflow: issue → branch → linked PR → self-review → squash-merge; labels & milestones. |
 | [handoff-s00-s01.md](process/handoff-s00-s01.md) | Relay handoff — Stage 00 build history, completed-vs-to-complete status, how-we-work, Stage 01 brief + paste-ready terminal prompt. |
+| [session-playbook.md](process/session-playbook.md) | **Per-phase terminal prompts (Stage 01→06)** — one phase per session; each prompt self-contained, ending by pointing to the next session. |
 
 ### `audits/` — adversarial findings
 | Document | Description |
