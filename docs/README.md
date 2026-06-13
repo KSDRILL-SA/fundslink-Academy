@@ -92,6 +92,7 @@ graph LR
 | [FUNDSLINK-IMPLEMENTATION-PROCESS-v1.0.md](50-process/FUNDSLINK-IMPLEMENTATION-PROCESS-v1.0.md) | Stage-gated build order G0–G6 (database first) + Human Track. |
 | [FUNDSLINK-DOCS-MANIFEST-v1.5.md](50-process/FUNDSLINK-DOCS-MANIFEST-v1.5.md) | The suite index, precedence order, and cross-document consistency record. |
 | [FUNDSLINK-GITHUB-WORKFLOW-v1.0.md](50-process/FUNDSLINK-GITHUB-WORKFLOW-v1.0.md) | GitHub workflow: issue → branch → linked PR → self-review → squash-merge; labels & milestones. |
+| [FUNDSLINK-HANDOFF-S00-S01.md](50-process/FUNDSLINK-HANDOFF-S00-S01.md) | Relay handoff — Stage 00 build history, locked decisions, how-we-work, and the Stage 01 (database) brief. |
 
 ### `60-audits/` — adversarial findings
 | Document | Description |
