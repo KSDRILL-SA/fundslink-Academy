@@ -43,11 +43,24 @@ Migration `0005` creates `fundslink_app` **NOLOGIN** (no secret in git). Product
 - [ ] `counselling` schema gets its **own** DB role/credentials; `fundslink_app` has **no grants**
       on it (Spec §6.4 / §15.3).
 
-## 7. Defense-in-depth review (deliberate choices, revisit per stage)
-- [ ] **No Row-Level Security** at v1 — owner/tenant scoping is enforced in the repository/service
-      layer (TAD §3.5). Re-evaluate RLS for the most sensitive tables as a future hardening.
+## 7. Row-Level Security — the backend contract (migration 0007)
+RLS is **enforced in the database** on the core student-data tables (student_profile,
+funding_application, document, tracked_application, match_result, consent_record,
+notification_preference, notification_outbox). The app role is `NOBYPASSRLS`, so the backend
+**must** set the request context inside each transaction or it sees **nothing** (fail-closed):
+- [ ] After authenticating, per request: `SET LOCAL app.user_id = '<user cuid>'` and
+      `SET LOCAL app.user_role = '<effective role>'` (use the request's DB transaction).
+- [ ] Background jobs / matching run with `app.user_role = 'SYSTEM'` (and `app.user_id = 'SYSTEM'`).
+- [ ] Analytics via `fundslink_readonly`: decide BYPASSRLS vs a SYSTEM context when a BI tool
+      is introduced (today it is fail-closed by default — secure, but set a context to read).
+- [ ] **New owned tables in later stages** add their own RLS policies following the 0007 pattern
+      (proven in `tests/db/test_row_level_security.py`).
+
+## 8. Defense-in-depth summary (deliberate choices)
 - [ ] Audit-log immutability rests on **two walls**: `fn_block_mutation` trigger **and** the
       `fundslink_app` privilege revoke (proven in `tests/db/test_security_least_privilege.py`).
+- [ ] Cross-user data exposure has **two walls**: RLS policies **and** the repository/service
+      ownership checks. Either alone would hold; together they are belt-and-suspenders.
 
 ---
 
