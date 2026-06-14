@@ -154,6 +154,20 @@ class RefreshTokenRepository(BaseRepository):
         )
 
 
+class RbacRepository(BaseRepository):
+    async def get_permissions_for_role(self, role_code: str) -> set[str]:
+        """The permission codes granted to a role (the seeded role→permission map, S3.21)."""
+        rows = await sql.fetch_all(
+            self.session,
+            "SELECT p.code FROM role r"
+            " JOIN role_permission rp ON rp.role_id = r.id"
+            " JOIN permission p ON p.id = rp.permission_id"
+            " WHERE r.code = :code",
+            code=role_code,
+        )
+        return {row[0] for row in rows}
+
+
 class ConsentRepository(BaseRepository):
     async def valid_purposes(self) -> set[str]:
         rows = await sql.fetch_all(self.session, "SELECT code FROM lk_consent_purpose")

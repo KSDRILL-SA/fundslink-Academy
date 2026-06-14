@@ -56,6 +56,8 @@ select = ["E", "F", "I", "UP", "B"]
 extend-immutable-calls = [
     "fastapi.Depends", "fastapi.Header", "fastapi.Query", "fastapi.Path",
     "fastapi.Cookie", "fastapi.Body", "fastapi.Form", "fastapi.File",
+    # require() is a dependency factory (like Depends) — sanctioned in argument defaults.
+    "app.modules.auth.permissions.require",
 ]
 
 [tool.pytest.ini_options]

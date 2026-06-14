@@ -12,7 +12,8 @@ from fastapi import APIRouter, Depends, Request, Response
 from app.common.request_id import get_request_id
 from app.core.config import settings
 from app.db.engine import get_session
-from app.modules.auth.deps import CurrentUser, get_current_user, get_redis_client, system_db
+from app.modules.auth.deps import CurrentUser, get_redis_client, system_db
+from app.modules.auth.permissions import authenticated_only, public_endpoint
 from app.modules.auth.schemas import AuthTokens, LoginRequest, RegisterRequest
 from app.modules.auth.service import AuthService
 
@@ -41,7 +42,12 @@ def _set_refresh_cookie(response: Response, raw: str) -> None:
     )
 
 
-@router.post("/register", status_code=201, operation_id="authRegister")
+@router.post(
+    "/register",
+    status_code=201,
+    operation_id="authRegister",
+    dependencies=[Depends(public_endpoint)],  # deny-by-default: explicitly public (S3.21)
+)
 async def register(
     body: RegisterRequest,
     request: Request,
@@ -56,7 +62,9 @@ async def register(
     return tokens
 
 
-@router.post("/login", operation_id="authLogin")
+@router.post(
+    "/login", operation_id="authLogin", dependencies=[Depends(public_endpoint)]
+)
 async def login(
     body: LoginRequest,
     request: Request,
@@ -71,7 +79,9 @@ async def login(
     return tokens
 
 
-@router.post("/refresh", operation_id="authRefresh")
+@router.post(
+    "/refresh", operation_id="authRefresh", dependencies=[Depends(public_endpoint)]
+)
 async def refresh(
     request: Request,
     response: Response,
@@ -90,7 +100,7 @@ async def refresh(
 async def logout(
     request: Request,
     response: Response,
-    current: CurrentUser = Depends(get_current_user),
+    current: CurrentUser = Depends(authenticated_only),
     session=Depends(get_session),
     redis=Depends(get_redis_client),
 ) -> None:

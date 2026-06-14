@@ -46,8 +46,8 @@ jobs:
         run: ruff check .
       - name: Layering (import-linter — routers/services may not import DB drivers)
         run: lint-imports
-      - name: Permission lint (placeholder — S3.21)
-        run: echo "TODO S3.21 deny-by-default permission lint — activates when endpoints exist"
+      - name: Permission lint (S3.21 — deny-by-default; every route declares its posture)
+        run: python ../../scripts/permission_lint.py
       - name: Contract diff (S2.7 — FastAPI OpenAPI vs packages/contracts/openapi.yaml)
         run: python ../../scripts/contract_diff.py
       - name: Migrations — upgrade from zero (DB-D36)
