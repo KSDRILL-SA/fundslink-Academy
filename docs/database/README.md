@@ -19,8 +19,11 @@
 | `0008` | Alignment — `updated_at` auto-stamp on the remaining mutable tables |
 | `0009` | **Security** — RLS completeness (motivation, pre-screen, returns, appeals, audit-log) |
 | `0010` | **Security** — auth-table RLS (`user`, `refresh_token*`) + SYSTEM principal seed (Stage 02, D-015) |
+| `0011` | Auth — `token_version` session-epoch on `user` (S3.13 claim + global invalidation S3.35) |
+| `0012` | Auth — MFA state (`mfa_enabled`, encrypted recovery codes) for TOTP (Stage 02, TAD §3.1) |
+| `0013` | **Security** — `auth_token` table (email-verify + password-reset single-use tokens) + RLS |
 
-Single head = `0010`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
+Single head = `0013`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
 
 ## Stores (3-store polyglot — ADR-004 rejected)
 PostgreSQL is the **system of record** (auth, applications, tracking, match records, outbox,

@@ -77,6 +77,71 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '409': { $ref: '#/components/responses/Conflict' }
 
+  /auth/verify-email:
+    post:
+      operationId: authVerifyEmail
+      security: []
+      summary: Verify an email address with a single-use token (S3.12)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerifyEmailRequest' }
+      responses:
+        '204': { description: Email verified }
+        '400': { $ref: '#/components/responses/Validation' }
+  /auth/verify-email/resend:
+    post:
+      operationId: authResendVerification
+      security: []
+      summary: Resend the verification email (enumeration-proof — always 202)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmailRequest' }
+      responses:
+        '202': { description: Accepted }
+  /auth/forgot-password:
+    post:
+      operationId: authForgotPassword
+      security: []
+      summary: Request a password reset — always 202, enumeration-proof (S3.30)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmailRequest' }
+      responses:
+        '202': { description: Accepted }
+  /auth/reset-password:
+    post:
+      operationId: authResetPassword
+      security: []
+      summary: Reset password with a single-use token; revokes all sessions (S3.30 / S3.35)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResetPasswordRequest' }
+      responses:
+        '204': { description: Password reset }
+        '400': { $ref: '#/components/responses/Validation' }
+        '422': { $ref: '#/components/responses/Validation' }
+  /auth/change-password:
+    post:
+      operationId: authChangePassword
+      summary: Change password (authenticated); revokes all sessions (S3.35)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChangePasswordRequest' }
+      responses:
+        '204': { description: Password changed }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/Validation' }
+
   /students/me/profile:
     get:
       operationId: getMyProfile
@@ -411,6 +476,32 @@ components:
       required: [code]
       properties:
         code: { type: string, description: A current 6-digit TOTP from the authenticator }
+
+    VerifyEmailRequest:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+
+    EmailRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+
+    ResetPasswordRequest:
+      type: object
+      required: [token, new_password]
+      properties:
+        token: { type: string }
+        new_password: { type: string, minLength: 10 }
+
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password: { type: string }
+        new_password: { type: string, minLength: 10 }
 
     StudentProfileInput:
       type: object

@@ -46,3 +46,23 @@ class MfaEnrollResponse(BaseModel):
 
 class MfaActivateRequest(BaseModel):
     code: str
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class EmailRequest(BaseModel):
+    """Resend-verification / forgot-password — by email (enumeration-proof response)."""
+
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=10)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=10)

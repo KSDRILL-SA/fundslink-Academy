@@ -14,16 +14,21 @@ from datetime import UTC, datetime
 from app.common.errors import AppError
 from app.core.config import settings
 from app.modules.auth import crypto, mfa, passwords
+from app.modules.auth.email import get_email_adapter
 from app.modules.auth.jwt import create_access_token
 from app.modules.auth.ratelimit import LoginRateLimiter, TokenDenyList
 from app.modules.auth.repository import (
     AuditRepository,
+    AuthTokenRepository,
     ConsentRepository,
     RefreshTokenRepository,
     UserRepository,
 )
 from app.modules.auth.schemas import AuthTokens, RegisterRequest
-from app.modules.auth.tokens import hash_refresh_token, new_refresh_token
+from app.modules.auth.tokens import hash_refresh_token, new_opaque_token, new_refresh_token
+
+EMAIL_VERIFY_TTL = 24 * 3600  # 24h (S3.12)
+PASSWORD_RESET_TTL = 3600  # 1h (S3.30)
 
 # JWT role claim precedence when a user holds more than one role (v1 users hold exactly one).
 _ROLE_PRECEDENCE = [
@@ -49,6 +54,8 @@ class AuthService:
         self.refresh = RefreshTokenRepository(session)
         self.consents = ConsentRepository(session)
         self.audit = AuditRepository(session)
+        self.auth_tokens = AuthTokenRepository(session)
+        self.email = get_email_adapter()
         self.denylist = TokenDenyList(redis)
         self.ratelimiter = LoginRateLimiter(redis)
 
@@ -147,10 +154,119 @@ class AuthService:
             actor_user_id=user_id, action="AUTH_REGISTER", resource_type="user",
             resource_id=user_id, request_id=request_id, detail={"email": req.email},
         )
+        if settings.email_verification_required:
+            await self._send_verification(user_id, req.email, request_id)
         return await self._issue(
             user_id=user_id, email=req.email, role="STUDENT", token_version=1,
             request_id=request_id, action="AUTH_REGISTER",
         )
+
+    # ------------------------- email verification (S3.12) -------------------------
+    async def _send_verification(self, user_id: str, email: str, request_id: str) -> None:
+        raw, token_hash = new_opaque_token()
+        await self.auth_tokens.create(
+            user_id=user_id,
+            kind="EMAIL_VERIFY",
+            token_hash=token_hash,
+            ttl_seconds=EMAIL_VERIFY_TTL,
+        )
+        await self.email.send(
+            to=email,
+            subject="Verify your FundsLink email",
+            body=f"Confirm your email with this token (valid 24h): {raw}",
+        )
+        await self.audit.write(
+            actor_user_id=user_id, action="AUTH_EMAIL_VERIFICATION_SENT", resource_type="user",
+            resource_id=user_id, request_id=request_id,
+        )
+
+    async def verify_email(self, *, token: str, request_id: str) -> None:
+        row = await self.auth_tokens.get_active_by_hash(hash_refresh_token(token), "EMAIL_VERIFY")
+        token_id, user_id = self._consume_token_or_fail(row)
+        await self.auth_tokens.mark_used(token_id)
+        await self.users.set_account_state(user_id, "ACTIVE")
+        await self.audit.write(
+            actor_user_id=user_id, action="AUTH_EMAIL_VERIFIED", resource_type="user",
+            resource_id=user_id, request_id=request_id,
+        )
+
+    async def resend_verification(self, *, email: str, request_id: str) -> None:
+        """Always succeeds to the caller (enumeration-proof); only acts for a pending account."""
+        user = await self.users.get_by_email(email)
+        if user is not None and user[0] != "SYSTEM" and user[3] == "PENDING_VERIFICATION":
+            await self._send_verification(user[0], user[1], request_id)
+
+    # ----------------------------- password reset (S3.30) -------------------------
+    async def forgot_password(self, *, email: str, request_id: str) -> None:
+        """Enumeration-proof (S3.30): identical outcome whether or not the account exists."""
+        user = await self.users.get_by_email(email)
+        if user is None or user[0] == "SYSTEM":
+            return
+        user_id = user[0]
+        raw, token_hash = new_opaque_token()
+        await self.auth_tokens.create(
+            user_id=user_id,
+            kind="PASSWORD_RESET",
+            token_hash=token_hash,
+            ttl_seconds=PASSWORD_RESET_TTL,
+        )
+        await self.email.send(
+            to=user[1],
+            subject="Reset your FundsLink password",
+            body=f"Reset your password with this token (valid 1h): {raw}",
+        )
+        await self.audit.write(
+            actor_user_id=user_id, action="AUTH_PASSWORD_RESET_REQUESTED", resource_type="user",
+            resource_id=user_id, request_id=request_id,
+        )
+
+    async def reset_password(self, *, token: str, new_password: str, request_id: str) -> None:
+        await self._validate_new_password(new_password)
+        row = await self.auth_tokens.get_active_by_hash(hash_refresh_token(token), "PASSWORD_RESET")
+        token_id, user_id = self._consume_token_or_fail(row)
+        await self.auth_tokens.mark_used(token_id)
+        await self.users.set_password_hash(user_id, passwords.hash_password(new_password))
+        await self._revoke_all_sessions(user_id)  # S3.35
+        await self.audit.write(
+            actor_user_id=user_id, action="AUTH_PASSWORD_RESET", resource_type="user",
+            resource_id=user_id, request_id=request_id,
+        )
+
+    # ---------------------------- password change (S3.35) -------------------------
+    async def change_password(
+        self, *, user_id: str, current_password: str, new_password: str, request_id: str
+    ) -> None:
+        user = await self.users.get_by_id(user_id)
+        if user is None or not passwords.verify_password(current_password, user[2]):
+            raise AppError("invalid_credentials", "Current password is incorrect", status_code=401)
+        await self._validate_new_password(new_password)
+        await self.users.set_password_hash(user_id, passwords.hash_password(new_password))
+        await self._revoke_all_sessions(user_id)  # S3.35 — log out everywhere
+        await self.audit.write(
+            actor_user_id=user_id, action="AUTH_PASSWORD_CHANGED", resource_type="user",
+            resource_id=user_id, request_id=request_id,
+        )
+
+    # --------------------------------- helpers ------------------------------------
+    @staticmethod
+    def _consume_token_or_fail(row) -> tuple[str, str]:
+        """Validate an auth_token row (exists, unused, unexpired); return (token_id, user_id)."""
+        if row is None or row[3] is not None or row[2] < _now():
+            raise AppError("invalid_token", "This link is invalid or has expired", status_code=400)
+        return row[0], row[1]
+
+    async def _validate_new_password(self, password: str) -> None:
+        passwords.validate_strength(password)
+        if await passwords.is_breached(password):
+            raise AppError(
+                "password_breached",
+                "This password has appeared in a known data breach; choose another",
+                status_code=422,
+            )
+
+    async def _revoke_all_sessions(self, user_id: str) -> None:
+        await self.refresh.revoke_all_for_user(user_id)
+        await self.users.bump_token_version(user_id)
 
     # ----------------------------------- login ------------------------------------
     async def login(

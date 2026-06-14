@@ -22,3 +22,10 @@ def new_refresh_token() -> tuple[str, str]:
 def hash_refresh_token(raw: str) -> str:
     """Deterministic SHA-256 hash for constant-work lookup by token_hash."""
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def new_opaque_token(nbytes: int = 32) -> tuple[str, str]:
+    """A URL-safe random token + its SHA-256 hash — for email-verify / password-reset links."""
+    raw = secrets.token_urlsafe(nbytes)
+    return raw, hash_refresh_token(raw)
+

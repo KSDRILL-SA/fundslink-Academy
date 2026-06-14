@@ -221,6 +221,42 @@ class ConsentRepository(BaseRepository):
         )
 
 
+class AuthTokenRepository(BaseRepository):
+    """Single-use, expiring email-verify / password-reset tokens (only the hash is stored)."""
+
+    async def create(self, *, user_id: str, kind: str, token_hash: str, ttl_seconds: int) -> str:
+        token_id = cuid()
+        expires_at = datetime.now(UTC) + timedelta(seconds=ttl_seconds)
+        await sql.execute(
+            self.session,
+            "INSERT INTO auth_token(id, user_id, kind, token_hash, expires_at)"
+            " VALUES (:id, :uid, :kind, :hash, :exp)",
+            id=token_id,
+            uid=user_id,
+            kind=kind,
+            hash=token_hash,
+            exp=expires_at,
+        )
+        return token_id
+
+    async def get_active_by_hash(self, token_hash: str, kind: str):
+        """Return (id, user_id, expires_at, used_at) for a token of this kind, or None."""
+        return await sql.fetch_one(
+            self.session,
+            "SELECT id, user_id, expires_at, used_at FROM auth_token"
+            " WHERE token_hash = :hash AND kind = :kind",
+            hash=token_hash,
+            kind=kind,
+        )
+
+    async def mark_used(self, token_id: str) -> None:
+        await sql.execute(
+            self.session,
+            "UPDATE auth_token SET used_at = now() WHERE id = :id AND used_at IS NULL",
+            id=token_id,
+        )
+
+
 class AuditRepository(BaseRepository):
     async def write(
         self,
