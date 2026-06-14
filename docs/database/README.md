@@ -18,8 +18,9 @@
 | `0007` | **Security** — Row-Level Security (right row, right person, right role; fail-closed) |
 | `0008` | Alignment — `updated_at` auto-stamp on the remaining mutable tables |
 | `0009` | **Security** — RLS completeness (motivation, pre-screen, returns, appeals, audit-log) |
+| `0010` | **Security** — auth-table RLS (`user`, `refresh_token*`) + SYSTEM principal seed (Stage 02, D-015) |
 
-Single head = `0009`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
+Single head = `0010`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
 
 ## Stores (3-store polyglot — ADR-004 rejected)
 PostgreSQL is the **system of record** (auth, applications, tracking, match records, outbox,
@@ -56,14 +57,15 @@ DDL, NOBYPASSRLS, fenced by `statement_timeout`/`idle`/`lock_timeout` + connecti
 profile, application, document, tracking, matches, consent, notification, motivation,
 pre-screen, returns, appeals, theme tags, recusal, and audit-log — fail-closed: no session
 context ⇒ no rows. Reviewer-only metadata is staff-scoped; audit is own/staff. The owner
-bypasses (migrations); the app is always subject. **Auth tables (`user`/`refresh_token*`) get
-RLS in Stage 02** with a SYSTEM-context login path (you have no `user_id` at login) — see D-015.
+bypasses (migrations); the app is always subject. **Auth tables (`user`/`refresh_token*`) now
+carry RLS (0010)** with a SYSTEM-context login/token path (no `user_id` at login) — see D-015;
+the SYSTEM principal is seeded with the literal `user.id='SYSTEM'` (so `fn_human_final` keys on it).
 
 ## Backend integration contracts (every later phase MUST honor)
 1. **Connect as `fundslink_app`**, never the owner/superuser; the owner is for migrations only.
 2. **Per request, in the transaction:** `SET LOCAL app.user_id = '<cuid>'` and
    `SET LOCAL app.user_role = '<role>'` — or RLS returns nothing. Jobs use `SYSTEM`.
-3. **The SYSTEM principal's `user.id` MUST be literally `'SYSTEM'`** (Stage 02 seeds it) or
+3. **The SYSTEM principal's `user.id` MUST be literally `'SYSTEM'`** (seeded in 0010) or
    `fn_human_final` won't catch it.
 4. **New append-only table** ⇒ its migration `REVOKE UPDATE, DELETE … FROM fundslink_app`.
 5. **New owned table** ⇒ add RLS policies following the 0007 pattern.
@@ -84,7 +86,7 @@ RLS in Stage 02** with a SYSTEM-context login path (you have no `user_id` at log
 | PII encryption / key mgmt | columns ready | ✅ app-side AES-256-GCM (Stage 02) |
 
 ## Verification (Gate G1+)
-`alembic upgrade head` (0001→0008) clean · downgrade→upgrade roundtrip clean · constraint +
+`alembic upgrade head` (0001→0010) clean · downgrade→upgrade roundtrip clean · constraint +
 security + RLS suite green in CI · `make integrity` clean · restore drill PASS · EXPLAIN shows
 index scans. Deployment-side security: [`../operations/security-deployment-checklist.md`](../operations/security-deployment-checklist.md).
 
