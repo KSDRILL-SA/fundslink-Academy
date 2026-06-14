@@ -43,3 +43,15 @@ Run it with: `make restore-drill` (or `bash scripts/restore_drill.sh`).
 | **total** | **38.65** |
 
 **Result:** PASS ✅ — restored DB enforces all constraints (constraint suite rc=0).
+
+## Restore drill — 2026-06-14T02:55:34Z
+
+| Phase | Seconds |
+|-------|---------|
+| pg_dump (fundslink) | 1.88 |
+| drop + create (fundslink_restore) | 6.56 |
+| pg_restore | 4.35 |
+| constraint suite (DB-D37) | 25.89 |
+| **total** | **38.67** |
+
+**Result:** PASS ✅ — restored DB enforces all constraints (constraint suite rc=0).
