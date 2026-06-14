@@ -5,7 +5,7 @@
 > Re-run with `make explain`.
 
 Volume: funding_application=20000, tracked_application=20000, match_result=20000, notification_outbox=60000 (PENDING).
-Generated: 2026-06-14T01:14:30Z · PostgreSQL 16.
+Generated: 2026-06-14T04:52:48Z · PostgreSQL 16.
 
 ## 1. My applications (student dashboard)
 
@@ -16,9 +16,9 @@ SELECT * FROM funding_application WHERE student_profile_id='u123' AND deleted_at
 ```
                                      QUERY PLAN                                     
 ------------------------------------------------------------------------------------
- Sort  (cost=19.02..19.03 rows=4 width=122)
+ Sort  (cost=19.07..19.08 rows=4 width=133)
    Sort Key: created_at DESC
-   ->  Bitmap Heap Scan on funding_application  (cost=4.32..18.98 rows=4 width=122)
+   ->  Bitmap Heap Scan on funding_application  (cost=4.32..19.03 rows=4 width=133)
          Recheck Cond: (student_profile_id = 'u123'::text)
          Filter: (deleted_at IS NULL)
          ->  Bitmap Index Scan on ix_app_student  (cost=0.00..4.32 rows=4 width=0)
@@ -54,13 +54,13 @@ SELECT * FROM notification_outbox WHERE state='PENDING' AND next_attempt_at<=now
 ```
 
 ```
-                                                                                   QUERY PLAN                                                                                   
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Limit  (cost=2.06..303.47 rows=100 width=105)
-   ->  LockRows  (cost=2.06..2313.82 rows=767 width=105)
-         ->  Merge Append  (cost=2.06..2306.15 rows=767 width=105)
+                                                                                   QUERY PLAN                                                                                    
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2.06..269.84 rows=100 width=105)
+   ->  LockRows  (cost=2.06..2947.60 rows=1100 width=105)
+         ->  Merge Append  (cost=2.06..2936.60 rows=1100 width=105)
                Sort Key: notification_outbox.next_attempt_at
-               ->  Index Scan using notification_outbox_202606_next_attempt_at_idx on notification_outbox_202606 notification_outbox_1  (cost=0.29..2190.11 rows=755 width=105)
+               ->  Index Scan using notification_outbox_202606_next_attempt_at_idx on notification_outbox_202606 notification_outbox_1  (cost=0.29..2812.73 rows=1088 width=105)
                      Index Cond: (next_attempt_at <= now())
                      Filter: (state = 'PENDING'::text)
                ->  Index Scan using notification_outbox_202607_next_attempt_at_idx on notification_outbox_202607 notification_outbox_2  (cost=0.13..8.15 rows=1 width=222)
@@ -131,8 +131,8 @@ SELECT * FROM funding_application WHERE status='READY_FOR_REVIEW' ORDER BY creat
 ```
                                               QUERY PLAN                                               
 -------------------------------------------------------------------------------------------------------
- Limit  (cost=0.29..13.18 rows=50 width=122)
-   ->  Index Scan using ix_app_status on funding_application  (cost=0.29..1290.03 rows=5000 width=122)
+ Limit  (cost=0.29..14.18 rows=50 width=133)
+   ->  Index Scan using ix_app_status on funding_application  (cost=0.29..1389.21 rows=5000 width=133)
          Index Cond: (status = 'READY_FOR_REVIEW'::text)
 (3 rows)
 
