@@ -1318,6 +1318,59 @@ Daily reconciliation · Quarterly transparency report
 
 ---
 
+# 25. v1.2 LIFECYCLE ADDENDUM (Founder-approved, 2026-06-14)
+
+> Outcome of the student-journey review. These are **binding product rules**; the schema
+> already enforces what can be enforced (migrations 0003–0004). Service/UX items name their
+> build stage. Every rule is citable like any other (BR-x / S-x).
+
+## 25.1 Always-open, rolling intake (no application deadline)
+FundsLink's own funding intake is **open 24/7, all year**. There is **no submission deadline**
+on a FundsLink application — a safety net with office hours is not a safety net. (The only
+deadlines in the system belong to *external* bursaries we track, `bursary_deadline.due_on`.)
+- **Intake** (DRAFT, SUBMITTED, automated PRE_SCREENING) is real-time.
+- **Human judgement** is paced in review cycles bounded by `config.review_sla_days` (14).
+- **Spend** stays safe via `config.matching_daily_budget_zar`.
+
+## 25.2 Priority / emergency lane (the defunded-late student)
+A student who misses external windows or is **defunded by NSFAS mid/late-year** is the *most*
+deserving, not the least. Applications carry a **priority** (`lk_priority`: NORMAL/URGENT/
+CRITICAL) and an optional `needed_by` date; emergency cases get a shorter SLA
+(`config.emergency_review_sla_days`, 3). Reviewers triage by priority then age
+(`ix_app_review_triage`). *(Service routing: Stage 03.)*
+
+## 25.3 Post-approval lifecycle (money safety)
+Approval is **not** the end of the money story. An award may move `APPROVED →
+{SUSPENDED, REVOKED, COMPLETED}` (and `SUSPENDED → APPROVED`), each by a **human actor** with a
+recorded `note`. Only `COMPLETED` frees the student's year; `SUSPENDED`/`REVOKED` still count as
+active. Binds to the two-person money rule (§16). *(BR-S10 — new.)*
+
+## 25.4 Honesty layer
+- **Document validity (BR-E10):** documents carry `issued_at`/`valid_until`; an expired
+  document triggers a **RETURN for info**, never a rejection.
+- **Resubmission clock:** a RETURNED_FOR_INFO carries a `respond_by`; silence is reminded, not
+  punished (ties into the 30/45/60 nudge engine). *(Service: Stage 03.)*
+- **One human, one identity:** SA ID (blind-indexed, `uq_user_idnum`) is required **before
+  SUBMIT**, not before register — low-friction onboarding, hard anti-duplicate at the moment
+  money is at stake. *(Service: Stage 02/03.)*
+
+## 25.5 Meet students where they live
+- **Language:** `student_profile.preferred_language` and `application_motivation.language` are
+  constrained to the **11 SA official languages** (E11). The whole experience speaks their
+  language. *(UX: Stage 04.)*
+- **Channels:** WhatsApp is a first-class, consented channel (`MARKETING_WHATSAPP`) alongside
+  email/SMS (BR-N03). Mobile-first, low-data, autosave drafts. *(UX: Stage 04.)*
+
+## 25.6 Deferred-but-committed (named for their stage)
+| Item | Stage |
+|------|-------|
+| Pre-submit eligibility self-check (read `eligibility_ruleset`) | 03 service |
+| "External deadline passed → here are alternatives" nudge job | 03 service |
+| Orphan `application_motivation` cleanup on category switch | 03 service |
+| Mobile-first, low-data, autosave, multi-language UI | 04 UX |
+
+---
+
 # LOCKED & APPROVED
 
 **This document is the complete MASTER specification for FundsLink Academy — the main document from which the TAD, DB Doctrine, ERD Package, and all ADRs derive.**

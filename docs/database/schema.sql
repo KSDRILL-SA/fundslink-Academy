@@ -2,7 +2,12 @@
 -- FUNDSLINK ACADEMY — v1 PHYSICAL SCHEMA (PostgreSQL 15+)
 -- ERD-PACKAGE v1.0 Part 4 | Governed by DB-DOCTRINE v1.1
 -- [BUILD] tables only. [FWD] financial tables arrive v1.5/v2.
--- Migration 0001 (Alembic wraps this content).
+-- ------------------------------------------------------------
+-- APPLY PATH: Alembic migrations are authoritative.
+--   0001 = this baseline (v1.0/v1.1)   0002 = seeds
+--   0003 = review hardening            0004 = application lifecycle
+-- This file is the consolidated, readable reference; the v1.2 delta from 0003/0004 is
+-- summarised in the "v1.2 ADDITIONS" section at the end. ERD of record: data-model.md.
 -- ============================================================
 
 -- Vectors live in ChromaDB (S5.45) and AI match reasoning in MongoDB (S5.33) — NOT in Postgres.
@@ -432,3 +437,56 @@ CREATE TABLE recusal (                                   -- BR-E09 append-only
   CONSTRAINT uq_recusal UNIQUE (application_id, reviewer_id)
 );
 CREATE TRIGGER tg_recusal_guard BEFORE UPDATE OR DELETE ON recusal FOR EACH ROW EXECUTE FUNCTION fn_block_mutation();
+
+-- ============================================================
+-- v1.2 ADDITIONS — review hardening (0003) + application lifecycle (0004)
+-- Founder-approved L4, 2026-06-14. Reference mirror of migrations 0003/0004.
+-- ============================================================
+
+-- ---------- 0003: performance indexes (DB-D28/D40) ----------
+-- (in 0003 these REPLACE the single-column ix_app_status; the dashboard composites were
+--  tested and rejected — tiny per-student cardinality. See data-model.md §6.4.)
+CREATE INDEX ix_rtf_user        ON refresh_token_family(user_id);
+CREATE INDEX ix_ta_bursary      ON tracked_application(external_bursary_id);
+CREATE INDEX ix_match_bursary   ON match_result(external_bursary_id);
+CREATE INDEX ix_user_role_role  ON user_role(role_id);
+CREATE INDEX ix_role_perm_perm  ON role_permission(permission_id);
+-- ix_app_status is (status, created_at DESC) — paginated review queue, ordered, no sort.
+
+-- ---------- 0003: domain CHECKs (DB-D9) ----------
+ALTER TABLE document        ADD CONSTRAINT ck_doc_av_status
+  CHECK (av_status IN ('PENDING','SCANNING','CLEAN','INFECTED','ERROR'));
+ALTER TABLE student_profile ADD CONSTRAINT ck_sp_level
+  CHECK (level IN ('UG','HONOURS','MASTERS','PHD','PGDIP'));
+ALTER TABLE bursary_deadline ADD CONSTRAINT ck_bd_type
+  CHECK (deadline_type IN ('APPLICATION','DOCUMENT','INTERVIEW','DECISION','PAYMENT','OTHER'));
+
+-- ---------- 0003: DEFAULT partitions (overflow safety nets) ----------
+-- audit_log/notification_outbox/application_status_event/tracked_status_event each get a
+-- DEFAULT partition so an out-of-range row can never fail a mutation's transaction.
+
+-- ---------- 0004: priority / emergency lane ----------
+CREATE TABLE lk_priority (code text PRIMARY KEY, rank int NOT NULL);  -- NORMAL=1/URGENT=2/CRITICAL=3
+ALTER TABLE funding_application
+  ADD COLUMN priority text NOT NULL DEFAULT 'NORMAL' REFERENCES lk_priority,
+  ADD COLUMN needed_by date;
+CREATE INDEX ix_app_review_triage ON funding_application(priority, created_at)
+  WHERE deleted_at IS NULL AND status IN ('READY_FOR_REVIEW','UNSCREENED','RESUBMITTED');
+
+-- ---------- 0004: post-approval lifecycle (money safety) ----------
+-- lk_app_status += SUSPENDED/REVOKED/COMPLETED; transitions APPROVED->{SUSPENDED,REVOKED,
+-- COMPLETED}, SUSPENDED->{APPROVED,REVOKED,COMPLETED}. Only COMPLETED is terminal for
+-- uq_app_active_per_year. A reason rides every transition:
+ALTER TABLE application_status_event ADD COLUMN note text;
+
+-- ---------- 0004: honesty layer + language ----------
+ALTER TABLE document
+  ADD COLUMN issued_at date, ADD COLUMN valid_until date,
+  ADD CONSTRAINT ck_doc_validity CHECK (issued_at IS NULL OR valid_until IS NULL OR issued_at <= valid_until);
+ALTER TABLE application_return ADD COLUMN respond_by date;
+ALTER TABLE student_profile
+  ADD COLUMN preferred_language text NOT NULL DEFAULT 'en',
+  ADD CONSTRAINT ck_sp_language CHECK (preferred_language IN ('en','af','zu','xh','nso','tn','st','ts','ss','ve','nr'));
+ALTER TABLE application_motivation ADD CONSTRAINT ck_motiv_language
+  CHECK (language IN ('en','af','zu','xh','nso','tn','st','ts','ss','ve','nr'));
+-- seeds: config += emergency_review_sla_days; lk_consent_purpose += MARKETING_WHATSAPP.
