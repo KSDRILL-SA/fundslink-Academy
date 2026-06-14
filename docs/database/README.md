@@ -22,8 +22,9 @@
 | `0011` | Auth — `token_version` session-epoch on `user` (S3.13 claim + global invalidation S3.35) |
 | `0012` | Auth — MFA state (`mfa_enabled`, encrypted recovery codes) for TOTP (Stage 02, TAD §3.1) |
 | `0013` | **Security** — `auth_token` table (email-verify + password-reset single-use tokens) + RLS |
+| `0014` | **Security** — least privilege: `fundslink_app` is SELECT-only on reference + RBAC-matrix tables (no escalation/tamper) |
 
-Single head = `0013`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
+Single head = `0014`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
 
 ## Stores (3-store polyglot — ADR-004 rejected)
 PostgreSQL is the **system of record** (auth, applications, tracking, match records, outbox,
@@ -75,6 +76,14 @@ the SYSTEM principal is seeded with the literal `user.id='SYSTEM'` (so `fn_human
 6. **Money / financial-history paths** ⇒ raw parameterised SQL + NUMERIC (ADR-003); CRUD via ORM.
 7. **Status change** ⇒ transition-table check + status event + outbox row, in **one** transaction.
 8. **Endpoints** come FROM `packages/contracts/openapi.yaml` (S2.7); each declares a permission.
+
+## Auth ↔ Database integration (Stage 02 — how auth sits on the DB's security)
+The auth layer is built squarely on every DB hardening wall, and proves it at runtime:
+- **Connects as `fundslink_app`** (non-superuser, NOBYPASSRLS) — verified by `app.db.guard.verify_least_privilege`; **`/readyz` returns 503** if the app is ever pointed at a role that could bypass RLS (contract #1, made self-checking).
+- **Sets RLS context every request** — `set_user_context` (authenticated) / `set_system_context` (login authority + jobs, D-015); no context ⇒ no rows (contract #2).
+- **Append-only respected** — auth only INSERTs `audit_log` / `consent_record`; never UPDATE/DELETE (proven by the privilege wall) (contract #4).
+- **Least privilege tightened (0014)** — `fundslink_app` is SELECT-only on the RBAC matrix + lookups, so a compromised app role cannot escalate (`role_permission`) or tamper with reference data; `user_role` keeps INSERT for role assignment.
+- **SYSTEM principal** seeded `user.id='SYSTEM'` (contract #3); `fn_human_final` intact.
 
 ## What's enforced where
 | Concern | Database | Service (later stages) |
