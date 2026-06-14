@@ -56,5 +56,9 @@ jobs:
         run: |
           alembic downgrade base
           alembic upgrade head
+      - name: Partition maintenance (DB-D44 — keep N+12 ahead)
+        run: python -m app.db.partitions
+      - name: Integrity job (DB-D39 — clean on seeded DB)
+        run: python -m app.db.integrity
       - name: Test (pytest — incl. DB-D37 constraint suite when present)
         run: pytest -q

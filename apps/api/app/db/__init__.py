@@ -7,13 +7,13 @@ institution-scoped repository base (TAD §3.5 / BR-I02), and the cuid generator
 """
 
 from app.db.cuid import cuid
-from app.db.engine import engine, get_session, session_factory
+from app.db.engine import get_engine, get_session, get_session_factory
 from app.db.repository import BaseRepository, InstitutionScopedRepository
 from app.db.sql import execute, fetch_all, fetch_one
 
 __all__ = [
-    "engine",
-    "session_factory",
+    "get_engine",
+    "get_session_factory",
     "get_session",
     "cuid",
     "fetch_all",
