@@ -56,6 +56,27 @@ paths:
       responses:
         '204': { description: Logged out }
 
+  /auth/mfa/enroll:
+    post:
+      operationId: authMfaEnroll
+      summary: Begin TOTP MFA enrolment — returns provisioning URI + recovery codes (shown once)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/MfaEnrollResponse' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/mfa/activate:
+    post:
+      operationId: authMfaActivate
+      summary: Activate MFA by confirming a TOTP code (mandatory for privileged roles — TAD §3.1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MfaActivateRequest' }
+      responses:
+        '204': { description: MFA activated }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
   /students/me/profile:
     get:
       operationId: getMyProfile
@@ -376,6 +397,20 @@ components:
         access_token: { type: string }
         token_type: { type: string, const: bearer }
         expires_in: { type: integer }
+
+    MfaEnrollResponse:
+      type: object
+      required: [secret, provisioning_uri, recovery_codes]
+      properties:
+        secret: { type: string, description: Base32 TOTP secret (shown once) }
+        provisioning_uri: { type: string, description: otpauth:// URI for the QR code }
+        recovery_codes: { type: array, items: { type: string }, description: Single-use backup codes (shown once) }
+
+    MfaActivateRequest:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, description: A current 6-digit TOTP from the authenticator }
 
     StudentProfileInput:
       type: object

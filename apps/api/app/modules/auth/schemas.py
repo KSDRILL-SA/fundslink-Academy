@@ -34,3 +34,15 @@ class AuthTokens(BaseModel):
     access_token: str
     token_type: Literal["bearer"] = "bearer"
     expires_in: int
+
+
+class MfaEnrollResponse(BaseModel):
+    """Returned once at enrolment — the client renders the QR and shows recovery codes."""
+
+    secret: str
+    provisioning_uri: str
+    recovery_codes: list[str]
+
+
+class MfaActivateRequest(BaseModel):
+    code: str

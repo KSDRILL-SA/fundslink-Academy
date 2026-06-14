@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from fastapi import Depends, Header, Request
+from fastapi import Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.errors import AppError
@@ -38,13 +38,11 @@ class CurrentUser:
     role: str
     jti: str
     access_expires_at: int
+    scope: str = "full"
 
 
-async def get_current_user(
-    request: Request,
-    authorization: str | None = Header(default=None),
-    session: AsyncSession = Depends(get_session),
-    redis=Depends(get_redis_client),
+async def _resolve_user(
+    authorization: str | None, session: AsyncSession, redis, allowed_scopes: frozenset[str]
 ) -> CurrentUser:
     if not authorization or not authorization.startswith("Bearer "):
         raise AppError("unauthorized", "Missing or malformed Authorization header", status_code=401)
@@ -58,6 +56,11 @@ async def get_current_user(
     if await TokenDenyList(redis).is_denied(jti):
         raise AppError("unauthorized", "Token has been revoked", status_code=401)
 
+    scope = claims.get("scope", "full")
+    if scope not in allowed_scopes:
+        # A valid token of the wrong scope — e.g. an mfa_pending token at a business route.
+        raise AppError("mfa_required", "Complete MFA enrolment to continue", status_code=403)
+
     # Trust the verified claims to set context, then confirm the account against the DB.
     await set_user_context(session, user_id=claims["sub"], role=claims["role"])
     user = await UserRepository(session).get_by_id(claims["sub"])
@@ -70,5 +73,31 @@ async def get_current_user(
         raise AppError("forbidden", "Account is not active", status_code=403)
 
     return CurrentUser(
-        id=_id, email=email, role=claims["role"], jti=jti, access_expires_at=int(claims["exp"])
+        id=_id,
+        email=email,
+        role=claims["role"],
+        jti=jti,
+        access_expires_at=int(claims["exp"]),
+        scope=scope,
     )
+
+
+async def get_current_user(
+    authorization: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+    redis=Depends(get_redis_client),
+) -> CurrentUser:
+    """The sole authentication gate for business routes — full-scope sessions only (S3.17)."""
+    return await _resolve_user(authorization, session, redis, frozenset({"full"}))
+
+
+async def mfa_session(
+    authorization: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_session),
+    redis=Depends(get_redis_client),
+) -> CurrentUser:
+    """Authentication for the MFA enrolment endpoints — accepts a full OR mfa_pending token."""
+    return await _resolve_user(authorization, session, redis, frozenset({"full", "mfa_pending"}))
+
+
+mfa_session._fundslink_authenticated = True  # deny-by-default marker (S3.21)

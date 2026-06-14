@@ -19,8 +19,9 @@ class UserRepository(BaseRepository):
     async def get_by_email(self, email: str):
         return await sql.fetch_one(
             self.session,
-            'SELECT id, email, password_hash, account_state, mfa_secret_enc, token_version,'
-            ' deleted_at FROM "user" WHERE lower(email) = lower(:email) AND deleted_at IS NULL',
+            'SELECT id, email, password_hash, account_state, mfa_secret_enc, mfa_enabled,'
+            ' token_version, deleted_at FROM "user"'
+            " WHERE lower(email) = lower(:email) AND deleted_at IS NULL",
             email=email,
         )
 
@@ -92,6 +93,41 @@ class UserRepository(BaseRepository):
         await sql.execute(
             self.session,
             'UPDATE "user" SET token_version = token_version + 1 WHERE id = :id',
+            id=user_id,
+        )
+
+    # ---- MFA (TOTP) ----
+    async def get_mfa(self, user_id: str):
+        """Return (mfa_secret_enc, mfa_enabled, mfa_recovery_enc) for the user."""
+        return await sql.fetch_one(
+            self.session,
+            'SELECT mfa_secret_enc, mfa_enabled, mfa_recovery_enc FROM "user"'
+            " WHERE id = :id AND deleted_at IS NULL",
+            id=user_id,
+        )
+
+    async def set_mfa_pending(self, user_id: str, *, secret_enc: str, recovery_enc: str) -> None:
+        """Store a freshly-generated (not yet activated) TOTP secret + recovery codes."""
+        await sql.execute(
+            self.session,
+            'UPDATE "user" SET mfa_secret_enc = :secret, mfa_recovery_enc = :rec,'
+            " mfa_enabled = false WHERE id = :id",
+            secret=secret_enc,
+            rec=recovery_enc,
+            id=user_id,
+        )
+
+    async def enable_mfa(self, user_id: str) -> None:
+        await sql.execute(
+            self.session, 'UPDATE "user" SET mfa_enabled = true WHERE id = :id', id=user_id
+        )
+
+    async def set_mfa_recovery(self, user_id: str, recovery_enc: str) -> None:
+        """Persist the remaining recovery codes after one is consumed."""
+        await sql.execute(
+            self.session,
+            'UPDATE "user" SET mfa_recovery_enc = :rec WHERE id = :id',
+            rec=recovery_enc,
             id=user_id,
         )
 

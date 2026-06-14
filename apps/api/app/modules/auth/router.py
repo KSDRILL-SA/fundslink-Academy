@@ -12,9 +12,15 @@ from fastapi import APIRouter, Depends, Request, Response
 from app.common.request_id import get_request_id
 from app.core.config import settings
 from app.db.engine import get_session
-from app.modules.auth.deps import CurrentUser, get_redis_client, system_db
+from app.modules.auth.deps import CurrentUser, get_redis_client, mfa_session, system_db
 from app.modules.auth.permissions import authenticated_only, public_endpoint
-from app.modules.auth.schemas import AuthTokens, LoginRequest, RegisterRequest
+from app.modules.auth.schemas import (
+    AuthTokens,
+    LoginRequest,
+    MfaActivateRequest,
+    MfaEnrollResponse,
+    RegisterRequest,
+)
 from app.modules.auth.service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -73,9 +79,14 @@ async def login(
     redis=Depends(get_redis_client),
 ) -> AuthTokens:
     tokens, raw = await AuthService(session, redis).login(
-        body.email, body.password, ip=_client_ip(request), request_id=get_request_id(request)
+        body.email,
+        body.password,
+        ip=_client_ip(request),
+        request_id=get_request_id(request),
+        mfa_code=body.mfa_code,
     )
-    _set_refresh_cookie(response, raw)
+    if raw is not None:  # None => an MFA step-up (mfa_pending) token, which has no refresh
+        _set_refresh_cookie(response, raw)
     return tokens
 
 
@@ -113,3 +124,29 @@ async def logout(
         request_id=get_request_id(request),
     )
     response.delete_cookie(REFRESH_COOKIE, path=COOKIE_PATH)
+
+
+@router.post("/mfa/enroll", operation_id="authMfaEnroll")
+async def mfa_enroll(
+    request: Request,
+    current: CurrentUser = Depends(mfa_session),
+    session=Depends(get_session),
+    redis=Depends(get_redis_client),
+) -> MfaEnrollResponse:
+    result = await AuthService(session, redis).enroll_mfa(
+        user_id=current.id, email=current.email, request_id=get_request_id(request)
+    )
+    return MfaEnrollResponse(**result)
+
+
+@router.post("/mfa/activate", status_code=204, operation_id="authMfaActivate")
+async def mfa_activate(
+    body: MfaActivateRequest,
+    request: Request,
+    current: CurrentUser = Depends(mfa_session),
+    session=Depends(get_session),
+    redis=Depends(get_redis_client),
+) -> None:
+    await AuthService(session, redis).activate_mfa(
+        user_id=current.id, code=body.code, request_id=get_request_id(request)
+    )

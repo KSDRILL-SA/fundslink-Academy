@@ -32,9 +32,21 @@ def new_jti() -> str:
 
 
 def create_access_token(
-    *, sub: str, role: str, email: str, version: int, jti: str | None = None, ttl: int | None = None
+    *,
+    sub: str,
+    role: str,
+    email: str,
+    version: int,
+    scope: str = "full",
+    jti: str | None = None,
+    ttl: int | None = None,
 ) -> tuple[str, str]:
-    """Sign an access token. Returns ``(token, jti)`` so the caller can deny-list it later."""
+    """Sign an access token. Returns ``(token, jti)`` so the caller can deny-list it later.
+
+    ``scope`` is "full" for a normal session, or "mfa_pending" for the step-up enrolment token
+    issued to a privileged user who has not yet activated MFA (TAD §3.1) — that token is
+    accepted only by the MFA enrolment endpoints, never by business routes.
+    """
     if not settings.rs256_private_key:
         raise JWTConfigError("RS256_PRIVATE_KEY is not configured")
     token_id = jti or new_jti()
@@ -44,6 +56,7 @@ def create_access_token(
         "role": role,
         "email": email,
         "version": version,
+        "scope": scope,
         "jti": token_id,
         "iat": now,
         "nbf": now,

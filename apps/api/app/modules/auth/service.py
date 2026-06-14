@@ -8,11 +8,12 @@ Every mutation writes audit_log in the same transaction (S3.33).
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 
 from app.common.errors import AppError
 from app.core.config import settings
-from app.modules.auth import passwords
+from app.modules.auth import crypto, mfa, passwords
 from app.modules.auth.jwt import create_access_token
 from app.modules.auth.ratelimit import LoginRateLimiter, TokenDenyList
 from app.modules.auth.repository import (
@@ -153,8 +154,8 @@ class AuthService:
 
     # ----------------------------------- login ------------------------------------
     async def login(
-        self, email: str, password: str, *, ip: str, request_id: str
-    ) -> tuple[AuthTokens, str]:
+        self, email: str, password: str, *, ip: str, request_id: str, mfa_code: str | None = None
+    ) -> tuple[AuthTokens, str | None]:
         identifier = f"{email.lower()}|{ip}"
         if not await self.ratelimiter.ip_allowed(ip) or not await self.ratelimiter.global_allowed():
             raise AppError(
@@ -168,7 +169,8 @@ class AuthService:
             await self.ratelimiter.record_failure(identifier)
             raise await self._reject_login(email, request_id, "no_such_user")
 
-        user_id, db_email, password_hash, account_state, _mfa, token_version, _deleted = user
+        (user_id, db_email, password_hash, account_state, secret_enc, mfa_enabled,
+         token_version, _deleted) = user
         if not passwords.verify_password(password, password_hash):
             locked = await self.ratelimiter.record_failure(identifier)
             reason = "locked" if locked else "bad_password"
@@ -176,13 +178,88 @@ class AuthService:
         if account_state != "ACTIVE":  # identical error — never reveal state (no enumeration)
             raise await self._reject_login(db_email, request_id, f"state_{account_state}")
 
-        roles = await self.users.get_role_codes(user_id)
-        role = self._primary_role(roles)
-        # MFA enforcement for privileged roles is layered in by PR-F (enforce_mfa hook).
+        role = self._primary_role(await self.users.get_role_codes(user_id))
+
+        # MFA enforcement for privileged roles (TAD §3.1).
+        if mfa.role_requires_mfa(role):
+            if not mfa_enabled:
+                # Un-enrolled privileged user: issue ONLY a short step-up token (scope=mfa_pending)
+                # that can reach the MFA endpoints but no business route — "MFA blocks the admin".
+                await self.ratelimiter.clear_failures(identifier)
+                await self.audit.write(
+                    actor_user_id=user_id, action="AUTH_MFA_ENROLLMENT_REQUIRED",
+                    resource_type="user", resource_id=user_id, request_id=request_id,
+                )
+                access, _jti = create_access_token(
+                    sub=user_id, role=role, email=db_email, version=token_version,
+                    scope="mfa_pending", ttl=settings.access_token_ttl_seconds,
+                )
+                tokens = AuthTokens(
+                    access_token=access, expires_in=settings.access_token_ttl_seconds
+                )
+                return tokens, None
+            if not await self._verify_mfa(user_id, secret_enc, mfa_code):
+                locked = await self.ratelimiter.record_failure(identifier)
+                reason = "locked" if locked else "mfa"
+                raise await self._reject_login(db_email, request_id, reason)
+
         await self.ratelimiter.clear_failures(identifier)
         return await self._issue(
             user_id=user_id, email=db_email, role=role, token_version=token_version,
             request_id=request_id, action="AUTH_LOGIN_SUCCESS",
+        )
+
+    async def _verify_mfa(self, user_id: str, secret_enc: str | None, code: str | None) -> bool:
+        """Accept a valid TOTP, or a single-use recovery code (consumed on use)."""
+        if not code or not secret_enc:
+            return False
+        if mfa.verify_totp(crypto.decrypt(secret_enc), code):
+            return True
+        # Recovery-code path: match a stored hash, then consume it.
+        row = await self.users.get_mfa(user_id)
+        recovery_enc = row[2] if row else None
+        if not recovery_enc:
+            return False
+        codes = json.loads(crypto.decrypt(recovery_enc))
+        digest = mfa.hash_recovery_code(code)
+        if digest in codes:
+            codes.remove(digest)
+            await self.users.set_mfa_recovery(user_id, crypto.encrypt(json.dumps(codes)))
+            return True
+        return False
+
+    # ------------------------------------ MFA -------------------------------------
+    async def enroll_mfa(self, *, user_id: str, email: str, request_id: str) -> dict:
+        """Generate a TOTP secret + recovery codes (stored pending activation). Shown once."""
+        secret = mfa.generate_secret()
+        recovery = mfa.generate_recovery_codes()
+        await self.users.set_mfa_pending(
+            user_id,
+            secret_enc=crypto.encrypt(secret),
+            recovery_enc=crypto.encrypt(json.dumps([mfa.hash_recovery_code(c) for c in recovery])),
+        )
+        await self.audit.write(
+            actor_user_id=user_id, action="AUTH_MFA_ENROLLED", resource_type="user",
+            resource_id=user_id, request_id=request_id,
+        )
+        return {
+            "secret": secret,
+            "provisioning_uri": mfa.provisioning_uri(secret, email),
+            "recovery_codes": recovery,
+        }
+
+    async def activate_mfa(self, *, user_id: str, code: str, request_id: str) -> None:
+        """Confirm enrolment by verifying a first TOTP, then turn MFA on (TAD §3.1)."""
+        row = await self.users.get_mfa(user_id)
+        secret_enc = row[0] if row else None
+        if not secret_enc:
+            raise AppError("mfa_not_enrolled", "Start MFA enrolment first", status_code=409)
+        if not mfa.verify_totp(crypto.decrypt(secret_enc), code):
+            raise AppError("mfa_invalid_code", "Invalid authenticator code", status_code=401)
+        await self.users.enable_mfa(user_id)
+        await self.audit.write(
+            actor_user_id=user_id, action="AUTH_MFA_ACTIVATED", resource_type="user",
+            resource_id=user_id, request_id=request_id,
         )
 
     # ---------------------------------- refresh -----------------------------------
