@@ -50,6 +50,19 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
+_dummy_hash: str | None = None
+
+
+def verify_dummy(password: str) -> None:
+    """Burn an equivalent bcrypt verification for an unknown account, so login takes the same
+    time whether or not the email exists — closes the timing user-enumeration channel (ST-2 /
+    S3.4). The dummy hash is computed once at the configured cost factor."""
+    global _dummy_hash
+    if _dummy_hash is None:
+        _dummy_hash = hash_password("fundslink-constant-time-equalizer")
+    verify_password(password, _dummy_hash)
+
+
 def validate_strength(password: str) -> None:
     """Raise WeakPasswordError if the policy is not met (server-authoritative — S3.32)."""
     if len(password) < MIN_LENGTH:

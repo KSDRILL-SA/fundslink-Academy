@@ -10,6 +10,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy.exc import IntegrityError
+
+from app.common.errors import AppError
 from app.db import sql
 from app.db.cuid import cuid
 from app.db.repository import BaseRepository
@@ -41,15 +44,20 @@ class UserRepository(BaseRepository):
 
     async def create(self, *, email: str, password_hash: str, account_state: str) -> str:
         user_id = cuid()
-        await sql.execute(
-            self.session,
-            'INSERT INTO "user"(id, email, password_hash, account_state, created_by)'
-            " VALUES (:id, :email, :ph, :state, :id)",
-            id=user_id,
-            email=email,
-            ph=password_hash,
-            state=account_state,
-        )
+        try:
+            await sql.execute(
+                self.session,
+                'INSERT INTO "user"(id, email, password_hash, account_state, created_by)'
+                " VALUES (:id, :email, :ph, :state, :id)",
+                id=user_id,
+                email=email,
+                ph=password_hash,
+                state=account_state,
+            )
+        except IntegrityError as exc:  # uq_user_email race — surface a friendly 409, not a 500
+            raise AppError(
+                "email_taken", "An account with this email already exists", status_code=409
+            ) from exc
         return user_id
 
     async def assign_role(self, user_id: str, role_code: str) -> None:

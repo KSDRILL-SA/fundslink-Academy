@@ -16,15 +16,20 @@ class ConsentInput(BaseModel):
     wording_version: str
 
 
+# Upper bound on any password input — bcrypt's SHA-256 pre-hash handles long inputs correctly,
+# but capping the field rejects pathological payloads at the boundary (DoS guard, S2.23).
+_PW_MAX = 128
+
+
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=10)
+    password: str = Field(min_length=10, max_length=_PW_MAX)
     consents: list[ConsentInput]
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(max_length=_PW_MAX)
     mfa_code: str | None = Field(default=None, description="Required for privileged roles")
 
 
@@ -60,9 +65,9 @@ class EmailRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     token: str
-    new_password: str = Field(min_length=10)
+    new_password: str = Field(min_length=10, max_length=_PW_MAX)
 
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str = Field(min_length=10)
+    current_password: str = Field(max_length=_PW_MAX)
+    new_password: str = Field(min_length=10, max_length=_PW_MAX)

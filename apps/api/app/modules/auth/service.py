@@ -16,7 +16,7 @@ from app.core.config import settings
 from app.modules.auth import crypto, mfa, passwords
 from app.modules.auth.email import get_email_adapter
 from app.modules.auth.jwt import create_access_token
-from app.modules.auth.ratelimit import LoginRateLimiter, TokenDenyList
+from app.modules.auth.ratelimit import IP_WINDOW, LoginRateLimiter, TokenDenyList
 from app.modules.auth.repository import (
     AuditRepository,
     AuthTokenRepository,
@@ -56,6 +56,7 @@ class AuthService:
         self.audit = AuditRepository(session)
         self.auth_tokens = AuthTokenRepository(session)
         self.email = get_email_adapter()
+        self.redis = redis  # raw client for the TOTP replay guard
         self.denylist = TokenDenyList(redis)
         self.ratelimiter = LoginRateLimiter(redis)
 
@@ -113,6 +114,21 @@ class AuthService:
         )
         await self.session.commit()
         return self._invalid_credentials()
+
+    async def _notify_lockout(self, email: str, request_id: str) -> None:
+        """On the 5th failure (S3.4): a distinct audit event + a security email to the address."""
+        await self.audit.write(
+            actor_user_id=None, action="AUTH_ACCOUNT_LOCKED", resource_type="user",
+            resource_id=None, request_id=request_id, detail={"email": email},
+        )
+        await self.email.send(
+            to=email,
+            subject="FundsLink security alert — account temporarily locked",
+            body=(
+                "We locked sign-in for 15 minutes after several failed attempts. If this "
+                "wasn't you, your password may be exposed — reset it from the sign-in page."
+            ),
+        )
 
     # ---------------------------------- register ----------------------------------
     async def register(self, req: RegisterRequest, *, request_id: str) -> tuple[AuthTokens, str]:
@@ -275,22 +291,27 @@ class AuthService:
         identifier = f"{email.lower()}|{ip}"
         if not await self.ratelimiter.ip_allowed(ip) or not await self.ratelimiter.global_allowed():
             raise AppError(
-                "rate_limited", "Too many requests; please try again later", status_code=429
+                "rate_limited",
+                "Too many requests; please try again later",
+                status_code=429,
+                headers={"Retry-After": str(IP_WINDOW)},
             )
         if await self.ratelimiter.is_locked(identifier):
             raise await self._reject_login(email, request_id, "account_locked")
 
         user = await self.users.get_by_email(email)
         if user is None or user[0] == "SYSTEM":  # SYSTEM principal can never authenticate
-            await self.ratelimiter.record_failure(identifier)
+            passwords.verify_dummy(password)  # constant-time: equalise login timing (ST-2)
+            if await self.ratelimiter.record_failure(identifier):
+                await self._notify_lockout(email, request_id)
             raise await self._reject_login(email, request_id, "no_such_user")
 
         (user_id, db_email, password_hash, account_state, secret_enc, mfa_enabled,
          token_version, _deleted) = user
         if not passwords.verify_password(password, password_hash):
-            locked = await self.ratelimiter.record_failure(identifier)
-            reason = "locked" if locked else "bad_password"
-            raise await self._reject_login(db_email, request_id, reason)
+            if await self.ratelimiter.record_failure(identifier):
+                await self._notify_lockout(db_email, request_id)
+            raise await self._reject_login(db_email, request_id, "bad_password")
         if account_state != "ACTIVE":  # identical error — never reveal state (no enumeration)
             raise await self._reject_login(db_email, request_id, f"state_{account_state}")
 
@@ -326,11 +347,15 @@ class AuthService:
         )
 
     async def _verify_mfa(self, user_id: str, secret_enc: str | None, code: str | None) -> bool:
-        """Accept a valid TOTP, or a single-use recovery code (consumed on use)."""
+        """Accept a valid TOTP (single-use per time-step), or a single-use recovery code."""
         if not code or not secret_enc:
             return False
-        if mfa.verify_totp(crypto.decrypt(secret_enc), code):
-            return True
+        step = mfa.matched_step(crypto.decrypt(secret_enc), code)
+        if step is not None:
+            # Replay guard (ST-2): a given TOTP step is usable once. SET NX with a short TTL —
+            # a captured code cannot be reused inside its 30-90s validity window.
+            fresh = await self.redis.set(f"mfa:used:{user_id}:{step}", "1", nx=True, ex=90)
+            return bool(fresh)
         # Recovery-code path: match a stored hash, then consume it.
         row = await self.users.get_mfa(user_id)
         recovery_enc = row[2] if row else None

@@ -41,6 +41,22 @@ def verify_totp(secret: str, code: str) -> bool:
     return pyotp.TOTP(secret).verify(code.strip(), valid_window=1)
 
 
+def matched_step(secret: str, code: str, *, window: int = 1) -> int | None:
+    """Return the 30s time-step a TOTP code matches (±window), or None. Lets the caller mark
+    that step single-use so a captured code cannot be replayed inside its validity window."""
+    if not code or not code.strip().isdigit():
+        return None
+    import time
+
+    totp = pyotp.TOTP(secret)
+    current = int(time.time()) // 30
+    for offset in range(-window, window + 1):
+        step = current + offset
+        if totp.at(step * 30) == code.strip():
+            return step
+    return None
+
+
 def generate_recovery_codes(count: int = 8) -> list[str]:
     """Human-friendly single-use backup codes (shown once, stored hashed)."""
     return [

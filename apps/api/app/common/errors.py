@@ -33,13 +33,20 @@ class AppError(Exception):
     """A domain error carrying a stable client code + HTTP status (S2.19 / TAD §2.3)."""
 
     def __init__(
-        self, code: str, message: str, *, status_code: int = 400, details: dict | None = None
+        self,
+        code: str,
+        message: str,
+        *,
+        status_code: int = 400,
+        details: dict | None = None,
+        headers: dict | None = None,
     ) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
         self.status_code = status_code
         self.details = details or {}
+        self.headers = headers or None  # e.g. Retry-After on 429
 
 
 def _envelope(request: Request, code: str, message: str, details: Any = None) -> dict:
@@ -59,6 +66,7 @@ def install_error_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content=_envelope(request, exc.code, exc.message, exc.details or None),
+            headers=exc.headers,
         )
 
     @app.exception_handler(StarletteHTTPException)
@@ -78,4 +86,18 @@ def install_error_handlers(app: FastAPI) -> None:
             content=_envelope(
                 request, "validation_error", "Request validation failed", exc.errors()
             ),
+        )
+
+    @app.exception_handler(Exception)
+    async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
+        """Last line of defence: never leak a stack trace; report to Sentry; uniform envelope."""
+        try:
+            import sentry_sdk
+
+            sentry_sdk.capture_exception(exc)
+        except Exception:  # observability must never mask the original error
+            pass
+        return JSONResponse(
+            status_code=500,
+            content=_envelope(request, "internal_error", "An unexpected error occurred"),
         )
