@@ -347,3 +347,58 @@ Shipped as **`schema.sql`** (companion file): all [BUILD] tables, lookup seeds, 
 
 _________________________
 **Maluleke Kurhula Success** — Founder (L4)
+
+---
+
+# PART 6 — v1.2 EVOLUTION (migrations 0003–0004, Founder-approved 2026-06-14)
+
+The physical schema is now applied by **Alembic migrations** (the authoritative path);
+`schema.sql` is the consolidated readable reference. Migration **0001** = the v1.0/v1.1
+baseline; **0002** = seeds; **0003** = review hardening; **0004** = application lifecycle.
+
+## 6.1 New business rules
+
+| ID | Rule | Enforced at |
+|----|------|-------------|
+| BR-S10 | An APPROVED award may be SUSPENDED, REVOKED, or COMPLETED by a **human actor** with a recorded reason; only COMPLETED frees the student's academic year. | transition table + `application_status_event.note` + service |
+| BR-S11 | Every application carries a **priority** (NORMAL/URGENT/CRITICAL) and optional `needed_by`; emergency cases use a shorter review SLA. | `lk_priority` FK + `config.emergency_review_sla_days` + service triage |
+| BR-S12 | FundsLink **intake is always open** (no application submission deadline); review is paced by `config.review_sla_days`. | absence of a deadline column + service |
+| BR-E10⁺ | A document past its validity window triggers a **return**, never a rejection. | `document.issued_at`/`valid_until` + service |
+| BR-N04 | WhatsApp is a consented notification channel alongside email/SMS. | `lk_consent_purpose = MARKETING_WHATSAPP` + service |
+| BR-A08 | A student's preferred language is one of the **11 SA official languages**. | `ck_sp_language` / `ck_motiv_language` |
+
+## 6.2 Logical-model deltas
+
+| Table | Added |
+|-------|-------|
+| `funding_application` | `priority` (FK `lk_priority`, default NORMAL), `needed_by date` |
+| `application_status_event` | `note text` (reason for any transition) |
+| `document` | `issued_at date`, `valid_until date`, `ck_doc_validity` |
+| `application_return` | `respond_by date` |
+| `student_profile` | `preferred_language text` + `ck_sp_language` |
+| `lk_priority` *(new)* | `code` PK, `rank int` (NORMAL=1, URGENT=2, CRITICAL=3) |
+| `lk_app_status` | + `SUSPENDED`, `REVOKED`, `COMPLETED` |
+| `config` | + `emergency_review_sla_days=3` |
+
+## 6.3 State machine — post-approval lifecycle (BR-S04 extension)
+
+```mermaid
+stateDiagram-v2
+    APPROVED --> SUSPENDED: human + note
+    APPROVED --> REVOKED: human + note
+    APPROVED --> COMPLETED: award fulfilled
+    SUSPENDED --> APPROVED: reinstated
+    SUSPENDED --> REVOKED
+    SUSPENDED --> COMPLETED
+    REVOKED --> [*]
+    COMPLETED --> [*]
+```
+
+## 6.4 Index plan deltas (DB-D28/D40, EXPLAIN-verified)
+
+`ix_app_status(status, created_at DESC)` (paginated review queue — ordered Index Scan, no
+sort); FK indexes `ix_rtf_user`, `ix_ta_bursary`, `ix_match_bursary`, `ix_user_role_role`,
+`ix_role_perm_perm`; `ix_app_review_triage(priority, created_at)` partial on the live queue.
+The two student-dashboard composites were **tested and rejected** (tiny per-student
+cardinality — bitmap+sort wins; no speculative indexes). DEFAULT partitions on all four
+partitioned tables are overflow safety nets.
