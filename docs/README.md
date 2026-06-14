@@ -11,11 +11,11 @@ live in [`/claude-instructions`](../claude-instructions); master Claude Code ins
 
 ---
 
-## Build status (as of 2026-06-13)
+## Build status (as of 2026-06-15)
 
 ```mermaid
 graph LR
-  G0["G0 Scaffold ✅"]:::done --> G1["G1 Database ▶"]:::now --> G2["G2 Auth ⬜"]:::todo --> G3["G3 Backend ⬜"]:::todo --> G4["G4 Frontend ⬜"]:::todo --> G5["G5 Integration ⬜"]:::todo --> G6["G6 Launch ⬜"]:::todo
+  G0["G0 Scaffold ✅"]:::done --> G1["G1 Database ✅"]:::done --> G2["G2 Auth ✅"]:::done --> G3["G3 Backend ▶"]:::now --> G4["G4 Frontend ⬜"]:::todo --> G5["G5 Integration ⬜"]:::todo --> G6["G6 Launch ⬜"]:::todo
   classDef done fill:#0e7490,color:#fff,stroke:#155e75;
   classDef now fill:#1d4ed8,color:#fff,stroke:#1e3a8a;
   classDef todo fill:#475569,color:#fff,stroke:#334155;
@@ -24,10 +24,12 @@ graph LR
 | Area | Status |
 |------|--------|
 | Documentation suite (design · lifecycle · sdlc · engineering-architecture · diagrams) | ✅ **complete** |
-| Stage 00 — monorepo scaffold · CI gates · env hygiene | ✅ **complete** (Gate G0; `docker compose` smoke check pending Founder) |
-| **Stage 01 — the database** | ▶ **next** |
-| Stages 02–06 — auth → backend → frontend → integration → launch | ⬜ to complete |
-| Deferred by design — financial (v1.5) · institution (v2) · MongoDB/ChromaDB bootstrap (Stage 03) | ⬜ flag-gated / later |
+| Stage 00 — monorepo scaffold · CI gates · env hygiene | ✅ **complete** (Gate G0) |
+| Stage 01 — the database | ✅ **complete** (Gate G1; migrations 0001→0009) |
+| Stage 02 — auth | ✅ **complete** (Gate G2 + hardened + DB-integrated; migrations →0014) |
+| **Stage 03 — backend modules** | ▶ **next** (new session) |
+| Stages 04–06 — frontend → integration → launch | ⬜ to complete |
+| Deferred by design — financial/donations (v1.5+; design: architecture/funding-donations-architecture) · institution (v2) · MongoDB/ChromaDB bootstrap (Stage 03) | ⬜ flag-gated / later |
 
 ---
 
@@ -94,10 +96,12 @@ graph LR
 |----------|-------------|
 | [technical-architecture.md](architecture/technical-architecture.md) | TAD — topology, queued matching, MFA, eligibility module, deploy choreography. |
 | [engineering-architecture.md](architecture/engineering-architecture.md) | Layering (router→service→repository), shared/common homes, enforced hard rules, design-for-extension seams. |
+| [funding-donations-architecture.md](architecture/funding-donations-architecture.md) | Funding intake (donors/institutions/partners) forward design for v1.5+; readiness audit; PROPOSED (L4 lock pending). |
 
 ### `database/` — database law & schema
 | Document | Description |
 |----------|-------------|
+| [README.md](database/README.md) | **The database capstone** — apply path (migrations 0001→0014), security model (roles, RLS, append-only), triggers, and the backend/auth integration contracts. |
 | [lifecycle.md](database/lifecycle.md) | Database lifecycle — conceptual/logical/physical models, normalization (1NF→BCNF), status state machines, store assignment. |
 | [doctrine.md](database/doctrine.md) | Database law DB-D1–D44 — gates all schema work. |
 | [data-model.md](database/data-model.md) | Entity-relationship package + business-rule catalog (BR-A/S/E/T/M/N). |
@@ -115,7 +119,9 @@ graph LR
 | [implementation-process.md](process/implementation-process.md) | Stage-gated build order G0–G6 (database first) + Human Track. |
 | [docs-manifest.md](process/docs-manifest.md) | The suite index, precedence order, and cross-document consistency record. |
 | [github-workflow.md](process/github-workflow.md) | GitHub workflow: issue → branch → linked PR → self-review → squash-merge; labels & milestones. |
-| [handoff-s00-s01.md](process/handoff-s00-s01.md) | Relay handoff — Stage 00 build history, completed-vs-to-complete status, how-we-work, Stage 01 brief + paste-ready terminal prompt. |
+| [handoff-s00-s01.md](process/handoff-s00-s01.md) | Relay handoff — Stage 00 → Stage 01. |
+| [handoff-s01-s02.md](process/handoff-s01-s02.md) | Relay handoff — Stage 01 (database) → Stage 02 (auth). |
+| [handoff-s02-s03.md](process/handoff-s02-s03.md) | Relay handoff — Stage 02 (auth, complete + hardened) → Stage 03 (backend); contracts Stage 03 must honor. |
 | [session-playbook.md](process/session-playbook.md) | **Per-phase terminal prompts (Stage 01→06)** — one phase per session; each prompt self-contained, ending by pointing to the next session. |
 
 ### `audits/` — adversarial findings
