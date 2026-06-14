@@ -43,18 +43,24 @@ Migration `0005` creates `fundslink_app` **NOLOGIN** (no secret in git). Product
 - [ ] `counselling` schema gets its **own** DB role/credentials; `fundslink_app` has **no grants**
       on it (Spec §6.4 / §15.3).
 
-## 7. Row-Level Security — the backend contract (migration 0007)
-RLS is **enforced in the database** on the core student-data tables (student_profile,
-funding_application, document, tracked_application, match_result, consent_record,
-notification_preference, notification_outbox). The app role is `NOBYPASSRLS`, so the backend
-**must** set the request context inside each transaction or it sees **nothing** (fail-closed):
+## 7. Row-Level Security — the backend contract (migrations 0007 + 0009)
+RLS is **enforced in the database** on **every** student-data / sensitive table (profile,
+application, document, tracking, matches, consent, notification, motivation, pre-screen,
+returns, appeals, theme tags, recusal, audit-log). The app role is `NOBYPASSRLS`, so the
+backend **must** set the request context inside each transaction or it sees **nothing**
+(fail-closed):
 - [ ] After authenticating, per request: `SET LOCAL app.user_id = '<user cuid>'` and
       `SET LOCAL app.user_role = '<effective role>'` (use the request's DB transaction).
 - [ ] Background jobs / matching run with `app.user_role = 'SYSTEM'` (and `app.user_id = 'SYSTEM'`).
 - [ ] Analytics via `fundslink_readonly`: decide BYPASSRLS vs a SYSTEM context when a BI tool
       is introduced (today it is fail-closed by default — secure, but set a context to read).
-- [ ] **New owned tables in later stages** add their own RLS policies following the 0007 pattern
-      (proven in `tests/db/test_row_level_security.py`).
+- [ ] **New owned tables in later stages** add their own RLS policies following the 0007/0009
+      pattern (`test_row_level_security.py` + `test_rls_completeness.py`).
+- [ ] **Stage 02 MUST add RLS to the auth tables** (`user`, `refresh_token_family`,
+      `refresh_token`) with a **SYSTEM-context** login/token-validation path — at login there is
+      no `app.user_id` yet, so the auth service sets `app.user_role='SYSTEM'` for the lookup then
+      switches to the user's context post-auth (decision **D-015**). Deferred from Stage 01 on
+      purpose: RLS there is meaningless until the auth flow exists.
 
 ## 8. Defense-in-depth summary (deliberate choices)
 - [ ] Audit-log immutability rests on **two walls**: `fn_block_mutation` trigger **and** the
