@@ -79,5 +79,8 @@ mkdir -p "$(dirname "$LOG")"
   echo "**Result:** $verdict (constraint suite rc=$SUITE_RC)."
 } >> "$LOG"
 
+# Drop the restored DB so the cluster-global app role keeps no cross-DB grant dependency.
+"$DROPDB" --if-exists "$RESTORE_DB" 2>/dev/null || true
+
 echo "[drill] done in ${total_s}s — suite rc=$SUITE_RC — log: $LOG"
 exit $SUITE_RC
