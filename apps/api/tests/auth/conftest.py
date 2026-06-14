@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 
 import fakeredis.aioredis
@@ -22,6 +23,58 @@ from app.core.config import settings
 
 _API_DIR = Path(__file__).resolve().parents[2]
 _APP_PW = "ci_auth_endpoints_probe"
+
+
+def _build_app(extra_routers):
+    """A fresh app mirroring main.py (security, request-id, error envelope, auth router) plus
+    any extra routers — isolated so tests can mount a dummy resource without touching the real
+    contract surface."""
+    from fastapi import FastAPI
+
+    from app.common.errors import install_error_handlers
+    from app.common.request_id import RequestIdMiddleware
+    from app.core.security import install_security
+    from app.modules.auth.router import router as auth_router
+
+    app = FastAPI()
+    install_security(app)
+    app.add_middleware(RequestIdMiddleware)
+    install_error_handlers(app)
+    app.include_router(auth_router, prefix="/api/v1")
+    for extra in extra_routers:
+        app.include_router(extra, prefix="/api/v1")
+    return app
+
+
+@contextmanager
+def auth_test_client(migrated_db, monkeypatch, *, extra_routers=()):
+    """Build a TestClient wired to the real DB AS fundslink_app, fakeredis, and stubbed HIBP."""
+    admin = psycopg.connect(migrated_db, autocommit=True)
+    admin.execute(f"ALTER ROLE fundslink_app LOGIN PASSWORD '{_APP_PW}'")
+
+    app_url = make_url(migrated_db.replace("postgresql://", "postgresql+asyncpg://")).set(
+        username="fundslink_app", password=_APP_PW
+    )
+    monkeypatch.setattr(settings, "database_url", app_url.render_as_string(hide_password=False))
+
+    import app.db.engine as engine_mod
+    import app.modules.auth.ratelimit as ratelimit_mod
+    from app.modules.auth import passwords
+
+    engine_mod._engine = None
+    engine_mod._session_factory = None
+    ratelimit_mod._client = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    monkeypatch.setattr(passwords, "is_breached", _not_breached)
+
+    try:
+        with TestClient(_build_app(extra_routers)) as test_client:
+            yield test_client
+    finally:
+        engine_mod._engine = None
+        engine_mod._session_factory = None
+        ratelimit_mod._client = None
+        admin.execute("ALTER ROLE fundslink_app NOLOGIN")
+        admin.close()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -69,39 +122,9 @@ def migrated_db() -> str:
 
 @pytest.fixture
 def client(migrated_db, rs256_keys, monkeypatch):
-    """A TestClient wired to the real DB AS fundslink_app, with fakeredis and HIBP stubbed.
-
-    Exercises the full stack — router -> service -> repository -> RLS-enforced DB — exactly as
-    production runs, including the SYSTEM-context login path.
-    """
-    admin = psycopg.connect(migrated_db, autocommit=True)
-    admin.execute(f"ALTER ROLE fundslink_app LOGIN PASSWORD '{_APP_PW}'")
-
-    app_url = make_url(migrated_db.replace("postgresql://", "postgresql+asyncpg://")).set(
-        username="fundslink_app", password=_APP_PW
-    )
-    monkeypatch.setattr(settings, "database_url", app_url.render_as_string(hide_password=False))
-
-    import app.db.engine as engine_mod
-    import app.modules.auth.ratelimit as ratelimit_mod
-    from app.modules.auth import passwords
-
-    engine_mod._engine = None
-    engine_mod._session_factory = None
-    ratelimit_mod._client = fakeredis.aioredis.FakeRedis(decode_responses=True)
-    # No real HIBP network call in tests (default: not breached); individual tests can override.
-    monkeypatch.setattr(passwords, "is_breached", _not_breached)
-
-    from app.main import app
-
-    with TestClient(app) as test_client:
+    """Full-stack TestClient (router → service → repository → RLS-enforced DB), production-like."""
+    with auth_test_client(migrated_db, monkeypatch) as test_client:
         yield test_client
-
-    engine_mod._engine = None
-    engine_mod._session_factory = None
-    ratelimit_mod._client = None
-    admin.execute("ALTER ROLE fundslink_app NOLOGIN")
-    admin.close()
 
 
 async def _not_breached(password: str, *, client=None) -> bool:  # noqa: ARG001
