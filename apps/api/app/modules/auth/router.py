@@ -16,10 +16,14 @@ from app.modules.auth.deps import CurrentUser, get_redis_client, mfa_session, sy
 from app.modules.auth.permissions import authenticated_only, public_endpoint
 from app.modules.auth.schemas import (
     AuthTokens,
+    ChangePasswordRequest,
+    EmailRequest,
     LoginRequest,
     MfaActivateRequest,
     MfaEnrollResponse,
     RegisterRequest,
+    ResetPasswordRequest,
+    VerifyEmailRequest,
 )
 from app.modules.auth.service import AuthService
 
@@ -149,4 +153,82 @@ async def mfa_activate(
 ) -> None:
     await AuthService(session, redis).activate_mfa(
         user_id=current.id, code=body.code, request_id=get_request_id(request)
+    )
+
+
+@router.post(
+    "/verify-email", status_code=204, operation_id="authVerifyEmail",
+    dependencies=[Depends(public_endpoint)],
+)
+async def verify_email(
+    body: VerifyEmailRequest,
+    request: Request,
+    session=Depends(system_db),
+    redis=Depends(get_redis_client),
+) -> None:
+    await AuthService(session, redis).verify_email(
+        token=body.token, request_id=get_request_id(request)
+    )
+
+
+@router.post(
+    "/verify-email/resend", status_code=202, operation_id="authResendVerification",
+    dependencies=[Depends(public_endpoint)],
+)
+async def resend_verification(
+    body: EmailRequest,
+    request: Request,
+    session=Depends(system_db),
+    redis=Depends(get_redis_client),
+) -> dict:
+    await AuthService(session, redis).resend_verification(
+        email=body.email, request_id=get_request_id(request)
+    )
+    return {"status": "accepted"}
+
+
+@router.post(
+    "/forgot-password", status_code=202, operation_id="authForgotPassword",
+    dependencies=[Depends(public_endpoint)],
+)
+async def forgot_password(
+    body: EmailRequest,
+    request: Request,
+    session=Depends(system_db),
+    redis=Depends(get_redis_client),
+) -> dict:
+    await AuthService(session, redis).forgot_password(
+        email=body.email, request_id=get_request_id(request)
+    )
+    return {"status": "accepted"}  # identical whether or not the account exists (S3.30)
+
+
+@router.post(
+    "/reset-password", status_code=204, operation_id="authResetPassword",
+    dependencies=[Depends(public_endpoint)],
+)
+async def reset_password(
+    body: ResetPasswordRequest,
+    request: Request,
+    session=Depends(system_db),
+    redis=Depends(get_redis_client),
+) -> None:
+    await AuthService(session, redis).reset_password(
+        token=body.token, new_password=body.new_password, request_id=get_request_id(request)
+    )
+
+
+@router.post("/change-password", status_code=204, operation_id="authChangePassword")
+async def change_password(
+    body: ChangePasswordRequest,
+    request: Request,
+    current: CurrentUser = Depends(authenticated_only),
+    session=Depends(get_session),
+    redis=Depends(get_redis_client),
+) -> None:
+    await AuthService(session, redis).change_password(
+        user_id=current.id,
+        current_password=body.current_password,
+        new_password=body.new_password,
+        request_id=get_request_id(request),
     )
