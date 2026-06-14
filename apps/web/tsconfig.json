@@ -25,7 +25,7 @@
     ],
     "paths": {
       "auth": [
-        "./dist/auth"
+        "./libs/auth/src/public-api.ts"
       ],
       "data-access": [
         "./dist/data-access"
