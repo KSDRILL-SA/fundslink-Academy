@@ -10,3 +10,6 @@ export * from './lib/auth.guard';
 export * from './lib/auth.service';
 export * from './lib/screens/login.component';
 export * from './lib/screens/register.component';
+export * from './lib/screens/verify-email.component';
+export * from './lib/screens/forgot-password.component';
+export * from './lib/screens/reset-password.component';

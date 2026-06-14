@@ -11,6 +11,18 @@ export const routes: Routes = [
     loadComponent: () => import('auth').then((m) => m.RegisterComponent),
   },
   {
+    path: 'verify-email',
+    loadComponent: () => import('auth').then((m) => m.VerifyEmailComponent),
+  },
+  {
+    path: 'forgot-password',
+    loadComponent: () => import('auth').then((m) => m.ForgotPasswordComponent),
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () => import('auth').then((m) => m.ResetPasswordComponent),
+  },
+  {
     path: 'debug-sentry',
     loadComponent: () => import('./core/debug-sentry.component').then((m) => m.DebugSentryComponent),
   },
