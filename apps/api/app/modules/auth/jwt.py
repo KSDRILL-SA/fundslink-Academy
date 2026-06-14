@@ -1,0 +1,69 @@
+"""RS256 access-token issuance & verification (S3.13).
+
+Asymmetric signing: the private key signs (Railway Secrets only — S3.20), the public key
+verifies (safely distributable). HS256 is forbidden (AP-S3.13a). The payload carries only the
+defined claims — sub, role, email, jti, version — never sensitive data (AP-S3.13b), because a
+JWT payload is base64, not encrypted.
+"""
+
+from __future__ import annotations
+
+import time
+import uuid
+
+import jwt
+
+from app.core.config import settings
+
+_ALG = "RS256"
+
+
+class JWTConfigError(RuntimeError):
+    """An RS256 key required for this operation is not configured (S3.20)."""
+
+
+class JWTValidationError(Exception):
+    """The presented token is missing, expired, malformed, or signed by the wrong key."""
+
+
+def new_jti() -> str:
+    """A unique token id for deny-listing on logout (S3.18)."""
+    return uuid.uuid4().hex
+
+
+def create_access_token(
+    *, sub: str, role: str, email: str, version: int, jti: str | None = None, ttl: int | None = None
+) -> tuple[str, str]:
+    """Sign an access token. Returns ``(token, jti)`` so the caller can deny-list it later."""
+    if not settings.rs256_private_key:
+        raise JWTConfigError("RS256_PRIVATE_KEY is not configured")
+    token_id = jti or new_jti()
+    now = int(time.time())
+    payload = {
+        "sub": sub,
+        "role": role,
+        "email": email,
+        "version": version,
+        "jti": token_id,
+        "iat": now,
+        "nbf": now,
+        "exp": now + (ttl if ttl is not None else settings.access_token_ttl_seconds),
+        "iss": settings.jwt_issuer,
+    }
+    return jwt.encode(payload, settings.rs256_private_key, algorithm=_ALG), token_id
+
+
+def decode_access_token(token: str) -> dict:
+    """Verify signature/expiry/issuer and return the claims, or raise JWTValidationError."""
+    if not settings.rs256_public_key:
+        raise JWTConfigError("RS256_PUBLIC_KEY is not configured")
+    try:
+        return jwt.decode(
+            token,
+            settings.rs256_public_key,
+            algorithms=[_ALG],
+            issuer=settings.jwt_issuer,
+            options={"require": ["exp", "iat", "sub", "jti"]},
+        )
+    except jwt.PyJWTError as exc:  # expired, bad signature, wrong issuer, missing claim
+        raise JWTValidationError(str(exc)) from exc
