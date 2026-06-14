@@ -90,11 +90,15 @@ def rs256_keys():
         .public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
         .decode()
     )
-    prev_priv, prev_pub = settings.rs256_private_key, settings.rs256_public_key
+    import base64
+    import os
+
+    prev = (settings.rs256_private_key, settings.rs256_public_key, settings.pii_encryption_key)
     settings.rs256_private_key = private_pem
     settings.rs256_public_key = public_pem
+    settings.pii_encryption_key = base64.b64encode(os.urandom(32)).decode()  # AES-256 key
     yield {"private": private_pem, "public": public_pem}
-    settings.rs256_private_key, settings.rs256_public_key = prev_priv, prev_pub
+    settings.rs256_private_key, settings.rs256_public_key, settings.pii_encryption_key = prev
 
 
 def _conninfo() -> str:
