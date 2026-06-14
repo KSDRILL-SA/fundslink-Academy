@@ -17,8 +17,9 @@
 | `0006` | **Security** — privilege lockdown (revoke PUBLIC, role timeouts/limits, read-only role) |
 | `0007` | **Security** — Row-Level Security (right row, right person, right role; fail-closed) |
 | `0008` | Alignment — `updated_at` auto-stamp on the remaining mutable tables |
+| `0009` | **Security** — RLS completeness (motivation, pre-screen, returns, appeals, audit-log) |
 
-Single head = `0008`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
+Single head = `0009`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
 
 ## Stores (3-store polyglot — ADR-004 rejected)
 PostgreSQL is the **system of record** (auth, applications, tracking, match records, outbox,
@@ -51,8 +52,12 @@ DDL, NOBYPASSRLS, fenced by `statement_timeout`/`idle`/`lock_timeout` + connecti
 - *Cross-user exposure* = RLS policies **and** the service ownership checks — proven in
   `test_row_level_security.py`.
 
-**Row-Level Security** is enforced on the 8 core student-data tables, fail-closed: no session
-context ⇒ no rows. The owner bypasses (migrations); the app is always subject.
+**Row-Level Security** is enforced on **every** student-data / sensitive table (0007 + 0009):
+profile, application, document, tracking, matches, consent, notification, motivation,
+pre-screen, returns, appeals, theme tags, recusal, and audit-log — fail-closed: no session
+context ⇒ no rows. Reviewer-only metadata is staff-scoped; audit is own/staff. The owner
+bypasses (migrations); the app is always subject. **Auth tables (`user`/`refresh_token*`) get
+RLS in Stage 02** with a SYSTEM-context login path (you have no `user_id` at login) — see D-015.
 
 ## Backend integration contracts (every later phase MUST honor)
 1. **Connect as `fundslink_app`**, never the owner/superuser; the owner is for migrations only.

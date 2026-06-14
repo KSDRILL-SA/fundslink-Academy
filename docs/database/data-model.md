@@ -356,7 +356,7 @@ The physical schema is now applied by **Alembic migrations** (the authoritative 
 `schema.sql` is the consolidated readable reference. **0001** = v1.0/v1.1 baseline · **0002** =
 seeds · **0003** = review hardening · **0004** = application lifecycle · **0005–0007** =
 security (least-privilege role, privilege lockdown, Row-Level Security) · **0008** = updated_at
-alignment. Single head = `0008`. Consolidated overview: [`README.md`](README.md).
+alignment · **0009** = RLS completeness. Single head = `0009`. Overview: [`README.md`](README.md).
 
 ## 6.1 New business rules
 
@@ -411,7 +411,7 @@ partitioned tables are overflow safety nets.
 |-------|---------|
 | Roles | owner (migrations only) · `fundslink_app` (non-owner, no DDL, NOBYPASSRLS, fenced by timeouts) · `fundslink_readonly` (SELECT-only) |
 | Append-only | **two walls** — `fn_block_mutation` trigger **and** privilege revoke (no UPDATE/DELETE on the 7 tables) |
-| Cross-user access | **two walls** — Row-Level Security (8 core tables, fail-closed) **and** service ownership checks |
+| Cross-user access | **two walls** — Row-Level Security (all student-data + audit tables, fail-closed; auth tables → Stage 02) **and** service ownership checks |
 | RLS contract | backend sets `SET LOCAL app.user_id` / `app.user_role` per request; jobs use `SYSTEM`; no context ⇒ no rows |
 | Hardening | revoke ambient PUBLIC; search_path pinned on trigger fns; no `SECURITY DEFINER`; resource guardrails |
 

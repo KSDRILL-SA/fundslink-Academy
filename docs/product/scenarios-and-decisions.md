@@ -40,7 +40,11 @@
 | D-008 | **11 SA official languages**; WhatsApp a consented channel; mobile-first/low-data | ADOPTED | 0004 + 04 | `ck_sp_language`, `MARKETING_WHATSAPP`; BR-A08/N04 |
 | D-009 | **DEFAULT partitions** as overflow safety nets on the critical write-path tables | ADOPTED | 0003 | default partitions |
 | D-010 | **The machine never decides** — APPROVED/REJECTED/REJECTED_FINAL require a human | ADOPTED | 01 | `fn_human_final`; BR-E03 |
-| D-011 | Derived seed value-sets pending spec confirmation (see [Open Questions](#open-questions)) | OPEN | — | tracked transitions, doc/consent/notify/deadline lookups |
+| D-011 | Derived seed value-sets **confirmed as-is** (tracked transitions, doc/consent/notify/deadline lookups) — refine in Stage 03 if a real bursary admin disagrees | ADOPTED | 02/03 | 0002/0004 seeds |
+| D-012 | **Suspend/Revoke/Complete policy** — COMPLETED at `funding_end`; SUSPENDED on uncertain status (e.g. attendance flag / NSFAS re-funds → pause), reversible; REVOKED on confirmed drop-out / deregistration / fraud (terminal). Revoke/complete need a human (ADMIN_AUTHORIZER for money) + reason in `note`. | ADOPTED (delegated) | 03 | BR-S10; transitions + note |
+| D-013 | **Priority authority** — students apply at NORMAL and may *request* urgency (reason + `needed_by`); only ADMIN_REVIEWER+ may set URGENT/CRITICAL (anti-gaming), evidenced by the motivation + documents (e.g. NSFAS defunding / exclusion notice). | ADOPTED (delegated) | 03 | `lk_priority`; BR-S11 |
+| D-014 | **No silent edits under review** — a SUBMITTED/UNDER_REVIEW application is locked; new urgent info arrives as a new Document or a reviewer `note`, or via RETURNED_FOR_INFO→resubmit. Keeps the audit trail clean. | ADOPTED (delegated) | 03/04 | `document`, `application_status_event.note`, `application_return` |
+| D-015 | **Auth-table RLS is a Stage 02 contract** — `user` / `refresh_token*` get RLS in Stage 02 with a SYSTEM-context login/token-validation path (you have no `user_id` at login). Not bolted on in Stage 01. | ADOPTED (delegated) | 02 | C3; `app.user_role='SYSTEM'` login context |
 
 ---
 
@@ -102,13 +106,16 @@
 
 ## Open questions (parking lot — resolve before the owning stage builds)
 
-| # | Question | Needed by | Notes |
-|---|----------|-----------|-------|
-| OQ-1 | Confirm `tracked_status_transition` set vs BR-T04 (currently derived) | Stage 03 (tracking) | seeded in 0002 |
-| OQ-2 | Confirm `lk_doc_type` / `lk_consent_purpose` / `lk_notify_trigger` / `deadline_type` value-sets vs MASTER-SPEC §12–§18 | Stage 03 | derived sets, flagged |
-| OQ-3 | What exactly suspends/revokes funding (drop-out, <50% attendance, fraud)? define the triggers | Stage 03 (application) | states exist (D-003); rules don't |
-| OQ-4 | Emergency-lane intake: who can set CRITICAL, and what evidence gates it? (anti-abuse) | Stage 03 | priority exists; policy doesn't |
-| OQ-5 | Can a student edit/append urgent new info while UNDER_REVIEW (not only on RETURN)? | Stage 03/04 | edge E-ε |
+All resolved by the Founder (delegated judgment, 2026-06-14). Kept here as the trail.
+
+| # | Question | Resolution |
+|---|----------|-----------|
+| OQ-1 | Confirm `tracked_status_transition` set vs BR-T04 | **D-011** — confirmed as-is; revisit in Stage 03 with a bursary admin |
+| OQ-2 | Confirm `lk_doc_type`/`consent_purpose`/`notify_trigger`/`deadline_type` value-sets | **D-011** — confirmed as-is |
+| OQ-3 | What suspends/revokes funding? | **D-012** — policy adopted (COMPLETED at funding_end; SUSPENDED reversible; REVOKED on drop-out/fraud) |
+| OQ-4 | Who sets CRITICAL priority + evidence? | **D-013** — students request; ADMIN_REVIEWER+ confirms; evidenced by motivation + docs |
+| OQ-5 | Edit while UNDER_REVIEW? | **D-014** — no silent edits; new info via Document / reviewer note / RETURN→resubmit |
+| OQ-6 | RLS on auth tables (`user`/tokens)? | **D-015** — Stage 02 contract (SYSTEM-context login) |
 
 ---
 
