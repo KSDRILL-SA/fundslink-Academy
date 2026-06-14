@@ -40,10 +40,11 @@ def test_human_actor_may_decide(conn, to_status):
 
 def test_system_principal_may_make_non_decision_transition(conn):
     # SYSTEM exists as a real principal for non-decision moves; the guard does not bite.
+    # SYSTEM is now a seeded principal (migration 0010) — use it directly rather than
+    # inserting a duplicate id (which would violate the PK).
     aid = helpers.insert_application(conn)
-    system = helpers.insert_user(conn, user_id="SYSTEM", email="system@fundslink.test")
     helpers.insert_status_event(
-        conn, application_id=aid, actor_user_id=system, to_status="PRE_SCREENING"
+        conn, application_id=aid, actor_user_id="SYSTEM", to_status="PRE_SCREENING"
     )
     row = conn.execute(
         "SELECT to_status FROM application_status_event WHERE application_id = %s", (aid,)
