@@ -26,4 +26,28 @@ export class AuthApiService {
   logout(): Observable<void> {
     return this.http.post<void>(`${this.base}/logout`, {}, { withCredentials: true });
   }
+
+  verifyEmail(token: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/verify-email`, { token });
+  }
+
+  resendVerification(email: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/verify-email/resend`, { email });
+  }
+
+  forgotPassword(email: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/reset-password`, { token, new_password: newPassword });
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.base}/change-password`,
+      { current_password: currentPassword, new_password: newPassword },
+      { withCredentials: true },
+    );
+  }
 }
