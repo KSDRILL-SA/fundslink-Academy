@@ -353,8 +353,10 @@ _________________________
 # PART 6 — v1.2 EVOLUTION (migrations 0003–0004, Founder-approved 2026-06-14)
 
 The physical schema is now applied by **Alembic migrations** (the authoritative path);
-`schema.sql` is the consolidated readable reference. Migration **0001** = the v1.0/v1.1
-baseline; **0002** = seeds; **0003** = review hardening; **0004** = application lifecycle.
+`schema.sql` is the consolidated readable reference. **0001** = v1.0/v1.1 baseline · **0002** =
+seeds · **0003** = review hardening · **0004** = application lifecycle · **0005–0007** =
+security (least-privilege role, privilege lockdown, Row-Level Security) · **0008** = updated_at
+alignment. Single head = `0008`. Consolidated overview: [`README.md`](README.md).
 
 ## 6.1 New business rules
 
@@ -402,3 +404,17 @@ sort); FK indexes `ix_rtf_user`, `ix_ta_bursary`, `ix_match_bursary`, `ix_user_r
 The two student-dashboard composites were **tested and rejected** (tiny per-student
 cardinality — bitmap+sort wins; no speculative indexes). DEFAULT partitions on all four
 partitioned tables are overflow safety nets.
+
+## 6.5 Security model (migrations 0005–0007)
+
+| Layer | Control |
+|-------|---------|
+| Roles | owner (migrations only) · `fundslink_app` (non-owner, no DDL, NOBYPASSRLS, fenced by timeouts) · `fundslink_readonly` (SELECT-only) |
+| Append-only | **two walls** — `fn_block_mutation` trigger **and** privilege revoke (no UPDATE/DELETE on the 7 tables) |
+| Cross-user access | **two walls** — Row-Level Security (8 core tables, fail-closed) **and** service ownership checks |
+| RLS contract | backend sets `SET LOCAL app.user_id` / `app.user_role` per request; jobs use `SYSTEM`; no context ⇒ no rows |
+| Hardening | revoke ambient PUBLIC; search_path pinned on trigger fns; no `SECURITY DEFINER`; resource guardrails |
+
+Backend integration contracts and the "enforced where" matrix: [`README.md`](README.md).
+Deployment-side controls (TLS, PgBouncer, backups/PITR, key rotation):
+[`../operations/security-deployment-checklist.md`](../operations/security-deployment-checklist.md).

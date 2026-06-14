@@ -490,3 +490,25 @@ ALTER TABLE student_profile
 ALTER TABLE application_motivation ADD CONSTRAINT ck_motiv_language
   CHECK (language IN ('en','af','zu','xh','nso','tn','st','ts','ss','ve','nr'));
 -- seeds: config += emergency_review_sla_days; lk_consent_purpose += MARKETING_WHATSAPP.
+
+-- ============================================================
+-- v1.2 SECURITY + ALIGNMENT — migrations 0005–0008 (reference mirror)
+-- Full detail in docs/database/README.md and the operations security checklist.
+-- ============================================================
+-- 0005: least-privilege role + search_path hardening
+--   CREATE ROLE fundslink_app NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+--   GRANT SELECT,INSERT,UPDATE on CRUD; REVOKE UPDATE,DELETE on the 7 append-only tables.
+--   The 3 trigger fns recreated WITH `SET search_path = pg_catalog, public`.
+-- 0006: privilege lockdown
+--   REVOKE ambient PUBLIC (database CONNECT, schema, function EXECUTE); app has USAGE not CREATE.
+--   ALTER ROLE fundslink_app SET statement_timeout=30s, idle_in_transaction=60s, lock_timeout=10s,
+--   CONNECTION LIMIT 100. CREATE ROLE fundslink_readonly (SELECT-only, analytics).
+-- 0007: Row-Level Security (fail-closed)
+--   Helpers app_uid()/app_role()/app_is_staff() read SET LOCAL app.user_id / app.user_role.
+--   ENABLE ROW LEVEL SECURITY + owner/staff policies on: student_profile, funding_application,
+--   document, tracked_application, match_result, consent_record, notification_preference,
+--   notification_outbox. App role is NOBYPASSRLS; owner bypasses (migrations only).
+-- 0008: complete updated_at auto-stamp coverage
+CREATE TRIGGER tg_doc_touch    BEFORE UPDATE ON document               FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+CREATE TRIGGER tg_np_touch     BEFORE UPDATE ON notification_preference FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+CREATE TRIGGER tg_config_touch BEFORE UPDATE ON config                 FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
