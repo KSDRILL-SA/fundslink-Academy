@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     refresh_token_ttl_seconds: int = 604800  # 7 days (TAD §3.1)
     jwt_issuer: str = "fundslink-api"
     bcrypt_rounds: int = 12  # cost factor from env, never hardcoded in a call (S3.3)
+    # Email-verification mode (S3.12). False (progressive) until the verify flow ships (PR-G).
+    email_verification_required: bool = False
 
     # --- PII field encryption (TAD §4.4) — AES-256-GCM; base64 of 32 random bytes ---
     pii_encryption_key: str = ""

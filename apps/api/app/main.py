@@ -8,14 +8,22 @@ and are excluded from the OpenAPI contract surface.
 
 from fastapi import FastAPI
 
+from app.common.errors import install_error_handlers
+from app.common.request_id import RequestIdMiddleware
 from app.core.config import settings
 from app.core.observability import init_sentry
 from app.core.security import install_security
+from app.modules.auth.router import router as auth_router
 
 init_sentry()
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 install_security(app)
+app.add_middleware(RequestIdMiddleware)
+install_error_handlers(app)
+
+# Business endpoints come FROM the contract (S2.7); mounted under the /api/v1 server prefix.
+app.include_router(auth_router, prefix="/api/v1")
 
 
 @app.get("/healthz", tags=["meta"], include_in_schema=False)

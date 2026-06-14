@@ -48,8 +48,8 @@ jobs:
         run: lint-imports
       - name: Permission lint (placeholder — S3.21)
         run: echo "TODO S3.21 deny-by-default permission lint — activates when endpoints exist"
-      - name: Contract diff (placeholder — S2.7)
-        run: echo "TODO S2.7 FastAPI OpenAPI vs packages/contracts yaml — activates when endpoints exist"
+      - name: Contract diff (S2.7 — FastAPI OpenAPI vs packages/contracts/openapi.yaml)
+        run: python ../../scripts/contract_diff.py
       - name: Migrations — upgrade from zero (DB-D36)
         run: alembic upgrade head
       - name: Migrations — downgrade→upgrade roundtrip clean
