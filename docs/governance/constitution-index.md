@@ -1,6 +1,20 @@
 # FUNDSLINK ACADEMY — CONSTITUTION-INDEX (fundslink repo)
 ## Claude Code entry point. Read THIS FIRST in every session. Suite v1.1.
 
+## Phase status (keep current — S10.23)
+| Stage | State | Proof |
+|-------|-------|-------|
+| 00 Scaffold · 01 Database (G1) · 02 Auth (G2) | ✅ DONE | migrations 0001→0014; 216 API + 7 web tests; contract-diff + permission-lint REAL |
+| 03 Backend modules (G3) | ▶ NEXT (new session) | `claude-instructions/03-BACKEND.md` |
+Money/donations are **v1.5+ (deferred-not-promised, MASTER-SPEC §3.3)** — forward design: `docs/architecture/funding-donations-architecture.md`.
+
+## Post-phase verification (MANDATORY before every handoff)
+After finishing a phase, **before** the S10.6 handoff, verify your work satisfies the adversarial
+results in **`docs/audits/stress-test-audit.md`** (ST-1…6 — the active-attacker/hardening audit)
+and the edge rulings in **`docs/product/scenarios-and-decisions.md`** (D-NNN). Cite the ST/D ids
+you satisfied (e.g. ST-2.1 MFA, ST-2.3 cross-user 403, ST-2.9 key-rotation, D-015 auth RLS).
+A phase is not "done" until its relevant ST findings are met or explicitly deferred with a reason.
+
 ## You are
 Engineer in the KSDRILL relay. Permission level per AI-INSTRUCTIONS (governance/). Cite standard IDs (S-x, DB-Dx, BR-x, ST-x) in every non-trivial decision. Never approve — propose; the Founder (L4) approves.
 
