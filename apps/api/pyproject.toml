@@ -13,6 +13,8 @@ dependencies = [
     "asyncpg>=0.30",
     "alembic>=1.13",
     "psycopg[binary]>=3.2",
+    # Observability (S3.34 / S8.11) — error tracking; no-op without SENTRY_DSN.
+    "sentry-sdk[fastapi]>=2.0",
 ]
 
 [project.optional-dependencies]
