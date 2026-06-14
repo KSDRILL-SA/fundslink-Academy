@@ -15,6 +15,13 @@ dependencies = [
     "psycopg[binary]>=3.2",
     # Observability (S3.34 / S8.11) — error tracking; no-op without SENTRY_DSN.
     "sentry-sdk[fastapi]>=2.0",
+    # Auth core (C3 Part 2) — RS256 JWT, bcrypt hashing, Redis deny-list/rate-limit,
+    # HIBP k-anonymity over httpx, TOTP MFA.
+    "pyjwt[crypto]>=2.8",
+    "bcrypt>=4.1",
+    "redis>=5.0",
+    "httpx>=0.27",
+    "pyotp>=2.9",
 ]
 
 [project.optional-dependencies]
@@ -24,6 +31,7 @@ dev = [
     "httpx>=0.27",
     "ruff>=0.5",
     "import-linter>=2.0",
+    "fakeredis>=2.21",
 ]
 
 [build-system]
