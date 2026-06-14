@@ -87,3 +87,36 @@ def test_application_return_cycle_must_be_positive(conn):
             " VALUES (%s, %s, 0, '[]')",
             (cuid(), aid),
         )
+
+
+# --- 0003 domain CHECKs (DB-D9): every status column constrained ---
+
+
+def test_ck_document_av_status(conn):
+    pid = helpers.insert_profile(conn)
+    with _expect_check(conn), conn.transaction():
+        conn.execute(
+            "INSERT INTO document(id, student_profile_id, doc_type, storage_uri, sha256, av_status)"
+            " VALUES (%s, %s, 'ID_DOCUMENT', 's3://x', 'abc', 'BOGUS')",
+            (cuid(), pid),
+        )
+
+
+def test_ck_student_level(conn):
+    uid = helpers.insert_user(conn)
+    with _expect_check(conn), conn.transaction():
+        conn.execute(
+            "INSERT INTO student_profile(id, first_name, last_name, level, field_of_study)"
+            " VALUES (%s, 'A', 'B', 'BOGUS', 'CS')",
+            (uid,),
+        )
+
+
+def test_ck_bursary_deadline_type(conn):
+    bid = helpers.insert_bursary(conn)
+    with _expect_check(conn), conn.transaction():
+        conn.execute(
+            "INSERT INTO bursary_deadline(id, external_bursary_id, deadline_type, due_on)"
+            " VALUES (%s, %s, 'BOGUS', '2026-12-01')",
+            (cuid(), bid),
+        )

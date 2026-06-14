@@ -44,6 +44,14 @@ def test_uq_app_active_per_year_partial_escape(conn):
     helpers.insert_application(conn, profile_id=pid, academic_year="2026", status="DRAFT")
 
 
+def test_uq_app_active_blocks_approved_duplicate(conn):
+    # 0003: APPROVED now counts as active — a funded student cannot open a duplicate same-year app.
+    pid = helpers.insert_profile(conn)
+    helpers.insert_application(conn, profile_id=pid, academic_year="2026", status="APPROVED")
+    with _expect_unique(conn), conn.transaction():
+        helpers.insert_application(conn, profile_id=pid, academic_year="2026", status="DRAFT")
+
+
 def test_uq_tracked_pair(conn):
     pid = helpers.insert_profile(conn)
     bid = helpers.insert_bursary(conn)

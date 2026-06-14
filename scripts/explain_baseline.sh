@@ -34,9 +34,9 @@ INSERT INTO external_bursary(id,name,provider,level_eligibility,status)
 INSERT INTO funding_application(id,student_profile_id,application_type,status,academic_year)
   SELECT 'a'||g,'u'||(1+(g%5000)),'POSTGRAD','SUBMITTED',(2020+(g/5000))::text
   FROM generate_series(1,20000) g;
--- ~200 rows into the review queue
+-- a realistically large review queue (national platform), paginated by the admin UI
 UPDATE funding_application SET status='READY_FOR_REVIEW'
-  WHERE id IN (SELECT id FROM funding_application ORDER BY id LIMIT 200);
+  WHERE id IN (SELECT id FROM funding_application ORDER BY id LIMIT 5000);
 -- 20k tracked; (g%5000, g/5000) is a unique pair => satisfies uq_tracked_pair
 INSERT INTO tracked_application(id,student_profile_id,external_bursary_id)
   SELECT 't'||g,'u'||(1+(g%5000)),'b'||(1+(g/5000)) FROM generate_series(1,20000) g;
@@ -63,8 +63,8 @@ TITLES[3]="3. Outbox claim (partial index, SKIP LOCKED)"
 SQLS[3]="SELECT * FROM notification_outbox WHERE state='PENDING' AND next_attempt_at<=now() ORDER BY next_attempt_at FOR UPDATE SKIP LOCKED LIMIT 100"
 TITLES[4]="4. Matches by student"
 SQLS[4]="SELECT * FROM match_result WHERE student_profile_id='u123' ORDER BY created_at DESC"
-TITLES[5]="5. Review queue (by status)"
-SQLS[5]="SELECT * FROM funding_application WHERE status='READY_FOR_REVIEW' ORDER BY created_at"
+TITLES[5]="5. Review queue (by status, paginated)"
+SQLS[5]="SELECT * FROM funding_application WHERE status='READY_FOR_REVIEW' ORDER BY created_at DESC LIMIT 50"
 
 {
   echo "# EXPLAIN Baseline — FundsLink Academy"
