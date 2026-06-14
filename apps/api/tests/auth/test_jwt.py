@@ -60,3 +60,36 @@ def test_missing_private_key_raises_config_error():
 
 def test_jti_is_unique():
     assert jwtsvc.new_jti() != jwtsvc.new_jti()
+
+
+def test_token_signed_by_previous_key_verifies_during_rotation():
+    # Rotation overlap (ST-2.9): a token signed by the OLD key must still verify while the old
+    # public key is configured as `previous`, and stop once the overlap window is closed.
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    old = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    old_priv = old.private_bytes(
+        serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()
+    ).decode()
+    old_pub = (
+        old.public_key()
+        .public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
+        .decode()
+    )
+
+    saved_priv = settings.rs256_private_key
+    settings.rs256_private_key = old_priv  # sign with the OLD key
+    token, _ = jwtsvc.create_access_token(sub="u1", role="STUDENT", email="e@x.io", version=1)
+    settings.rs256_private_key = saved_priv  # current signer restored
+
+    # No overlap configured -> the old token is rejected.
+    with pytest.raises(jwtsvc.JWTValidationError):
+        jwtsvc.decode_access_token(token)
+
+    # Overlap window open (previous key present) -> the old token still verifies.
+    settings.rs256_public_key_previous = old_pub
+    try:
+        assert jwtsvc.decode_access_token(token)["sub"] == "u1"
+    finally:
+        settings.rs256_public_key_previous = ""

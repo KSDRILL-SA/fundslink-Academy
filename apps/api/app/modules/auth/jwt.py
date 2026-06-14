@@ -67,16 +67,24 @@ def create_access_token(
 
 
 def decode_access_token(token: str) -> dict:
-    """Verify signature/expiry/issuer and return the claims, or raise JWTValidationError."""
-    if not settings.rs256_public_key:
+    """Verify signature/expiry/issuer and return the claims, or raise JWTValidationError.
+
+    Verifies against the current public key and, during a rotation overlap (ST-2.9), the
+    previous one — so rotating keys never invalidates in-flight tokens.
+    """
+    keys = [k for k in (settings.rs256_public_key, settings.rs256_public_key_previous) if k]
+    if not keys:
         raise JWTConfigError("RS256_PUBLIC_KEY is not configured")
-    try:
-        return jwt.decode(
-            token,
-            settings.rs256_public_key,
-            algorithms=[_ALG],
-            issuer=settings.jwt_issuer,
-            options={"require": ["exp", "iat", "sub", "jti"]},
-        )
-    except jwt.PyJWTError as exc:  # expired, bad signature, wrong issuer, missing claim
-        raise JWTValidationError(str(exc)) from exc
+    last_error: jwt.PyJWTError | None = None
+    for key in keys:
+        try:
+            return jwt.decode(
+                token,
+                key,
+                algorithms=[_ALG],
+                issuer=settings.jwt_issuer,
+                options={"require": ["exp", "iat", "sub", "jti"]},
+            )
+        except jwt.PyJWTError as exc:  # try the next key (rotation), else surface
+            last_error = exc
+    raise JWTValidationError(str(last_error)) from last_error

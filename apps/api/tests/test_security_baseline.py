@@ -40,7 +40,11 @@ def test_cors_does_not_echo_unknown_origin():
 
 def test_debug_sentry_route_raises_for_capture():
     # Proves the Sentry capture path (Gate G2) — non-prod meta route, excluded from schema.
-    assert client.get("/debug-sentry").status_code == 500
+    resp = client.get("/debug-sentry")
+    assert resp.status_code == 500
+    # The generic exception handler returns the uniform envelope, never a stack trace.
+    error = resp.json()["error"]
+    assert error["code"] == "internal_error" and "request_id" in error
 
 
 def test_sentry_disabled_without_dsn():

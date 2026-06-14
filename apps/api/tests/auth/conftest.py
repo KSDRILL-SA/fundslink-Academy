@@ -133,3 +133,18 @@ def client(migrated_db, rs256_keys, monkeypatch):
 
 async def _not_breached(password: str, *, client=None) -> bool:  # noqa: ARG001
     return False
+
+
+@pytest.fixture
+def mailbox(client, monkeypatch):
+    """Capture outbound auth emails (verify / reset / lockout) without any network."""
+    from app.modules.auth.email import EmailAdapter
+
+    sent: list[dict] = []
+
+    class Capture(EmailAdapter):
+        async def send(self, *, to: str, subject: str, body: str) -> None:
+            sent.append({"to": to, "subject": subject, "body": body})
+
+    monkeypatch.setattr("app.modules.auth.email._adapter", Capture())
+    return sent

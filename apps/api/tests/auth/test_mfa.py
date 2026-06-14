@@ -128,6 +128,19 @@ def test_admin_enrol_activate_then_full_login(client):
     assert REFRESH in full.headers.get("set-cookie", "")  # full session has a refresh cookie
 
 
+def test_totp_code_cannot_be_replayed(client):
+    """ST-2 hardening: a TOTP step is single-use — a captured code can't be reused in its window."""
+    email = _create_admin()
+    _enroll, secret = _enrol_and_activate(client, email)
+    code = _totp(secret)
+
+    first = _login(client, email, mfa_code=code)
+    assert first.status_code == 200
+    client.cookies.clear()
+    # Same code, same 30s step -> replay rejected.
+    assert _login(client, email, mfa_code=code).status_code == 401
+
+
 def test_admin_login_with_wrong_totp_is_401(client):
     email = _create_admin()
     _enrol_and_activate(client, email)

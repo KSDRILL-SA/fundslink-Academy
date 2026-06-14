@@ -9,11 +9,8 @@ from __future__ import annotations
 
 import uuid
 
-import pytest
-
 from app.core.config import settings
 from app.modules.auth import passwords
-from app.modules.auth.email import EmailAdapter
 
 BASE = "/api/v1/auth"
 GOOD_PW = "Str0ng!Passw0rd"
@@ -31,18 +28,6 @@ def _register(client, email=None, password=GOOD_PW):
         json={"email": email or _email(), "password": password,
               "consents": [{"purpose": "TERMS_OF_SERVICE", "wording_version": "v1"}]},
     )
-
-
-@pytest.fixture
-def mailbox(client, monkeypatch):
-    sent: list[dict] = []
-
-    class Capture(EmailAdapter):
-        async def send(self, *, to: str, subject: str, body: str) -> None:
-            sent.append({"to": to, "subject": subject, "body": body})
-
-    monkeypatch.setattr("app.modules.auth.email._adapter", Capture())
-    return sent
 
 
 def _token_from(body: str) -> str:

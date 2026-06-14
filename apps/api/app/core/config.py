@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # --- JWT / auth (C3 Part 2) ---
     rs256_private_key: str = ""  # PEM; signs access tokens (Railway Secrets only) — S3.13/S3.20
     rs256_public_key: str = ""  # PEM; verifies access tokens (safely distributable) — S3.13
+    # During a key rotation (ST-2.9 runbook), the PREVIOUS public key still verifies in-flight
+    # tokens for the overlap window — so rotation never logs everyone out. Empty when not rotating.
+    rs256_public_key_previous: str = ""
     access_token_ttl_seconds: int = 900  # 15 min (S3.1/TAD §3.1)
     refresh_token_ttl_seconds: int = 604800  # 7 days (TAD §3.1)
     jwt_issuer: str = "fundslink-api"
