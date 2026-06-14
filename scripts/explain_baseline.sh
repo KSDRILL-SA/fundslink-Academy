@@ -97,5 +97,8 @@ for i in 1 2 3 4 5; do
   if echo "$plan" | grep -qi "Index"; then echo "  [OK ] query $i uses an index"; else
     echo "  [FAIL] query $i has NO index scan:"; echo "$plan"; fail=1; fi
 done
+# Drop the throwaway DB so the cluster-global app role keeps no cross-DB grant dependency.
+"$DROPDB" --if-exists "$EXPLAIN_DB" 2>/dev/null || true
+
 echo "[explain] doc written: $DOC"
 exit $fail
