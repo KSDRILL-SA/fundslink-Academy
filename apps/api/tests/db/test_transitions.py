@@ -28,6 +28,11 @@ LEGAL_APP = [
     ("REJECTED", "APPEALED"),
     ("APPEALED", "REJECTED_FINAL"),
     ("SUBMITTED", "WITHDRAWN"),
+    # 0004 post-approval lifecycle (money safety)
+    ("APPROVED", "SUSPENDED"),
+    ("APPROVED", "REVOKED"),
+    ("APPROVED", "COMPLETED"),
+    ("SUSPENDED", "APPROVED"),
 ]
 
 ILLEGAL_APP = [
