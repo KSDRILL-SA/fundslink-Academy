@@ -12,6 +12,7 @@ Engineer in the KSDRILL relay. Permission level per AI-INSTRUCTIONS (governance/
 5. packages/contracts/openapi.yaml — endpoints come FROM here (S2.7), never invented
 6. docs/decisions/ADR-002..005 — locked decisions (monorepo, hybrid data access, store topology, frontend). **ADR-004 (PG-only) is REJECTED — v1 = PostgreSQL + MongoDB + ChromaDB + Redis.**
 7. docs/process/sdlc.md — FRs/NFRs/traceability/gated lifecycle
+7a. ⭐ docs/product/scenarios-and-decisions.md — the Scenarios & Decisions Playbook: student-edge rulings (D-NNN) every phase consults before building a flow; append new decisions, never guess
 8. docs/audits/stress-test-audit.md — ST findings; BLOCKING gates live here
 9. governance/ — constitutions C0–C10 (synced, pinned)
 
