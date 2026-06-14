@@ -2,9 +2,28 @@
 
 from datetime import date
 
-from app.db import integrity, partitions
+from app.db import cuid, integrity, partitions
 from app.db._ops import PARTITIONED_TABLES, partition_name
 from tests.db import helpers
+
+
+def test_default_partition_absorbs_audit_overflow(conn):
+    # 0003 safety net: a row beyond the +12 horizon lands in the default partition,
+    # not a 'no partition found' error (audit_log is written in every mutation's tx).
+    conn.execute(
+        "INSERT INTO audit_log(id, action, resource_type, request_id, created_at)"
+        " VALUES (%s, 'x', 'x', %s, now() + interval '36 months')",
+        (cuid(), cuid()),
+    )
+
+
+def test_default_partition_absorbs_outbox_overflow(conn):
+    uid = helpers.insert_user(conn)
+    conn.execute(
+        "INSERT INTO notification_outbox(id, user_id, trigger, channels, payload, created_at)"
+        " VALUES (%s, %s, 'DECISION_APPROVED', %s, '{}', now() + interval '36 months')",
+        (cuid(), uid, ["email"]),
+    )
 
 
 def test_integrity_clean_on_seeded_db(conn):
