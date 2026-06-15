@@ -1,6 +1,12 @@
 # FUNDSLINK ACADEMY — DOCUMENTATION SUITE MANIFEST
 ## Suite Version 1.5 | 2026 — DESIGN PHASE COMPLETE (+ v1.1 Eligibility Wave)
 
+> **This manifest is the design-phase completion record.** Live build status + the full document
+> index are in [`docs/README.md`](../README.md). Build progress: Stages 00/01/02 ✅ (auth done,
+> migrations 0001→0014); Stage 03 next. New build-phase design doc:
+> [`architecture/funding-donations-architecture.md`](../architecture/funding-donations-architecture.md)
+> (funding intake, v1.5+). TAD is now v1.2 (eligibility module).
+
 **v1.3 change wave (Founder edge-case directive):** Smart Pre-Screening Engine, Category D (OTHER) with Other-Reasons store + theme tags, Human-Final Principle (DB-enforced + proven), 14-entry edge-case register (E1–E14), appeal/recusal/waitlist structures. Updated: MASTER-SPEC→v1.1 ⭐, ERD→v1.1 (+BR-E01–E10, 7 tables), schema (re-validated from scratch; 4 violation proofs passed), API→v1.1.0 (validated; +resubmit, +appeal), TAD→v1.2 (eligibility module), GOVERNANCE-PATCHES→v1.1 (DB-D21 third trigger class). | The single index, precedence order, and consistency record
 
 ---

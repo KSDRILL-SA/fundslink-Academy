@@ -1,6 +1,7 @@
 # FUNDSLINK ACADEMY — v1 LAUNCH CHECKLIST | Gate: ALL boxes before public traffic
 ## Blocking (from STRESS-TEST-AUDIT)
 - [ ] MFA enrolled + enforced on every ADMIN_* account (ST-2.1)
+- [ ] `/readyz` returns 200 on staging+prod — app connected as `fundslink_app` (non-superuser, NOBYPASSRLS); a bypassing role returns 503 (auth↔DB least-privilege guard)
 - [ ] Restore drill executed on staging from PITR — timed, documented (ST-6.4)
 - [ ] k6 baseline run against staging; p95 < 2s at 200 concurrent (ST-6.5)
 - [ ] External port scan: only 443 on api/web answer publicly; PG/Redis internal-only (ST-2.8)
