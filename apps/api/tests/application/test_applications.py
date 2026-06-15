@@ -89,12 +89,14 @@ def test_requested_amount_must_be_positive(app_client):
     assert resp.status_code == 422
 
 
-def test_submit_moves_draft_to_submitted_br_s04(app_client):
+def test_submit_advances_through_the_state_machine_br_s04(app_client):
     token, _ = student_with_profile(app_client)
-    app = create_application(app_client, token)
+    app = create_application(app_client, token)  # UG_CAT_C, no documents uploaded
     resp = app_client.post(f"{APPS}/{app['id']}/submit", headers=bearer(token))
     assert resp.status_code == 200
-    assert resp.json()["status"] == "SUBMITTED"
+    # Submit applies DRAFT→SUBMITTED then runs pre-screening (module 3) in the same transaction;
+    # with no NSFAS outcome on file a UG_CAT_C lands at RETURNED_FOR_INFO — a fix-list, never a no.
+    assert resp.json()["status"] == "RETURNED_FOR_INFO"
 
 
 def test_submit_enqueues_outbox_in_same_transaction_br_n01(app_client, admin_conn):

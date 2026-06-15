@@ -90,6 +90,10 @@ class ApplicationService:
         want_motivation = (row[1] == "OTHER") if is_other is None else is_other
         return await self._to_application(row, with_motivation=want_motivation)
 
+    async def load_application(self, app_id: str) -> Application:
+        """Public read used by the eligibility module after a resubmit (caller controls context)."""
+        return await self._load_response(app_id)
+
     # --------------------------------- create --------------------------------
     async def create_application(
         self, *, actor_id: str, data: ApplicationInput, request_id: str
@@ -159,6 +163,14 @@ class ApplicationService:
             resource_type="funding_application",
             resource_id=application_id,
             request_id=request_id,
+        )
+        # Eligibility pre-screening (module 3) runs in this SAME transaction, advancing the
+        # application to READY_FOR_REVIEW / RETURNED_FOR_INFO / UNSCREENED. The deferred import
+        # breaks the application↔eligibility cycle (eligibility reuses this module's engine).
+        from app.modules.eligibility.service import EligibilityService
+
+        await EligibilityService(self.session).pre_screen(
+            application_id=application_id, owner_id=actor_id, request_id=request_id
         )
         return await self._load_response(application_id)
 
