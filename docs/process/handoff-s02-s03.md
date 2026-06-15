@@ -16,6 +16,24 @@ Auth is built, gate-green, hardened against the stress-test audit, and verified 
 DB security wall. **Migrations 0001→0014, 216 API tests + 7 web tests, contract-diff +
 permission-lint now REAL.**
 
+**Final integration check — re-run from a clean tree on 2026-06-15 (every gate, real output):**
+
+| Gate | Command | Result |
+|------|---------|--------|
+| Lint | `ruff check .` | **All checks passed** |
+| Layering (router→service→repo) | `lint-imports` | **1 contract kept, 0 broken** (64 files, 149 deps) |
+| Permission deny-by-default (S3.21) | `python scripts/permission_lint.py` | **OK — 11 routes declare a posture** |
+| Contract-first (S2.7) | `python scripts/contract_diff.py` | **OK — 11 ops match `openapi.yaml`** |
+| Migrations up (DB-D36) | `alembic upgrade head` | **0014 (head)** |
+| Migration roundtrip | `alembic downgrade base && alembic upgrade head` | **clean** |
+| Partition horizon (DB-D44) | `python -m app.db.partitions` | **+12-month horizon kept (4 tables)** |
+| Integrity (DB-D39) | `python -m app.db.integrity` | **all checks clean** |
+| API suite | `pytest -q` | **216 passed** |
+| Web suite | `npm test` (Vitest) | **7 passed** (incl. S7.12 refresh-dedup) |
+| Web strict AOT | `npm run build` | **bundle generated, typecheck clean** |
+
+*How to reproduce locally (no Docker on this host): `initdb` a throwaway trust cluster, `pg_ctl … start` on a spare port, `createdb fundslink`, export `ALEMBIC_DATABASE_URL`/`DATABASE_URL` at it, run the gates above, then stop + delete the cluster. CI (`.github/workflows/api.yml`) runs the same sequence against a `postgres:16` service.*
+
 ## 1. Full build history
 - **Engineer 01 — Claude (design):** master-spec, TAD v1.2, C0–C10, DB-DOCTRINE, ERD, OpenAPI contract, ADRs, the stress-test audit (ST-1…6).
 - **Engineer 02 — Claude Code (Stage 00):** monorepo scaffold, CI gates (with placeholders).
@@ -38,6 +56,19 @@ permission-lint now REAL.**
 
 **Standards satisfied:** S2.7, S3.2–S3.4, S3.13–S3.24, S3.29, S3.31, S3.33–S3.36, S7.12, ST-2/ST-2.9, TAD §2.3/§3.1/§4.4, DB-D36, BR-A05, D-015.
 
+**Governance + docs landed alongside (same operator):** PRs #90/#92/#94/#96 — docs brought current to Stage-02-complete; the stress-test audit made a *standing* post-phase rule; and **two C0 §8 amendments ratified (L4) and applied to the template** (`system-design-template` `1db276f`, issue #8): **S5.65** (C5 — ledger immutability) and **S10.37** (C10 — post-phase adversarial verification before handoff). Both are now *in force* — see §3 and §4.
+
+## 2a. How this engineer worked — mirror this discipline
+You inherit a way of working, not just code. Hold the same bar:
+- **"Done" = command output, never confidence.** Every gate in §0 was re-run from a clean tree and pasted. Do the same at G3 — paste the real pipeline-demo output, don't assert it.
+- **Branch before you touch anything.** I twice slipped and edited on `main`; both times I caught it with `git branch --show-current` and recovered (`git branch <feat> && git branch -f main origin/main`). Check the branch *first*, every time.
+- **Issue → branch → linked PR (`Closes #N`) → documented self-review (S10.27) → squash-merge → delete branch.** One logical unit per PR. Furniture every time: assignee MALULEKE-KS, labels, the stage milestone, the project board Status.
+- **Cite a standard ID for every non-trivial move** (`S{C}.{N}`, `DB-Dx`, `BR-x`, `ST-x`, `D-NNN`). If nothing governs it, say so and propose — don't invent a rule.
+- **Propose, never decide, on anything security/constitutional.** Auth and money decisions are L4. I proposed the contract expansion and the two amendments; the Founder ratified.
+- **Two working-tree files are NOT mine — never stage them:** `docs/database/explain-baseline.md`, `docs/operations/restore-drill-log.md`.
+- **Build-host facts:** no Docker (throwaway PG cluster — §0); `gh` hits intermittent TLS — wrap network calls in a short retry loop and verify state via the REST API; some git/network ops need the sandbox disabled.
+- **Surgical edits over rewrites; clean Mermaid in docs *and* PRs.**
+
 ## 3. Contracts Stage 03 MUST honor (from auth + DB)
 1. **Connect as `fundslink_app`** (the runtime guard + `/readyz` enforce non-superuser/NOBYPASSRLS).
 2. **Per request set the RLS context** — `set_user_context` (authenticated) / `set_system_context` (jobs). No context ⇒ no rows.
@@ -53,10 +84,12 @@ permission-lint now REAL.**
 
    Rationale: today S5.3's "never MongoDB/Redis" half holds only by convention (the schema keeps money in PG, ADR-003 is a review rule, and the other stores don't exist yet). Stage 03 is the first phase where a violation is *possible* — so it is the phase that must make it *impossible*. Funding amounts stay `NUMERIC` in PG (S5.28 / DB-D29 / DB-D42).
 
-## 4. MANDATORY before the Stage-03 handoff (post-phase verification)
-Verify Stage 03 satisfies the relevant findings in **`docs/audits/stress-test-audit.md`** (esp.
-ST-2.3 IDOR/cross-user, ST-2.4 upload weaponization, ST-2.6 matching cost attack, ST-1 growth)
-and **`docs/product/scenarios-and-decisions.md`** (D-001…). Cite the ST/D ids. See the
+## 4. MANDATORY before the Stage-03 handoff (post-phase verification — now constitutional: S10.37)
+This is no longer a custom: **S10.37** (C10 v1.1) makes it a hard gate — a handoff that doesn't
+document it is **not accepted**. Verify Stage 03 satisfies the relevant findings in
+**`docs/audits/stress-test-audit.md`** (esp. ST-2.3 IDOR/cross-user, ST-2.4 upload weaponization,
+ST-2.6 matching cost attack, ST-1 growth) and **`docs/product/scenarios-and-decisions.md`**
+(D-001…). Cite the ST/D ids satisfied (and any deferred, with reason) in your G3 handoff. See the
 CONSTITUTION-INDEX "Post-phase verification" rule.
 
 ## 5. Do NOT touch
