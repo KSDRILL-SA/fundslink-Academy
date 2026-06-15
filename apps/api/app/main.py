@@ -15,6 +15,7 @@ from app.core.observability import init_sentry
 from app.core.security import install_security
 from app.db.engine import get_session_factory
 from app.db.guard import verify_least_privilege
+from app.modules.application.router import router as application_router
 from app.modules.auth.router import router as auth_router
 from app.modules.profile.router import router as profile_router
 
@@ -28,6 +29,7 @@ install_error_handlers(app)
 # Business endpoints come FROM the contract (S2.7); mounted under the /api/v1 server prefix.
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")
+app.include_router(application_router, prefix="/api/v1")
 
 
 @app.get("/healthz", tags=["meta"], include_in_schema=False)
