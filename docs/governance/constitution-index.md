@@ -5,7 +5,8 @@
 | Stage | State | Proof |
 |-------|-------|-------|
 | 00 Scaffold · 01 Database (G1) · 02 Auth (G2) | ✅ DONE | migrations 0001→0014; 216 API + 7 web tests; contract-diff + permission-lint REAL |
-| 03 Backend modules (G3) | ▶ NEXT (new session) | `claude-instructions/03-BACKEND.md` |
+| 03 Backend modules (G3) | ✅ DONE | migrations 0001→0015; 315 API tests; 30 contract ops; store-isolation (S5.3) CI gate; pipeline demo green — see `docs/process/handoff-s03-s04.md` |
+| 04 Frontend (G4) | ▶ NEXT (new session) | `claude-instructions/04-FRONTEND.md` |
 Money/donations are **v1.5+ (deferred-not-promised, MASTER-SPEC §3.3)** — forward design: `docs/architecture/funding-donations-architecture.md`.
 
 ## Post-phase verification (MANDATORY before every handoff)
