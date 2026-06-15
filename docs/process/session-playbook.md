@@ -111,16 +111,21 @@ Do NOT start Stage 03. gh authenticated; auto squash-merge except .claude/ permi
 You are Claude Code — Engineer 02 (L3, build-only), KSDRILL relay, FundsLink Academy. Industry level
 or STOP and flag. Founder (MALULEKE-KS, L4) approves every gate.
 
-START: read CLAUDE.md → docs/governance/constitution-index.md → docs/process/handoff-s00-s01.md, then
-run the ksdrill-governance Session Startup Protocol. REPO-VERIFY (workflow §4.5C): confirm Stage 02
-(G2) is merged and green — auth gateway, RBAC deny-by-default, cross-user 403. If missing/contradictory → STOP and flag.
+START: read CLAUDE.md → docs/governance/constitution-index.md → **docs/process/handoff-s02-s03.md (your
+relay baton — read it in full)** → docs/process/handoff-s00-s01.md (how we work), then run the
+ksdrill-governance Session Startup Protocol. REPO-VERIFY (workflow §4.5C): confirm Stage 02 (G2) is
+merged and green — the baton §0 records the verified baseline (migrations 0001→0014, 216 API + 7 web,
+all gates re-run green on 2026-06-15: ruff, import-linter, permission-lint, contract-diff, roundtrip,
+partitions, integrity). Re-run them to confirm. If missing/contradictory → STOP and flag.
 
 DISCIPLINE: cite standard IDs; Issue-first → branch → PR ("Closes #N", assignee MALULEKE-KS, labels,
 milestone "Stage 03 — Backend", project + Status) → self-review → squash-merge; layering
 router→service→repository (only repos touch a DB); every endpoint FROM packages/contracts/openapi.yaml
 (S2.7) with a declared permission (S3.21); status change = transition-validated + status event +
-outbox row in ONE transaction; money NUMERIC + parameterised SQL; tests alongside (S7.1); clean
-Mermaid; "done" = output; flag conflicts, never improvise. Create the milestone if absent.
+outbox row in ONE transaction; money NUMERIC + parameterised SQL (ledger immutability is now
+constitutional — S5.65); tests alongside (S7.1); clean Mermaid; "done" = output; flag conflicts,
+never improvise. Create the milestone if absent. **Mirror the discipline in baton §2a** (branch-before-edit,
+propose-never-decide on security/money, never stage the two not-mine files).
 
 EXECUTE STAGE 03 — SIX MODULES IN ORDER per claude-instructions/03-BACKEND.md. **One module = one PR
 = one gate check.** Read implementation-process §5 · technical-architecture §2,§5–§7 · the data-model
@@ -128,15 +133,20 @@ BR sections + openapi paths for each module.
 Order: 1) profile · 2) application · 3) eligibility · 4) matching — **this module introduces the
 MongoDB reasoning store + ChromaDB embeddings collections + the DB-D35 cross-store integrity job,
 behind repository interfaces** (queued 202, cached embeddings, spend breaker + quotas, FALLBACK mode,
-browse-all equal-class) · 5) tracking · 6) notification (N workers SKIP LOCKED, consent/preference at enqueue).
+browse-all equal-class) — **so it MUST also land the S5.3 store-isolation guard (baton §3 contract 8):
+no monetary field in any Mongo/Beanie model (CI-asserted), a Redis key allowlist, and a cross-store
+test (S7.15) proving amounts live only in PostgreSQL** · 5) tracking · 6) notification (N workers SKIP LOCKED, consent/preference at enqueue).
 FORBIDDEN: frontend; building modules out of order.
 
 GATE G3 (per module, then final, paste output): contract-diff exact; every BR id appears in a test
-name; coverage ≥ the C7 threshold; cross-user 403 suite green per resource; FINAL headless API-only
-pipeline demo (seed student → apply → pre-screen → RETURN → resubmit → READY → review → all 4 decision
-paths; verify SYSTEM approve is rejected by the DB trigger). Then STOP, deliver the S10.6 Handoff
-Report, and tell the Founder: "Stage 03 complete — open a NEW session and paste §4 from
-docs/process/session-playbook.md." Do NOT start Stage 04. gh authenticated; auto squash-merge except .claude/ PRs.
+name; coverage ≥ the C7 threshold; cross-user 403 suite green per resource; store-isolation (S5.3) —
+no money field in Mongo/Beanie models + Redis key allowlist + cross-store test (S7.15); FINAL headless
+API-only pipeline demo (seed student → apply → pre-screen → RETURN → resubmit → READY → review → all 4
+decision paths; verify SYSTEM approve is rejected by the DB trigger). **Before the handoff, satisfy
+S10.37 (now constitutional): verify Stage 03 against docs/audits/stress-test-audit.md (ST) +
+docs/product/scenarios-and-decisions.md (D-NNN) and cite the ids — an unverified handoff is not
+accepted.** Then STOP, deliver the S10.6 Handoff Report, and tell the Founder: "Stage 03 complete —
+open a NEW session and paste §4 from docs/process/session-playbook.md." Do NOT start Stage 04. gh authenticated; auto squash-merge except .claude/ PRs.
 ```
 
 ---
