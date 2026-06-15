@@ -28,6 +28,9 @@ __pycache__/
 venv/
 .pytest_cache/
 .ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 *.egg-info/
 # Local throwaway PostgreSQL cluster used for DB gates (no Docker on the build host)
 .tmp-pg-*/

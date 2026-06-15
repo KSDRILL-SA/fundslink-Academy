@@ -42,6 +42,15 @@ class Settings(BaseSettings):
     # --- PII field encryption (TAD §4.4) — AES-256-GCM; base64 of 32 random bytes ---
     pii_encryption_key: str = ""
 
+    # --- Document uploads (profile module · ST-2.4) ---
+    # Uploaded files are served from a SEPARATE origin (never the API origin), so stored
+    # content can never execute in the app's security context. Retrieval is via short-lived
+    # HMAC-signed URLs. The signing key falls back to the PII key when unset (dev/test).
+    document_storage_origin: str = "https://files.fundslink.academy"
+    document_url_signing_key: str = ""
+    document_url_ttl_seconds: int = 300
+    document_max_bytes: int = 10 * 1024 * 1024  # 10 MB hard cap (over this → 413)
+
     # --- Web security baseline (C3 Part 5) ---
     # Comma-separated allowlist; never "*" in staging/production (S3.29). Read via cors_origins.
     cors_allowed_origins: str = "http://localhost:4200"
