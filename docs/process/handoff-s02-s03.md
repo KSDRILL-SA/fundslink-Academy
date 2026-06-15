@@ -45,7 +45,13 @@ permission-lint now REAL.**
 4. **Endpoints come FROM `packages/contracts/openapi.yaml`** (S2.7); contract-diff + permission-lint gate every PR.
 5. **New owned table** ⇒ RLS (0007 pattern) + (append-only ⇒ REVOKE UPDATE,DELETE). New reference/lookup ⇒ `fundslink_app` SELECT-only (0014 pattern).
 6. **Status changes** ⇒ transition-table check + status event + outbox row in ONE transaction; SYSTEM can never reach a final decision (`fn_human_final`).
-7. **Money** (when v1.5) ⇒ raw parameterised SQL + NUMERIC + append-only ledger (ADR-003); two-step approval (§16.4).
+7. **Money** (when v1.5) ⇒ raw parameterised SQL + NUMERIC + append-only ledger (ADR-003); ledger immutability is now constitutional (**S5.65**); two-step approval (§16.4).
+8. **Store isolation becomes machine-enforced the moment the polyglot stores come online (S5.3).** When the matching module bootstraps **MongoDB + ChromaDB**, it MUST land the guards that make "funding amounts live in PostgreSQL only — never MongoDB or Redis" un-violable, not merely documented:
+   - (a) **No monetary fields in MongoDB / Beanie models** — the matching reasoning doc carries `score`/text/tags only; assert in CI (a lint or model check that fails on a money-typed field).
+   - (b) **Redis key allowlist** — only `denylist:*`, `rl:*`, and matching's cache/quota keys; no Redis *value* is a money amount.
+   - (c) **Cross-store integration test (S7.15)** — a match round-trip writes **no** amount outside PostgreSQL.
+
+   Rationale: today S5.3's "never MongoDB/Redis" half holds only by convention (the schema keeps money in PG, ADR-003 is a review rule, and the other stores don't exist yet). Stage 03 is the first phase where a violation is *possible* — so it is the phase that must make it *impossible*. Funding amounts stay `NUMERIC` in PG (S5.28 / DB-D29 / DB-D42).
 
 ## 4. MANDATORY before the Stage-03 handoff (post-phase verification)
 Verify Stage 03 satisfies the relevant findings in **`docs/audits/stress-test-audit.md`** (esp.

@@ -9,11 +9,12 @@
 - [ ] Privacy policy live; Information Officer registered; consent wording v1 frozen (ST-6.3 / MASTER-SPEC §15)
 ## Required
 - [ ] CI green: pytest + Vitest + contract-diff + permission-lint + import-linter
+- [ ] Money store-isolation guard green: no monetary field in MongoDB/Beanie models or Redis values; cross-store test asserts funding amounts live only in PostgreSQL (S5.3 / S7.15)
 - [ ] Cross-user 403 tests pass for every owned resource (ST-2.3)
 - [ ] Sentry receiving from both apps; alert set live (TAD §11); cost alerts armed (OpenAI + Railway)
 - [ ] Email domain warmed (SPF/DKIM/DMARC verified); outbox DEAD-letter alert tested (ST-1.4)
 - [ ] Seeds loaded: roles/permissions, lookups, transitions, config (allowance=1000.00 ZAR)
 - [ ] Bursary database: ≥50 curated bursaries with deadlines (matching has something to match)
-- [ ] governance/ synced + pinned; GOVERNANCE-PATCHES v1.0 applied to system-design-template
+- [ ] governance/ synced + pinned; GOVERNANCE-PATCHES v1.2 applied to system-design-template (incl. A-1 C5 S5.65 ledger immutability + A-2 C10 S10.37 post-phase verification)
 ## Done-when (MASTER-SPEC §3)
 - [ ] One real student: register → profile → apply → matched → tracked, end-to-end in production
