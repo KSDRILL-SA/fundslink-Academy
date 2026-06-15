@@ -50,6 +50,8 @@ jobs:
         run: python ../../scripts/permission_lint.py
       - name: Contract diff (S2.7 — FastAPI OpenAPI vs packages/contracts/openapi.yaml)
         run: python ../../scripts/contract_diff.py
+      - name: Store-isolation lint (S5.3 — no money outside PostgreSQL; Redis key allowlist)
+        run: python ../../scripts/store_isolation_lint.py
       - name: Migrations — upgrade from zero (DB-D36)
         run: alembic upgrade head
       - name: Migrations — downgrade→upgrade roundtrip clean
