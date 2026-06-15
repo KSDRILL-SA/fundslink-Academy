@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -81,10 +82,13 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+        # jsonable_encoder makes the details JSON-safe — a custom validator raises ValueError,
+        # which Pydantic v2 stows (un-serialisable) in error ctx; without this a 422 becomes a 500.
         return JSONResponse(
             status_code=422,
             content=_envelope(
-                request, "validation_error", "Request validation failed", exc.errors()
+                request, "validation_error", "Request validation failed",
+                jsonable_encoder(exc.errors()),
             ),
         )
 
