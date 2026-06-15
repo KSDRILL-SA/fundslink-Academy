@@ -18,8 +18,10 @@ from app.db import sql
 from app.db.cuid import cuid
 from app.db.repository import BaseRepository
 
-# Active = occupies the one-per-year slot (mirrors uq_app_active_per_year's NOT IN set).
-_TERMINAL = ("REJECTED_FINAL", "REJECTED", "WITHDRAWN", "APPROVED")
+# Note: the "one active application per academic year" rule (BR-E06 / D-004) is enforced by the
+# DB partial unique index uq_app_active_per_year (active = status NOT IN REJECTED_FINAL/REJECTED/
+# WITHDRAWN/COMPLETED — so APPROVED/SUSPENDED/REVOKED still block). create() surfaces its violation
+# as a friendly 409; the database is the single source of truth, not a duplicated constant here.
 
 
 class ApplicationRepository(BaseRepository):
