@@ -25,6 +25,9 @@ dependencies = [
     "email-validator>=2.1",
     # Multipart form parsing — required by the profile document-upload endpoint (S2.7 contract).
     "python-multipart>=0.0.9",
+    # MongoDB ODM for AI match reasoning (S5.18/S5.33) — the matching module's reasoning store.
+    # Models are defined here for the S5.3 store-isolation guard; a live Mongo is wired at deploy.
+    "beanie>=1.26",
 ]
 
 [project.optional-dependencies]
