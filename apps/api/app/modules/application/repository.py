@@ -159,11 +159,14 @@ class StatusEventRepository(BaseRepository):
         actor_user_id: str,
         note: str | None = None,
     ) -> None:
+        # created_at = clock_timestamp() (wall clock), NOT now() (transaction start): a single
+        # transaction can write several events (submit → pre-screen), and "latest event = cache"
+        # (DB-D24 / the integrity job) needs them strictly ordered, not tied at the txn timestamp.
         await sql.execute(
             self.session,
             "INSERT INTO application_status_event"
-            " (id, application_id, from_status, to_status, actor_user_id, note)"
-            " VALUES (:id, :app, :from, :to, :actor, :note)",
+            " (id, application_id, from_status, to_status, actor_user_id, note, created_at)"
+            " VALUES (:id, :app, :from, :to, :actor, :note, clock_timestamp())",
             id=cuid(),
             app=application_id,
             **{"from": from_status, "to": to_status},
