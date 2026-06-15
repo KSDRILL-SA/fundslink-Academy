@@ -1,10 +1,15 @@
-# FUNDSLINK ACADEMY — GOVERNANCE PATCHES v1.1
-## L4 rulings of 2026-06-12, to be applied to the `system-design-template` repo
+# FUNDSLINK ACADEMY — GOVERNANCE PATCHES v1.2
+## L4 rulings, applied to the `system-design-template` repo
 
-## Patch 1 — C5 Amendment (APPROVED): Immutable Ledger Standard
-Add to C5 (Database Constitution):
-> **S5.x (new) — Ledger Immutability.** Tables recording financial movements are append-only: the application role holds INSERT+SELECT only; UPDATE and DELETE are revoked and additionally blocked by trigger. Corrections are reversing entries referencing the original row. This standard applies to ledger, financial event, and audit tables in every KSDRILL system.
-*Origin: MASTER-SPEC v1.0 §16.2 · Proven in schema.sql (violation test passed).*
+> **2026-06-15 — Patches 1 & 6 RATIFIED + APPLIED.** Both committed to the governance template
+> (`system-design-template`) at commit `1db276f`, amendment issue **#8**, via the C0 §8 protocol
+> (24h sit satisfied, adversarial + cross-constitution review documented). Patch 1 → **C5 v1.1,
+> S5.65**; Patch 6 → **C10 v1.1, S10.37**.
+
+## Patch 1 — C5 Amendment (✅ RATIFIED + APPLIED 2026-06-15): Immutable Ledger Standard
+Added to C5 (Database Constitution) as **S5.65** (Part 9 — Financial Ledger Integrity), C5 v1.1:
+> **S5.65 — Ledger Immutability.** Tables recording financial movements are append-only: the application role holds INSERT+SELECT only; UPDATE and DELETE are revoked and additionally blocked by trigger. Corrections are reversing entries referencing the original row. Ledgers are exempt from S5.8 soft-delete (a `deleted_at` stamp is itself an UPDATE). This standard applies to ledger, financial event, and audit tables in every KSDRILL system.
+*Origin: MASTER-SPEC v1.0 §16.2 · Proven in schema.sql (violation test passed) · Applied: template commit `1db276f`, issue #8.*
 
 ## Patch 2 — fundslink-context.md: ADR-004 REJECTED (no deviation recorded)
 ~~Append under "Approved Deviations":~~ **Rescinded.** No deviation is recorded; the locked
@@ -17,8 +22,16 @@ Append: the system's authoritative documents are Documentation Suite v1.1 — ma
 ## Patch 4 — Runbook stubs registered (to be written before v1.5/v2)
 `runbooks/disbursement-runbook.md` (25th critical window — MASTER-SPEC §19.4) and `runbooks/jwt-key-rotation-runbook.md` (ST-2.9). Tracked as Manifest item 14.
 
-**Applied by:** Founder via Claude Code in the repo. **Sign-off:** _____________ Maluleke Kurhula Success (L4)
+**Applied by:** Founder (L4) in the repo. **Sign-off:** Maluleke Kurhula Success (L4) — 2026-06-12 (Patches 1–5), 2026-06-15 (Patches 1 & 6 ratified + applied to template).
 
 
 ## Patch 5 — DB-D21 Amendment (APPROVED): Third Trigger Class
 DB-D21 ("triggers enforce physics, not business") gains a third approved class: **value-guards on append-only inserts that enforce constitutional principles** — currently exactly one: `fn_human_final` (SYSTEM principal barred from APPROVED/REJECTED/REJECTED_FINAL transitions — MASTER-SPEC v1.1 §5.8). Rationale: the Human-Final Principle is a constitutional invariant, not business workflow; defense-in-depth at the DB layer is warranted. Proven by violation test 2026-06-12.
+
+
+## Patch 6 — C10 Amendment (✅ RATIFIED + APPLIED 2026-06-15): Post-Phase Adversarial Verification
+Added to C10 (AI Collaboration) as **S10.37** (Part 7 — Relay Handoff Verification), C10 v1.1:
+> **S10.37 — Post-Phase Adversarial Verification Before Handoff.** Before delivering the S10.6 handoff, the engineer verifies the completed phase against the system's stress-test/red-team audit (`ST-x`) and scenario-and-decision log (`D-NNN`), recording in the handoff report the ids satisfied (and any deferred, with reason). An unverified handoff is incomplete and is not accepted at the S10.6 gate. Generic — applies to every KSDRILL system.
+*Origin: FundsLink Stage-02 hardening caught 7 ST-2 gaps that the green test suite had passed · Cross-refs S10.6, S10.27, C7 · Applied: template commit `1db276f`, issue #8.*
+
+This is the standing rule already wired into FundsLink's own docs: see CONSTITUTION-INDEX "Post-phase verification", the S01→S02 and S02→S03 handoffs, and the system-context. `docs/audits/stress-test-audit.md` (ST-1…6) + `docs/product/scenarios-and-decisions.md` (D-NNN) are the registers every phase is checked against.
