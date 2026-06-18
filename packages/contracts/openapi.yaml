@@ -542,6 +542,29 @@ components:
         application_type: { type: string, enum: [POSTGRAD, UG_CAT_A, UG_CAT_B, UG_CAT_C, OTHER] }
         academic_year: { type: string }
         requested_amount: { type: string, description: Decimal string ZAR — never float (DB-D29) }
+        household_income_band:
+          type: string
+          enum: [SASSA_GRANT, LTE_350K, MISSING_MIDDLE_350_600K, GT_600K, PREFER_NOT_TO_SAY]
+          description: >-
+            Self-declared household income band (D-016/D-017). NOT a means-test — the engine only
+            annotates the band; a human verifies and decides (§5.7). Bands mirror the national
+            NSFAS line (≤R350k) and missing-middle ceiling (R350k–R600k).
+        nsfas_decline_reason:
+          type: string
+          enum: [MEANS_INCOME, DOCUMENTATION, ADMINISTRATIVE, ACADEMIC_NPLUS, OTHER]
+          description: >-
+            Reason read off the required NSFAS outcome letter for UG_CAT_C — replaces §5.4's
+            ambiguous "various reasons" (D-016). MEANS_INCOME → human declines with a kind NSFAS /
+            missing-middle redirect; documentation/administrative → genuine crack → eligible.
+        prior_funder:
+          type: string
+          enum: [NSFAS, OTHER_BURSARY, SELF, NONE]
+          description: >-
+            Who funded the student before (D-016). OTHER_BURSARY + still NSFAS-eligible → reviewer
+            redirects to NSFAS first.
+        defunded_by:
+          type: string
+          description: Free-text — which funder dropped the student, if any (D-016).
         motivation:
           type: object
           description: REQUIRED when application_type=OTHER (MASTER-SPEC §5.6, BR-E05)
@@ -566,6 +589,13 @@ components:
               properties:
                 outcome: { type: string, enum: [READY, RETURNED, UNSCREENED] }
                 fix_list: { type: array, items: { type: string } }
+                annotations:
+                  type: array
+                  items: { type: string }
+                  description: >-
+                    Advisory review flags for the human (D-016/D-017) — e.g. income above the
+                    postgrad ceiling, NSFAS-declined-for-income, still-NSFAS-eligible redirect.
+                    Never an auto-decision (§5.7, D-010).
                 cycle_no: { type: integer }
             created_at: { type: string, format: date-time }
 
