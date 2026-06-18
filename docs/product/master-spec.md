@@ -1,7 +1,8 @@
 # ⭐ FUNDSLINK ACADEMY — MASTER SPECIFICATION ⭐
 # THE MAIN DOCUMENT — ALL OTHER SUITE DOCUMENTS DERIVE FROM THIS ONE
 
-## Version 1.1 (MASTER, LOCKED) | Date: 2026
+## Version 1.2 (MASTER, LOCKED) | Date: 2026
+## v1.2: Eligibility-policy hardening — NSFAS-eligibility signal for UG Category C (decline-reason, not "various reasons"), postgrad income requirement, prior-funder redirect (§4.1, §5.1, §5.4; D-016/D-017/D-018). Founder-approved (L4) 2026-06-18 per C0 §8.
 ## v1.1: Smart Pre-Screening Engine + Category D (Other Reasons) + Human-Final Principle + Edge-Case Register (§5.6–§5.8, §14.6)
 ## Founder: Maluleke Kurhula Success – NWU, Final Year
 ## Lineage: supersedes business-spec generations v1–v3 and normalized draft v4.0
@@ -13,7 +14,7 @@
 
 | Attribute | Value |
 |-----------|-------|
-| Version | 1.1 (MASTER) |
+| Version | 1.2 (MASTER) |
 | Status | LOCKED — the main document of Documentation Suite v1.0; supersedes all prior spec generations |
 | Governance alignment | `system-design-template` C0–C10, ADR-001, `fundslink-context.md` |
 | Normalization basis | Principal Architect Adversarial Review (Findings 0–11) + Founder Decision Sheet D1–D12 |
@@ -196,6 +197,26 @@ The v3.0 business spec described the complete vision as if all of it were the MV
 | PhD | Accepted into programme |
 | Postgraduate Diploma | Accepted into programme |
 
+### Income Eligibility (NEW in v1.2 — D-017)
+
+Acceptance alone is not enough. Because **no** public rail (NSFAS bursary, missing-middle loan)
+reaches postgraduate level, a self-funding higher-income student and a destitute one arrive
+indistinguishable — and a finite pool spent on the former is stolen from the latter. Postgrad
+therefore carries its **own** income line:
+
+- A **hard household-income ceiling** (configuration, not code — recommended **R600,000/yr**, the
+  top of the national "missing middle"; raised for students with disabilities, mirroring NSFAS).
+  Above the ceiling → redirected to NRF / commercial funders, never funded by FundsLink.
+- **Below** the ceiling, need is a **prioritiser, not a second gate**: SASSA / ≤ R350k applicants
+  are floated to the top of any capacity-limited pool via need-severity ordering (E4, §16) —
+  nobody below the ceiling is silently rejected.
+- Evidence is `PROOF_OF_INCOME` (or a SASSA confirmation). The Pre-Screening Engine checks the
+  document is **present** and annotates the declared band; a **human** verifies the figure against
+  the ceiling and decides (§5.7 — the machine never judges income).
+
+> *This does not narrow the postgrad-first mission — it sharpens it, by naming which postgraduate
+> students are the underserved ones we exist for.*
+
 ### Funding Conditions
 
 - Maintain **65% average overall** to continue
@@ -233,7 +254,7 @@ The v3.0 business spec described the complete vision as if all of it were the MV
 
 | Student Type | Funding Duration | Monthly Allowance | Success Requirement | After Funding |
 |--------------|------------------|-------------------|---------------------|----------------|
-| **Postgraduate (Honours+)** | Continuous | R1,000 (paid to institution) | 65% average | Continue funding |
+| **Postgraduate (Honours+)** | Continuous | R1,000 (paid to institution) | 65% average + income ≤ ceiling (D-017) | Continue funding |
 | **Undergrad – Failed (NSFAS paused)** | 1 year + redirection support | R1,000 (paid to institution) | Improve performance | Recommended back to NSFAS |
 | **Undergrad – NSFAS unable to pay** | One-time debt payment | R1,000 (paid to institution) | N/A | Graduate or continue |
 | **Undergrad – Never qualified** | 1 year | R1,000 (paid to institution) | Good performance | Recommended to NSFAS |
@@ -278,7 +299,21 @@ The v3.0 business spec described the complete vision as if all of it were the MV
 - Did not meet criteria or documentation requirements
 - Student has potential but needs a chance to prove it
 
-**The FundsLink Solution:**
+**"Various reasons" is not a blank cheque (clarified in v1.2 — D-016).** A NSFAS decline has a
+*reason*, and the reason decides eligibility — because **FundsLink does not oppose NSFAS** (§1.7).
+We read the reason off the NSFAS outcome letter Category C already requires (a bounded
+`nsfas_decline_reason`, never a free-text "various"):
+
+| NSFAS decline reason | FundsLink stance |
+|----------------------|------------------|
+| `MEANS_INCOME` — household assessed **above** the funding line | **Not eligible.** Funding here would undo NSFAS's own means decision. Decline with a kind missing-middle / NSFAS redirect. |
+| `DOCUMENTATION` / `ADMINISTRATIVE` — paperwork, timelines, capture errors | **Genuine crack → eligible.** This is precisely the gap FundsLink exists to catch. |
+| `ACADEMIC_NPLUS` — N+ rule / progression | Reviewer may re-classify toward Category A. |
+
+The Pre-Screening Engine only **annotates** the reason for the reviewer (§5.7); a **human** confirms
+it against the letter and decides. The income gate is enforced *at human review*, never by machine.
+
+**The FundsLink Solution (for the eligible reasons above):**
 - FundsLink funds student for ONE YEAR
 - Student proves academic ability
 - After one year of good performance → Recommended to NSFAS
