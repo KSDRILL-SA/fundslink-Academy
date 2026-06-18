@@ -54,6 +54,25 @@ export `ALEMBIC_DATABASE_URL`/`DATABASE_URL`, run the gates, stop + delete the c
 
 **Standards satisfied:** S2.7, S2.19, S2.23, S3.21–S3.23, S3.33, S4.79, S5.3, S5.21, S5.28, S5.33, S5.45, S7.1, S7.15, S7.25, S8.51, BR-A03/A04, BR-S01–S08, BR-E01–E07, BR-M01–M04, BR-N01–N03, BR-T01–T06, D-001/D-004/D-006/D-010/D-011/D-014.
 
+## 2b. Post-G3 — eligibility-policy pass (2026-06-18, Founder-approved L4)
+Between G3 and the Stage-03 hardening pass, a Founder-directed **eligibility-policy** correction
+landed (4 PRs, all CI-green). It closes the income/means gap **without building a means-test** —
+we read the decision NSFAS already made (§1.7); the engine annotates, a human decides (§5.7, D-010).
+
+| PR | Brings |
+|----|--------|
+| #114 | Rulings D-016 (UG NSFAS-eligibility signal) · D-017 (postgrad income ceiling + need-prioritisation) · D-018 (exit-debt edges stay OTHER); scenarios S-8/S-9; **master-spec v1.1→v1.2** (§4.1/§5.1/§5.4); PARKED institutional data feed + **ADR-0006** stub (Engineer 01) |
+| #116 | Contract (S2.7): `household_income_band`, `nsfas_decline_reason`, `prior_funder`, `defunded_by` + `pre_screen.annotations` |
+| #118 | Migration **0016** — lookups `lk_income_band`/`lk_nsfas_decline_reason`/`lk_prior_funder` + 4 cols on `funding_application` (inherit 0007 RLS; new lookups read-only via the 0014 pattern) |
+| #120 | Migration **0017** rulesets v2 (`ers_ug_cat_c_v2`/`ers_postgrad_v2`) + the engine `field_flag` annotation check + service wiring + 7 unit tests |
+
+**Net:** migrations now `0001→0017`; UG Cat C reads a bounded `nsfas_decline_reason` (replaces §5.4
+"various reasons"); postgrad requires `PROOF_OF_INCOME` + a config income ceiling (`GT_600K`); the
+`field_flag` check (severity `review_flag`) only annotates — never returns/rejects. Rulesets are
+versioned, so in-flight applications keep v1. Full record: `docs/product/scenarios-and-decisions.md`
+(D-016/017/018). **Build-host note:** local PG exes won't launch (Windows UCRT) — the migration
+roundtrip + full pytest were proven in CI (`postgres:16`), not locally.
+
 ## 2a. How this engineer worked — mirror this discipline
 - **"Done" = command output.** Every gate above was re-run from a clean tree and pasted.
 - **Issue → branch → linked PR (`Closes #N`) → documented self-review (S10.27) → squash-merge → delete branch.** One module per PR.
