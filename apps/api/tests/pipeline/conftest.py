@@ -57,7 +57,9 @@ def register_student(client) -> tuple[str, str]:
         f"{BASE}/students/me/profile",
         headers=bearer(token),
         json={"first_name": "Kabelo", "last_name": "Mahlangu", "level": "UG",
-              "field_of_study": "Computer Science"},
+              "field_of_study": "Computer Science",
+              # D-007: SUBMIT requires a SA ID on file (unique blind index, BR-A04).
+              "id_number": f"{uuid.uuid4().int % 10**13:013d}"},
     )
     return token, decode_access_token(token)["sub"]
 
