@@ -71,6 +71,7 @@ class ApplicationService:
             pre_screen = PreScreen(
                 outcome=latest[0],
                 fix_list=checks.get("fix_list", []) if isinstance(checks, dict) else [],
+                annotations=checks.get("annotations", []) if isinstance(checks, dict) else [],
                 cycle_no=checks.get("cycle_no") if isinstance(checks, dict) else None,
             )
         return Application(
@@ -110,6 +111,14 @@ class ApplicationService:
             application_type=data.application_type.value,
             academic_year=data.academic_year,
             requested_amount=amount,
+            household_income_band=(
+                data.household_income_band.value if data.household_income_band else None
+            ),
+            nsfas_decline_reason=(
+                data.nsfas_decline_reason.value if data.nsfas_decline_reason else None
+            ),
+            prior_funder=data.prior_funder.value if data.prior_funder else None,
+            defunded_by=data.defunded_by,
         )
         if data.application_type.value == "OTHER" and data.motivation is not None:
             await self.motivations.insert(

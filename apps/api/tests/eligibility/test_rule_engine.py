@@ -57,3 +57,79 @@ def test_motivation_present_check():
 
 def test_empty_ruleset_is_ready():
     assert evaluate({}, Facts(frozenset(), has_motivation=False)).outcome == READY
+
+
+# --------- field_flag annotation checks (D-016 / D-017) — income is annotated, never judged ------
+
+
+def _flag(**check):
+    base = {"id": "f", "type": "field_flag", "severity": "review_flag", "label": "flag fired"}
+    base.update(check)
+    return {"checks": [base]}
+
+
+def _facts(**fields):
+    return Facts(frozenset(), has_motivation=False, fields=fields)
+
+
+def test_field_flag_fires_as_annotation_not_a_return():
+    """An income/decline flag surfaces to the human — it NEVER returns or rejects (§5.7, D-010)."""
+    rules = _flag(field="household_income_band", flag_values=["GT_600K"])
+    out = evaluate(rules, _facts(household_income_band="GT_600K"))
+    assert out.outcome == READY
+    assert out.fix_list == []
+    assert "flag fired" in out.annotations
+
+
+def test_field_flag_silent_when_value_not_flagged():
+    rules = _flag(field="household_income_band", flag_values=["GT_600K"])
+    out = evaluate(rules, _facts(household_income_band="LTE_350K"))
+    assert out.outcome == READY
+    assert out.annotations == []
+
+
+def test_field_flag_missing_field_is_silent():
+    rules = _flag(field="household_income_band", flag_values=["GT_600K"])
+    assert evaluate(rules, _facts()).annotations == []
+
+
+def test_field_flag_compound_also_condition():
+    """D-016 redirect: private bursary dropped AND still NSFAS-eligible (≤ R350k)."""
+    rules = _flag(
+        field="prior_funder",
+        flag_values=["OTHER_BURSARY"],
+        also=[{"field": "household_income_band", "in": ["SASSA_GRANT", "LTE_350K"]}],
+    )
+    fires = _facts(prior_funder="OTHER_BURSARY", household_income_band="LTE_350K")
+    assert "flag fired" in evaluate(rules, fires).annotations
+    # same prior funder but income above the line → the `also` condition fails → silent.
+    silent = _facts(prior_funder="OTHER_BURSARY", household_income_band="GT_600K")
+    assert evaluate(rules, silent).annotations == []
+
+
+def test_nsfas_means_income_is_an_annotation():
+    rules = _flag(field="nsfas_decline_reason", flag_values=["MEANS_INCOME"])
+    out = evaluate(rules, _facts(nsfas_decline_reason="MEANS_INCOME"))
+    assert out.outcome == READY
+    assert "flag fired" in out.annotations
+
+
+def test_required_doc_and_income_flag_coexist():
+    """Postgrad shape (D-017): missing income proof RETURNS; the ceiling flag still shows."""
+    rules = {
+        "checks": [
+            {"id": "acc", "type": "document_present", "doc_type": "ACCEPTANCE_LETTER",
+             "severity": "required", "label": "Acceptance letter present"},
+            {"id": "inc", "type": "document_present", "doc_type": "PROOF_OF_INCOME",
+             "severity": "required", "label": "Proof of income present"},
+            {"id": "ceil", "type": "field_flag", "field": "household_income_band",
+             "flag_values": ["GT_600K"], "severity": "review_flag",
+             "label": "income above ceiling"},
+        ]
+    }
+    facts = Facts(frozenset({"ACCEPTANCE_LETTER"}), has_motivation=False,
+                  fields={"household_income_band": "GT_600K"})
+    out = evaluate(rules, facts)
+    assert out.outcome == RETURNED  # missing required income proof
+    assert "Proof of income present" in out.fix_list
+    assert "income above ceiling" in out.annotations  # flag still surfaced for the human

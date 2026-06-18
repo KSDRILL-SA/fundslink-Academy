@@ -32,6 +32,33 @@ class ReviewDecision(StrEnum):
     REJECTED = "REJECTED"
 
 
+class IncomeBand(StrEnum):
+    """Self-declared household income band (D-016/D-017) — mirrors the national funding line."""
+
+    SASSA_GRANT = "SASSA_GRANT"
+    LTE_350K = "LTE_350K"
+    MISSING_MIDDLE_350_600K = "MISSING_MIDDLE_350_600K"
+    GT_600K = "GT_600K"
+    PREFER_NOT_TO_SAY = "PREFER_NOT_TO_SAY"
+
+
+class NsfasDeclineReason(StrEnum):
+    """Reason read off the required NSFAS outcome letter for UG_CAT_C (D-016) — bounds §5.4."""
+
+    MEANS_INCOME = "MEANS_INCOME"
+    DOCUMENTATION = "DOCUMENTATION"
+    ADMINISTRATIVE = "ADMINISTRATIVE"
+    ACADEMIC_NPLUS = "ACADEMIC_NPLUS"
+    OTHER = "OTHER"
+
+
+class PriorFunder(StrEnum):
+    NSFAS = "NSFAS"
+    OTHER_BURSARY = "OTHER_BURSARY"
+    SELF = "SELF"
+    NONE = "NONE"
+
+
 class Motivation(BaseModel):
     situation: str = Field(min_length=1, max_length=4000)
     why_not_categories: str = Field(min_length=1, max_length=4000)
@@ -43,6 +70,12 @@ class ApplicationInput(BaseModel):
     application_type: ApplicationType
     academic_year: str = Field(min_length=4, max_length=9)
     requested_amount: str | None = Field(default=None, description="Decimal ZAR string (DB-D29)")
+    # Self-declared eligibility signals (D-016/D-017). Optional at the boundary; the ruleset +
+    # human reviewer apply them — the engine only annotates, never rejects (§5.7).
+    household_income_band: IncomeBand | None = None
+    nsfas_decline_reason: NsfasDeclineReason | None = None
+    prior_funder: PriorFunder | None = None
+    defunded_by: str | None = Field(default=None, max_length=200)
     motivation: Motivation | None = None
 
     @field_validator("requested_amount")
@@ -68,6 +101,7 @@ class ApplicationInput(BaseModel):
 class PreScreen(BaseModel):
     outcome: str | None = None
     fix_list: list[str] = Field(default_factory=list)
+    annotations: list[str] = Field(default_factory=list)  # advisory review flags (D-016/D-017)
     cycle_no: int | None = None
 
 

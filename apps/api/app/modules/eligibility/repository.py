@@ -51,6 +51,23 @@ class FactsRepository(BaseRepository):
         )
         return row is not None
 
+    async def declaration_fields(self, application_id: str) -> dict[str, str | None]:
+        """Self-declared signals the engine ANNOTATES on (D-016/D-017); migration 0016 columns."""
+        row = await sql.fetch_one(
+            self.session,
+            "SELECT household_income_band, nsfas_decline_reason, prior_funder, defunded_by"
+            " FROM funding_application WHERE id = :app",
+            app=application_id,
+        )
+        if row is None:
+            return {}
+        return {
+            "household_income_band": row[0],
+            "nsfas_decline_reason": row[1],
+            "prior_funder": row[2],
+            "defunded_by": row[3],
+        }
+
 
 class PreScreenResultRepository(BaseRepository):
     async def insert(
