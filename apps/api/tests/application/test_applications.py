@@ -139,6 +139,18 @@ def test_list_my_applications_returns_only_mine(app_client):
     assert b_list["items"] == []
 
 
+def test_list_uses_summary_projection_detail_on_single_get_st_3_7(app_client):
+    """ST-3.7: list rows carry the status signal, not per-row pre-screen detail (no N+1)."""
+    token, _ = student_with_profile(app_client)
+    app = create_application(app_client, token)
+    app_client.post(f"{APPS}/{app['id']}/submit", headers=bearer(token))  # writes a pre_screen
+    listed = app_client.get(APPS, headers=bearer(token)).json()["items"][0]
+    assert listed["status"] == "RETURNED_FOR_INFO"  # the actionable signal is on the row itself
+    assert listed.get("pre_screen") is None  # detail is NOT re-fetched per row
+    detail = app_client.get(f"{APPS}/{app['id']}", headers=bearer(token)).json()
+    assert detail["pre_screen"]["outcome"] == "RETURNED"  # full report on the detail view
+
+
 def test_cannot_read_another_users_application_st_2_3(app_client):
     a_token, _ = student_with_profile(app_client)
     b_token, _ = student_with_profile(app_client)
