@@ -57,6 +57,7 @@ class ApplicationRepository(BaseRepository):
         nsfas_decline_reason: str | None = None,
         prior_funder: str | None = None,
         defunded_by: str | None = None,
+        needed_by=None,
     ) -> str:
         app_id = cuid()
         try:
@@ -65,9 +66,9 @@ class ApplicationRepository(BaseRepository):
                 "INSERT INTO funding_application"
                 " (id, student_profile_id, application_type, academic_year, requested_amount,"
                 "  household_income_band, nsfas_decline_reason, prior_funder, defunded_by,"
-                "  created_by)"
+                "  needed_by, created_by)"
                 " VALUES (:id, :sp, :type, :year, :amount,"
-                "  :income_band, :decline_reason, :prior_funder, :defunded_by, :sp)",
+                "  :income_band, :decline_reason, :prior_funder, :defunded_by, :needed_by, :sp)",
                 id=app_id,
                 sp=student_profile_id,
                 type=application_type,
@@ -77,6 +78,7 @@ class ApplicationRepository(BaseRepository):
                 decline_reason=nsfas_decline_reason,
                 prior_funder=prior_funder,
                 defunded_by=defunded_by,
+                needed_by=needed_by,
             )
         except IntegrityError as exc:
             # uq_app_active_per_year — already one active application this academic year (BR-E06).
@@ -127,7 +129,17 @@ class ApplicationRepository(BaseRepository):
         return await sql.fetch_one(
             self.session,
             "SELECT id, application_type, academic_year, requested_amount, status, currency,"
-            " created_at FROM funding_application WHERE id = :id AND deleted_at IS NULL",
+            " created_at, priority, needed_by FROM funding_application"
+            " WHERE id = :id AND deleted_at IS NULL",
+            id=application_id,
+        )
+
+    async def set_priority(self, application_id: str, priority: str) -> None:
+        """Set triage rank (D-002/D-013). Caller is staff (reviewer ctx); RLS admits the write."""
+        await sql.execute(
+            self.session,
+            "UPDATE funding_application SET priority = :p WHERE id = :id",
+            p=priority,
             id=application_id,
         )
 
@@ -154,7 +166,7 @@ class ApplicationRepository(BaseRepository):
         rows = await sql.fetch_all(
             self.session,
             "SELECT id, application_type, academic_year, requested_amount, status, currency,"
-            f" created_at FROM funding_application WHERE {where}"
+            f" created_at, priority, needed_by FROM funding_application WHERE {where}"
             " ORDER BY created_at DESC, id DESC LIMIT :limit",
             limit=limit + 1,
             **params,

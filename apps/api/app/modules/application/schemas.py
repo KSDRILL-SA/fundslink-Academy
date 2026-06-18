@@ -8,7 +8,7 @@ is a clean 422, not a downstream surprise.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 
@@ -21,6 +21,14 @@ class ApplicationType(StrEnum):
     UG_CAT_B = "UG_CAT_B"
     UG_CAT_C = "UG_CAT_C"
     OTHER = "OTHER"
+
+
+class Priority(StrEnum):
+    """Triage rank (D-002/D-013) — only ADMIN_REVIEWER+ may raise above NORMAL (anti-gaming)."""
+
+    NORMAL = "NORMAL"
+    URGENT = "URGENT"
+    CRITICAL = "CRITICAL"
 
 
 class ReviewDecision(StrEnum):
@@ -76,6 +84,7 @@ class ApplicationInput(BaseModel):
     nsfas_decline_reason: NsfasDeclineReason | None = None
     prior_funder: PriorFunder | None = None
     defunded_by: str | None = Field(default=None, max_length=200)
+    needed_by: date | None = None  # student's urgency *request* (D-002/D-013); not a priority set
     motivation: Motivation | None = None
 
     @field_validator("requested_amount")
@@ -111,6 +120,8 @@ class Application(BaseModel):
     academic_year: str
     requested_amount: str | None = None
     status: str
+    priority: str = "NORMAL"
+    needed_by: date | None = None
     currency: str = "ZAR"
     motivation: Motivation | None = None
     pre_screen: PreScreen | None = None
@@ -128,6 +139,13 @@ class ApplicationPage(BaseModel):
 
 class AppealRequest(BaseModel):
     new_information: str = Field(min_length=20)
+
+
+class PriorityRequest(BaseModel):
+    """Admin sets triage priority (D-002/D-013) — ADMIN_REVIEWER+ only, audit-logged."""
+
+    priority: Priority
+    note: str | None = Field(default=None, max_length=4000)
 
 
 class ReviewRequest(BaseModel):
