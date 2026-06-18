@@ -37,6 +37,21 @@ def test_submit_missing_document_is_returned_with_fix_list(elig_client):
     assert body["pre_screen"]["cycle_no"] == 1
 
 
+def test_expired_required_document_is_returned_not_rejected_d005(elig_client, admin_conn):
+    """D-005 / BR-E10: a document that lapsed while waiting → RETURN with a kind 'expired' fix."""
+    token, uid = student_with_profile(elig_client)
+    upload_doc(elig_client, token, "NSFAS_OUTCOME")
+    admin_conn.execute(
+        "UPDATE document SET valid_until = current_date - 1"
+        " WHERE student_profile_id = %s AND doc_type = 'NSFAS_OUTCOME'",
+        (uid,),
+    )
+    app = create_app(elig_client, token)
+    body = submit(elig_client, token, app["id"]).json()
+    assert body["status"] == "RETURNED_FOR_INFO"  # a return, never a rejection
+    assert any("expired" in line for line in body["pre_screen"]["fix_list"])
+
+
 def test_resubmit_after_supplying_the_document_becomes_ready(elig_client):
     token, _ = student_with_profile(elig_client)
     app = create_app(elig_client, token)

@@ -23,11 +23,14 @@ RETURNED = "RETURNED"
 class Facts:
     """What the engine knows about an application at screen time."""
 
-    document_types: frozenset[str]
+    document_types: frozenset[str]  # types present AND still valid (non-expired)
     has_motivation: bool
     # Self-declared application fields the engine may *annotate* on (D-016/D-017): income band,
     # NSFAS decline reason, prior funder. Never a gate — only fuels review_flag annotations.
     fields: Mapping[str, str | None] = field(default_factory=dict)
+    # Types the student uploaded but which have EXPIRED (valid_until past). Used only to make a
+    # RETURN's fix-list kind — "expired, re-upload" vs a bare "missing" (D-005 / BR-E10).
+    expired_document_types: frozenset[str] = frozenset()
 
 
 @dataclass
@@ -58,6 +61,15 @@ def _check_passes(check: dict, facts: Facts) -> bool | None:
     return None  # unknown check type — never block the student on engine confusion
 
 
+def _fix_label(check: dict, label: str, facts: Facts) -> str:
+    """A kind fix-list line: if a required document is on file but EXPIRED, say so (D-005)."""
+    if check.get("type") == "document_present" and check.get("doc_type") in (
+        facts.expired_document_types
+    ):
+        return f"{label} — the document on file has expired; please upload a current one"
+    return label
+
+
 def evaluate(rules: dict, facts: Facts) -> PreScreenOutcome:
     """Evaluate a ruleset's checks against the facts. Required failures → fix-list (→ RETURNED)."""
     out = PreScreenOutcome(outcome=READY)
@@ -70,7 +82,7 @@ def evaluate(rules: dict, facts: Facts) -> PreScreenOutcome:
         )
         if passed is False:
             if severity == "required":
-                out.fix_list.append(label)
+                out.fix_list.append(_fix_label(check, label, facts))
             else:
                 out.annotations.append(label)  # advisory discrepancy — never an auto-failure
     if out.fix_list:
