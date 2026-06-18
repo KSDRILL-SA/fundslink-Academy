@@ -114,6 +114,23 @@ def test_nsfas_means_income_is_an_annotation():
     assert "flag fired" in out.annotations
 
 
+def test_expired_required_document_returns_with_a_kind_expiry_message():
+    """D-005 / BR-E10: an expired doc isn't 'present' → RETURN (not reject); fix says expired."""
+    rules = _doc_check()  # requires NSFAS_OUTCOME present
+    facts = Facts(frozenset(), has_motivation=False,
+                  expired_document_types=frozenset({"NSFAS_OUTCOME"}))
+    out = evaluate(rules, facts)
+    assert out.outcome == RETURNED
+    assert any("expired" in line for line in out.fix_list)  # kind: "expired; upload a current one"
+
+
+def test_valid_copy_overrides_an_expired_one():
+    """A fresh, valid document present → READY even if an older expired copy also exists."""
+    facts = Facts(frozenset({"NSFAS_OUTCOME"}), has_motivation=False,
+                  expired_document_types=frozenset({"NSFAS_OUTCOME"}))
+    assert evaluate(_doc_check(), facts).outcome == READY
+
+
 def test_required_doc_and_income_flag_coexist():
     """Postgrad shape (D-017): missing income proof RETURNS; the ceiling flag still shows."""
     rules = {

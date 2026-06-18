@@ -35,10 +35,26 @@ class RulesetRepository(BaseRepository):
 
 class FactsRepository(BaseRepository):
     async def document_types(self, owner_id: str) -> frozenset[str]:
+        """Types present AND still valid — an EXPIRED doc no longer counts as 'present' so the
+
+        required-doc check fails into the fix-list → RETURNED, never a rejection (D-005 / BR-E10).
+        """
         rows = await sql.fetch_all(
             self.session,
             "SELECT DISTINCT doc_type FROM document"
-            " WHERE student_profile_id = :owner AND deleted_at IS NULL AND av_status <> 'INFECTED'",
+            " WHERE student_profile_id = :owner AND deleted_at IS NULL AND av_status <> 'INFECTED'"
+            " AND (valid_until IS NULL OR valid_until >= current_date)",
+            owner=owner_id,
+        )
+        return frozenset(r[0] for r in rows)
+
+    async def expired_document_types(self, owner_id: str) -> frozenset[str]:
+        """Types the student uploaded that have lapsed (valid_until past) — for a kind fix-list."""
+        rows = await sql.fetch_all(
+            self.session,
+            "SELECT DISTINCT doc_type FROM document"
+            " WHERE student_profile_id = :owner AND deleted_at IS NULL AND av_status <> 'INFECTED'"
+            " AND valid_until IS NOT NULL AND valid_until < current_date",
             owner=owner_id,
         )
         return frozenset(r[0] for r in rows)
