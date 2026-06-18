@@ -99,6 +99,15 @@ def test_submit_advances_through_the_state_machine_br_s04(app_client):
     assert resp.json()["status"] == "RETURNED_FOR_INFO"
 
 
+def test_submit_requires_sa_id_on_file_d007(app_client):
+    """D-007: registration stays frictionless; SUBMIT needs the SA ID that anchors dup-detection."""
+    token, _ = student_with_profile(app_client, with_sa_id=False)
+    app = create_application(app_client, token)
+    resp = app_client.post(f"{APPS}/{app['id']}/submit", headers=bearer(token))
+    assert resp.status_code == 409
+    assert resp.json()["error"]["code"] == "sa_id_required"
+
+
 def test_submit_enqueues_outbox_in_same_transaction_br_n01(app_client, admin_conn):
     token, uid = student_with_profile(app_client)
     app = create_application(app_client, token)

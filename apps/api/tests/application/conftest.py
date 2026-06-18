@@ -59,18 +59,19 @@ def register_student(client) -> tuple[str, str]:
     return token, decode_access_token(token)["sub"]
 
 
-def student_with_profile(client) -> tuple[str, str]:
+def student_with_profile(client, *, with_sa_id: bool = True) -> tuple[str, str]:
     token, uid = register_student(client)
-    resp = client.put(
-        f"{BASE}/students/me/profile",
-        headers=bearer(token),
-        json={
-            "first_name": "Lebo",
-            "last_name": "Dlamini",
-            "level": "UG",
-            "field_of_study": "BEng Civil",
-        },
-    )
+    body = {
+        "first_name": "Lebo",
+        "last_name": "Dlamini",
+        "level": "UG",
+        "field_of_study": "BEng Civil",
+    }
+    if with_sa_id:
+        # A unique 13-digit SA ID per student — D-007 now requires one before SUBMIT, and the
+        # blind index is UNIQUE (BR-A04), so each fixture student needs a distinct number.
+        body["id_number"] = f"{uuid.uuid4().int % 10**13:013d}"
+    resp = client.put(f"{BASE}/students/me/profile", headers=bearer(token), json=body)
     assert resp.status_code == 200, resp.text
     return token, uid
 
