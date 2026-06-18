@@ -68,6 +68,7 @@ class EligibilityService:
             facts = Facts(
                 document_types=await self.facts.document_types(owner_id),
                 has_motivation=await self.facts.has_motivation(application_id),
+                fields=await self.facts.declaration_fields(application_id),
             )
             outcome = evaluate(rules, facts)
         except Exception as exc:  # engine degraded → UNSCREENED, never block the student (§5.7)

@@ -41,6 +41,10 @@ class ApplicationRepository(BaseRepository):
         application_type: str,
         academic_year: str,
         requested_amount: Decimal | None,
+        household_income_band: str | None = None,
+        nsfas_decline_reason: str | None = None,
+        prior_funder: str | None = None,
+        defunded_by: str | None = None,
     ) -> str:
         app_id = cuid()
         try:
@@ -48,13 +52,19 @@ class ApplicationRepository(BaseRepository):
                 self.session,
                 "INSERT INTO funding_application"
                 " (id, student_profile_id, application_type, academic_year, requested_amount,"
+                "  household_income_band, nsfas_decline_reason, prior_funder, defunded_by,"
                 "  created_by)"
-                " VALUES (:id, :sp, :type, :year, :amount, :sp)",
+                " VALUES (:id, :sp, :type, :year, :amount,"
+                "  :income_band, :decline_reason, :prior_funder, :defunded_by, :sp)",
                 id=app_id,
                 sp=student_profile_id,
                 type=application_type,
                 year=academic_year,
                 amount=requested_amount,
+                income_band=household_income_band,
+                decline_reason=nsfas_decline_reason,
+                prior_funder=prior_funder,
+                defunded_by=defunded_by,
             )
         except IntegrityError as exc:
             # uq_app_active_per_year — already one active application this academic year (BR-E06).

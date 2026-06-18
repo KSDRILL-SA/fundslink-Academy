@@ -12,6 +12,7 @@ whole policy unit-testable and keeps "engine down ⇒ UNSCREENED" a concern of t
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 READY = "READY"
@@ -24,6 +25,9 @@ class Facts:
 
     document_types: frozenset[str]
     has_motivation: bool
+    # Self-declared application fields the engine may *annotate* on (D-016/D-017): income band,
+    # NSFAS decline reason, prior funder. Never a gate — only fuels review_flag annotations.
+    fields: Mapping[str, str | None] = field(default_factory=dict)
 
 
 @dataclass
@@ -41,6 +45,16 @@ def _check_passes(check: dict, facts: Facts) -> bool | None:
         return check.get("doc_type") in facts.document_types
     if kind == "motivation_present":
         return facts.has_motivation
+    if kind == "field_flag":
+        # A config-driven ANNOTATION check (D-016/D-017): the flag "fires" when the field is in
+        # flag_values AND every optional `also` condition holds. A fired flag is modelled as
+        # passed=False so the existing annotation path surfaces it to the human — it NEVER joins
+        # the fix-list (these checks always carry a non-"required" severity, e.g. review_flag).
+        # No income/means JUDGEMENT happens here: we surface the declared band; the human decides.
+        fired = facts.fields.get(check.get("field")) in set(check.get("flag_values", []))
+        for cond in check.get("also", []):
+            fired = fired and facts.fields.get(cond.get("field")) in set(cond.get("in", []))
+        return not fired
     return None  # unknown check type — never block the student on engine confusion
 
 
