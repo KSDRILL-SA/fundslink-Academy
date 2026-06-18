@@ -352,6 +352,28 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { $ref: '#/components/responses/Conflict' }
 
+  /admin/applications/{id}/priority:
+    post:
+      operationId: adminSetPriority
+      summary: >-
+        Set triage priority — only ADMIN_REVIEWER+ may raise URGENT/CRITICAL (anti-gaming);
+        students request urgency via needed_by + motivation (D-002/D-013). Audit-logged.
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [priority]
+              properties:
+                priority: { type: string, enum: [NORMAL, URGENT, CRITICAL] }
+                note: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /notifications/me:
     get:
       operationId: listMyNotifications
@@ -565,6 +587,12 @@ components:
         defunded_by:
           type: string
           description: Free-text — which funder dropped the student, if any (D-016).
+        needed_by:
+          type: string
+          format: date
+          description: >-
+            "I need help by" — the student's urgency *request* (D-002/D-013). It does not set
+            priority (that is ADMIN_REVIEWER+ only, anti-gaming); it informs the reviewer.
         motivation:
           type: object
           description: REQUIRED when application_type=OTHER (MASTER-SPEC §5.6, BR-E05)
@@ -582,6 +610,7 @@ components:
           properties:
             id: { type: string }
             status: { type: string }
+            priority: { type: string, enum: [NORMAL, URGENT, CRITICAL], description: Triage rank (D-002/D-013) }
             currency: { type: string, const: ZAR }
             pre_screen:
               type: object

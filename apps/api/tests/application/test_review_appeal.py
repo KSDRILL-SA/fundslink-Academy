@@ -102,6 +102,31 @@ def test_cannot_appeal_an_application_that_was_not_rejected_br_s04(app_client, a
     assert resp.status_code == 409  # READY_FOR_REVIEW → APPEALED is not a legal transition
 
 
+def test_reviewer_can_set_priority_d013(app_client, admin_conn):
+    """D-002/D-013: ADMIN_REVIEWER+ raises triage priority; it surfaces on the application."""
+    _student, app_id = _ready_application(app_client, admin_conn)
+    rev_token, _ = make_reviewer(app_client, admin_conn)
+    resp = app_client.post(
+        f"{ADMIN}/{app_id}/priority",
+        headers=bearer(rev_token),
+        json={"priority": "CRITICAL", "note": "NSFAS defunding letter on file"},
+    )
+    assert resp.status_code == 200 and resp.json()["priority"] == "CRITICAL"
+    # and it persists on the next read
+    got = app_client.get(f"{APPS}/{app_id}", headers=bearer(_student)).json()
+    assert got["priority"] == "CRITICAL"
+
+
+def test_student_cannot_set_priority_anti_gaming_d013(app_client):
+    """A student cannot raise their own priority — that is the whole anti-gaming point (D-013)."""
+    token, _ = student_with_profile(app_client)
+    app = create_application(app_client, token)
+    resp = app_client.post(
+        f"{ADMIN}/{app['id']}/priority", headers=bearer(token), json={"priority": "CRITICAL"}
+    )
+    assert resp.status_code == 403
+
+
 def test_db_trigger_rejects_system_approval_br_e03(app_client, admin_conn):
     """The Human-Final backstop: the database itself refuses a SYSTEM-actor final decision."""
     _student, app_id = _ready_application(app_client, admin_conn)

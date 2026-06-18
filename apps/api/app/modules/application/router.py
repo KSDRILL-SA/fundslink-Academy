@@ -17,6 +17,7 @@ from app.modules.application.schemas import (
     Application,
     ApplicationInput,
     ApplicationPage,
+    PriorityRequest,
     ReviewRequest,
 )
 from app.modules.application.service import ApplicationService
@@ -115,6 +116,23 @@ async def admin_review(
         reviewer_id=current.id,
         application_id=id,
         decision=body.decision,
+        note=body.note,
+        request_id=get_request_id(request),
+    )
+
+
+@router.post("/admin/applications/{id}/priority", operation_id="adminSetPriority")
+async def admin_set_priority(
+    id: str,
+    body: PriorityRequest,
+    request: Request,
+    current: CurrentUser = Depends(require(Permission.APPLICATION_REVIEW)),
+    session=Depends(get_session),
+) -> Application:
+    return await ApplicationService(session).set_priority(
+        reviewer_id=current.id,
+        application_id=id,
+        priority=body.priority.value,
         note=body.note,
         request_id=get_request_id(request),
     )

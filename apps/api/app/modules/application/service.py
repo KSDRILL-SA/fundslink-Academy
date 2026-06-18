@@ -86,9 +86,11 @@ class ApplicationService:
             requested_amount=None if row[3] is None else str(row[3]),
             status=row[4],
             currency=row[5],
+            created_at=row[6],
+            priority=row[7],  # on the row — no extra query (kept out of the N+1, ST-3.7)
+            needed_by=row[8],
             motivation=motivation,
             pre_screen=pre_screen,
-            created_at=row[6],
         )
 
     async def _load_response(self, app_id: str, *, is_other: bool | None = None) -> Application:
@@ -124,6 +126,7 @@ class ApplicationService:
             ),
             prior_funder=data.prior_funder.value if data.prior_funder else None,
             defunded_by=data.defunded_by,
+            needed_by=data.needed_by,
         )
         if data.application_type.value == "OTHER" and data.motivation is not None:
             await self.motivations.insert(
@@ -239,6 +242,29 @@ class ApplicationService:
             status=status, limit=n, after=decode_cursor(cursor)
         )
         return await self._page(rows, n)
+
+    async def set_priority(
+        self,
+        *,
+        reviewer_id: str,
+        application_id: str,
+        priority: str,
+        note: str | None,
+        request_id: str,
+    ) -> Application:
+        """D-002/D-013: only ADMIN_REVIEWER+ raises priority (anti-gaming), under reviewer ctx."""
+        if await self.apps.owner_of(application_id) is None:
+            raise AppError("application_not_found", "Application not found", status_code=404)
+        await self.apps.set_priority(application_id, priority)
+        await self.audit.write(
+            actor_user_id=reviewer_id,
+            action="APPLICATION_PRIORITY_SET",
+            resource_type="funding_application",
+            resource_id=application_id,
+            request_id=request_id,
+            detail={"priority": priority, "note": note},
+        )
+        return await self._load_response(application_id)
 
     async def admin_review(
         self,
