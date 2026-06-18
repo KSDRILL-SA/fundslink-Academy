@@ -512,3 +512,24 @@ ALTER TABLE application_motivation ADD CONSTRAINT ck_motiv_language
 CREATE TRIGGER tg_doc_touch    BEFORE UPDATE ON document               FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 CREATE TRIGGER tg_np_touch     BEFORE UPDATE ON notification_preference FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
 CREATE TRIGGER tg_config_touch BEFORE UPDATE ON config                 FOR EACH ROW EXECUTE FUNCTION fn_touch_updated_at();
+
+-- ============================================================
+-- v1.2 ELIGIBILITY SIGNALS — migration 0016 (reference mirror)
+-- MASTER-SPEC v1.2 §4.1/§5.1/§5.4 | D-016 (UG NSFAS-eligibility) + D-017 (postgrad income).
+-- Self-declared signals the Pre-Screening Engine only ANNOTATES — a human decides (§5.7, D-010).
+-- Rand thresholds live in config / the versioned ruleset, never here (DB-D24).
+-- ============================================================
+CREATE TABLE lk_income_band (code text PRIMARY KEY, rank int NOT NULL);  -- rank = income ASC; need-severity (E4/§16)
+INSERT INTO lk_income_band(code, rank) VALUES
+  ('SASSA_GRANT',1),('LTE_350K',2),('MISSING_MIDDLE_350_600K',3),('GT_600K',4),('PREFER_NOT_TO_SAY',9);
+CREATE TABLE lk_nsfas_decline_reason (code text PRIMARY KEY);            -- MEANS_INCOME → decline+redirect (D-016)
+INSERT INTO lk_nsfas_decline_reason(code) VALUES
+  ('MEANS_INCOME'),('DOCUMENTATION'),('ADMINISTRATIVE'),('ACADEMIC_NPLUS'),('OTHER');
+CREATE TABLE lk_prior_funder (code text PRIMARY KEY);
+INSERT INTO lk_prior_funder(code) VALUES ('NSFAS'),('OTHER_BURSARY'),('SELF'),('NONE');
+ALTER TABLE funding_application
+  ADD COLUMN household_income_band text REFERENCES lk_income_band,
+  ADD COLUMN nsfas_decline_reason  text REFERENCES lk_nsfas_decline_reason,
+  ADD COLUMN prior_funder          text REFERENCES lk_prior_funder,
+  ADD COLUMN defunded_by           text;
+-- least-privilege: REVOKE INSERT,UPDATE ON the 3 new lk_ tables FROM fundslink_app (0014 pattern).
