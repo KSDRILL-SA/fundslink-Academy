@@ -55,18 +55,23 @@ class ApplicationService:
         )
 
     # --------------------------- response assembly ---------------------------
-    async def _to_application(self, row, *, with_motivation: bool) -> Application:
+    async def _to_application(
+        self, row, *, with_motivation: bool, detail: bool = True
+    ) -> Application:
+        # detail=False is the LIST projection: skip the per-row motivation + pre-screen reads that
+        # would otherwise make a page N+1 (ST-3.7). The list's `status` already encodes the
+        # pre-screen outcome (READY_FOR_REVIEW / RETURNED_FOR_INFO / UNSCREENED), so nothing
+        # actionable is lost; the full report is fetched on the single-application detail view.
         app_id = row[0]
         motivation = None
-        if with_motivation:
+        if detail and with_motivation:
             m = await self.motivations.get(app_id)
             if m is not None:
                 motivation = Motivation(
                     situation=m[0], why_not_categories=m[1], support_needed=m[2], language=m[3]
                 )
         pre_screen = None
-        latest = await self.pre_screens.latest(app_id)
-        if latest is not None:
+        if detail and (latest := await self.pre_screens.latest(app_id)) is not None:
             checks = latest[1] or {}
             pre_screen = PreScreen(
                 outcome=latest[0],
@@ -270,6 +275,7 @@ class ApplicationService:
     async def _page(self, rows, limit: int) -> ApplicationPage:
         has_more = len(rows) > limit
         page = rows[:limit]
-        items = [await self._to_application(r, with_motivation=r[1] == "OTHER") for r in page]
+        # List projection (detail=False): one row = one query, never N+1 (ST-3.7).
+        items = [await self._to_application(r, with_motivation=False, detail=False) for r in page]
         next_cursor = encode_cursor(page[-1][6], page[-1][0]) if has_more and page else None
         return ApplicationPage(items=items, meta=PageMeta(next_cursor=next_cursor))
