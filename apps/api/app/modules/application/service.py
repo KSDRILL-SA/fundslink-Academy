@@ -159,6 +159,15 @@ class ApplicationService:
         await set_system_context(self.session)  # outbox insert is staff-only
         if await self.apps.owned_id(application_id, actor_id) is None:
             raise AppError("application_not_found", "Application not found", status_code=404)
+        # D-007: the SA ID (blind-indexed) must be on file before SUBMIT — it is what makes
+        # duplicate detection real at the moment money is at stake. Registration stays
+        # frictionless; the gate is here, not at sign-up.
+        if not await self.apps.has_sa_id(actor_id):
+            raise AppError(
+                "sa_id_required",
+                "Add your SA ID number to your profile before submitting",
+                status_code=409,
+            )
         await self.engine.transition(
             application_id=application_id,
             owner_user_id=actor_id,

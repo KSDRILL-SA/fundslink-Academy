@@ -34,6 +34,18 @@ class ApplicationRepository(BaseRepository):
         )
         return row is not None
 
+    async def has_sa_id(self, user_id: str) -> bool:
+        """SA ID (blind-indexed) must exist before SUBMIT — the anti-duplicate gate (D-007/BR-A04).
+
+        student_profile.id == "user".id (1:1 PK=FK), so the owner id keys the user row directly.
+        """
+        row = await sql.fetch_one(
+            self.session,
+            'SELECT 1 FROM "user" WHERE id = :id AND id_number_blind_idx IS NOT NULL',
+            id=user_id,
+        )
+        return row is not None
+
     async def create(
         self,
         *,

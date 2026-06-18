@@ -57,7 +57,14 @@ def student_with_profile(client) -> tuple[str, str]:
     client.put(
         f"{BASE}/students/me/profile",
         headers=bearer(token),
-        json={"first_name": "Sipho", "last_name": "Nkosi", "level": "UG", "field_of_study": "BA"},
+        json={
+            "first_name": "Sipho",
+            "last_name": "Nkosi",
+            "level": "UG",
+            "field_of_study": "BA",
+            # D-007: a SA ID is required before SUBMIT (unique blind index, BR-A04).
+            "id_number": f"{uuid.uuid4().int % 10**13:013d}",
+        },
     )
     return token, decode_access_token(token)["sub"]
 
