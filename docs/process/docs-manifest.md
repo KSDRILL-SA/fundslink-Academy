@@ -2,10 +2,12 @@
 ## Suite Version 1.5 | 2026 — DESIGN PHASE COMPLETE (+ v1.1 Eligibility Wave)
 
 > **This manifest is the design-phase completion record.** Live build status + the full document
-> index are in [`docs/README.md`](../README.md). Build progress: Stages 00/01/02 ✅ (auth done,
-> migrations 0001→0014); Stage 03 next. New build-phase design doc:
-> [`architecture/funding-donations-architecture.md`](../architecture/funding-donations-architecture.md)
-> (funding intake, v1.5+). TAD is now v1.2 (eligibility module).
+> index are in [`docs/README.md`](../README.md). Build progress: Stages 00/01/02/03 ✅ + the
+> eligibility-policy pass (D-016/017/018, **master-spec v1.2**) + the hardening pass (H1–H8, D-019)
+> all done; migrations **0001→0017**; **32 contract ops**; **Stage 04 (frontend) next**. New
+> reference doc: [`architecture/error-codes.md`](../architecture/error-codes.md) (the stable
+> `error.code` registry). Forward design: `architecture/funding-donations-architecture.md` (v1.5+);
+> `decisions/adr-0006-institutional-data-feed.md` (PROPOSED stub, Engineer 01).
 
 **v1.3 change wave (Founder edge-case directive):** Smart Pre-Screening Engine, Category D (OTHER) with Other-Reasons store + theme tags, Human-Final Principle (DB-enforced + proven), 14-entry edge-case register (E1–E14), appeal/recusal/waitlist structures. Updated: MASTER-SPEC→v1.1 ⭐, ERD→v1.1 (+BR-E01–E10, 7 tables), schema (re-validated from scratch; 4 violation proofs passed), API→v1.1.0 (validated; +resubmit, +appeal), TAD→v1.2 (eligibility module), GOVERNANCE-PATCHES→v1.1 (DB-D21 third trigger class). | The single index, precedence order, and consistency record
 

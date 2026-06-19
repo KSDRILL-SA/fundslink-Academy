@@ -27,8 +27,10 @@ graph LR
 | Stage 00 — monorepo scaffold · CI gates · env hygiene | ✅ **complete** (Gate G0) |
 | Stage 01 — the database | ✅ **complete** (Gate G1; migrations 0001→0009) |
 | Stage 02 — auth | ✅ **complete** (Gate G2 + hardened + DB-integrated; migrations →0014) |
-| **Stage 03 — backend modules** | ▶ **next** (new session) |
-| Stages 04–06 — frontend → integration → launch | ⬜ to complete |
+| Stage 03 — backend modules | ✅ **complete** (Gate G3; 6 modules; migrations →0015) |
+| Stage 03+ — eligibility-policy pass (D-016/017/018, master-spec **v1.2**) + hardening pass (H1–H8, D-019) | ✅ **complete** (migrations →0017; 32 contract ops; H5→v1.5) |
+| **Stage 04 — frontend** | ▶ **next** (new session) |
+| Stages 05–06 — integration → launch | ⬜ to complete |
 | Deferred by design — financial/donations (v1.5+; design: architecture/funding-donations-architecture) · institution (v2) · MongoDB/ChromaDB bootstrap (Stage 03) | ⬜ flag-gated / later |
 
 ---
@@ -62,7 +64,7 @@ graph LR
   ROOT --> PKG["packages/contracts<br/>openapi.yaml (S2.7)"]
   ROOT --> GV["governance/<br/>C0–C10 (synced, pinned)"]
   DOCS --> M["product · master-spec"]
-  DOCS --> DEC["decisions · adr-0002…0005"]
+  DOCS --> DEC["decisions · adr-0002…0006"]
   DOCS --> ARCH["architecture · technical + engineering"]
   DOCS --> DB["database · lifecycle · doctrine · data-model · schema"]
   DOCS --> UX["experience · ux-screen-map"]
@@ -90,6 +92,7 @@ graph LR
 | [adr-0003-data-access.md](decisions/adr-0003-data-access.md) | PostgreSQL hybrid data access — raw SQL for money paths, SQLAlchemy for CRUD. **accepted**. |
 | [adr-0004-store-consolidation.md](decisions/adr-0004-store-consolidation.md) | Proposed v1 PostgreSQL-only consolidation — **REJECTED (L4, 2026-06-13)**; v1 keeps the 3-store polyglot. |
 | [adr-0005-frontend-strategy.md](decisions/adr-0005-frontend-strategy.md) | Angular-native frontend — Tailwind + custom CSS + spartan/ui; Magic/Aceternity reproduced in Angular. **accepted (L4)**. |
+| [adr-0006-institutional-data-feed.md](decisions/adr-0006-institutional-data-feed.md) | Institutional academic+financial data feed — **PROPOSED stub** (design-handoff to Engineer 01; gated on MOUs + POPIA; v2→v4). Not a v1 build item. |
 
 ### `architecture/` — how
 | Document | Description |
@@ -97,11 +100,12 @@ graph LR
 | [technical-architecture.md](architecture/technical-architecture.md) | TAD — topology, queued matching, MFA, eligibility module, deploy choreography. |
 | [engineering-architecture.md](architecture/engineering-architecture.md) | Layering (router→service→repository), shared/common homes, enforced hard rules, design-for-extension seams. |
 | [funding-donations-architecture.md](architecture/funding-donations-architecture.md) | Funding intake (donors/institutions/partners) forward design for v1.5+; readiness audit; PROPOSED (L4 lock pending). |
+| [error-codes.md](architecture/error-codes.md) | The stable `error.code` registry (28 codes · HTTP · meaning) — the contract the frontend branches on (S4.12). |
 
 ### `database/` — database law & schema
 | Document | Description |
 |----------|-------------|
-| [README.md](database/README.md) | **The database capstone** — apply path (migrations 0001→0014), security model (roles, RLS, append-only), triggers, and the backend/auth integration contracts. |
+| [README.md](database/README.md) | **The database capstone** — apply path (migrations 0001→0017), security model (roles, RLS, append-only), triggers, and the backend/auth integration contracts. |
 | [lifecycle.md](database/lifecycle.md) | Database lifecycle — conceptual/logical/physical models, normalization (1NF→BCNF), status state machines, store assignment. |
 | [doctrine.md](database/doctrine.md) | Database law DB-D1–D44 — gates all schema work. |
 | [data-model.md](database/data-model.md) | Entity-relationship package + business-rule catalog (BR-A/S/E/T/M/N). |

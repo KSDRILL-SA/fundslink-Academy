@@ -159,7 +159,10 @@ or STOP and flag. Founder (MALULEKE-KS, L4) approves every gate.
 
 START: read CLAUDE.md → docs/governance/constitution-index.md → docs/process/handoff-s00-s01.md, then
 run the ksdrill-governance Session Startup Protocol. REPO-VERIFY (workflow §4.5C): confirm Stage 03
-(G3) is merged and green — all six backend modules, contract-diff exact, the pipeline demo. If missing/contradictory → STOP and flag.
+(G3) is merged and green — all six backend modules, contract-diff exact, the pipeline demo — PLUS
+the post-G3 eligibility-policy pass (D-016/017/018, master-spec v1.2) + hardening pass (H1–H8,
+D-019): **32 contract ops** (incl. `adminSetPriority`, `dataExport`), migrations →`0017`. If
+missing/contradictory → STOP and flag.
 
 DISCIPLINE: cite standard IDs; Issue-first → branch → PR ("Closes #N", assignee MALULEKE-KS, labels,
 milestone "Stage 04 — Frontend", project + Status) → self-review → squash-merge; NO business logic in
@@ -167,7 +170,10 @@ components (S4.12) — logic in Angular services; use the GENERATED client only 
 types); clean Mermaid; "done" = output; flag conflicts, never improvise. Create the milestone if absent.
 
 EXECUTE STAGE 04 — 21 SCREENS + 4 ADMIN, journey order, per claude-instructions/04-FRONTEND.md.
-Read first: docs/experience/ux-screen-map.md (it is LAW — P1–P8 + the forbidden lists) · adr-0005.
+Read first: docs/experience/ux-screen-map.md (it is LAW — P1–P8 + the forbidden lists) · adr-0005 ·
+docs/architecture/error-codes.md (branch on `error.code`, never `message` — S4.12). Surface the
+post-G3 fields: income band + `needed_by` (apply), `priority` + `pre_screen.annotations` (review),
+the data-export action. Render reviewer annotations as guidance — the human decides (§5.7, D-010).
 Stack (adr-0005): Tailwind for layout/spacing/responsive (S4.13) + custom CSS for brand (S4.14);
 spartan/ui (Angular shadcn-equivalent) components in libs/ui — NOT React; S01 Landing reproduces
 Aceternity-style effects in Angular; Lucide icons, no emojis.
