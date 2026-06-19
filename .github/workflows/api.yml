@@ -44,30 +44,34 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/fundslink
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Install uv (reproducible, locked deps)
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.12"
-      - name: Install
-        run: pip install -e ".[dev]"
+          enable-cache: true
+      # uv sync --frozen installs the EXACT versions pinned in uv.lock (Python 3.12 via
+      # apps/api/.python-version); it fails if the lock and pyproject have drifted, so the build
+      # can never silently pick up a different dependency tree than the one that was reviewed.
+      - name: Install (frozen — exact deps from uv.lock)
+        run: uv sync --frozen --extra dev
       - name: Lint (ruff)
-        run: ruff check .
+        run: uv run ruff check .
       - name: Layering (import-linter — routers/services may not import DB drivers)
-        run: lint-imports
+        run: uv run lint-imports
       - name: Permission lint (S3.21 — deny-by-default; every route declares its posture)
-        run: python ../../scripts/permission_lint.py
+        run: uv run python ../../scripts/permission_lint.py
       - name: Contract diff (S2.7 — FastAPI OpenAPI vs packages/contracts/openapi.yaml)
-        run: python ../../scripts/contract_diff.py
+        run: uv run python ../../scripts/contract_diff.py
       - name: Store-isolation lint (S5.3 — no money outside PostgreSQL; Redis key allowlist)
-        run: python ../../scripts/store_isolation_lint.py
+        run: uv run python ../../scripts/store_isolation_lint.py
       - name: Migrations — upgrade from zero (DB-D36)
-        run: alembic upgrade head
+        run: uv run alembic upgrade head
       - name: Migrations — downgrade→upgrade roundtrip clean
         run: |
-          alembic downgrade base
-          alembic upgrade head
+          uv run alembic downgrade base
+          uv run alembic upgrade head
       - name: Partition maintenance (DB-D44 — keep N+12 ahead)
-        run: python -m app.db.partitions
+        run: uv run python -m app.db.partitions
       - name: Integrity job (DB-D39 — clean on seeded DB)
-        run: python -m app.db.integrity
+        run: uv run python -m app.db.integrity
       - name: Test (pytest — incl. DB-D37 constraint suite when present)
-        run: pytest -q
+        run: uv run pytest -q
