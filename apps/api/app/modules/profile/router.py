@@ -29,6 +29,18 @@ async def get_my_profile(
     return await ProfileService(session).get_profile(user_id=current.id)
 
 
+@router.get("/data-export", operation_id="dataExport")
+async def data_export(
+    request: Request,
+    current: CurrentUser = Depends(require(Permission.PROFILE_READ_OWN)),
+    session=Depends(get_session),
+) -> dict:
+    """POPIA §15.6 subject-access export — the caller's own data, audit-logged."""
+    return await ProfileService(session).export_data(
+        user_id=current.id, request_id=get_request_id(request)
+    )
+
+
 @router.put("/profile", operation_id="putMyProfile")
 async def put_my_profile(
     body: StudentProfileInput,

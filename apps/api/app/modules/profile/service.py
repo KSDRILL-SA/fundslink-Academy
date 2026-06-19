@@ -8,12 +8,15 @@ caller's own rows. Every mutation writes audit_log in the same transaction (S3.3
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from app.common.errors import AppError
 from app.core.config import settings
 from app.modules.auth import crypto
 from app.modules.auth.repository import AuditRepository
 from app.modules.profile.documents import EXTENSION, process_upload
 from app.modules.profile.repository import (
+    DataExportRepository,
     DocumentRepository,
     StudentProfileRepository,
     UserPiiRepository,
@@ -42,6 +45,7 @@ class ProfileService:
         self.profiles = StudentProfileRepository(session)
         self.pii = UserPiiRepository(session)
         self.documents = DocumentRepository(session)
+        self.exports = DataExportRepository(session)
         self.audit = AuditRepository(session)
         self.storage = get_document_storage()
 
@@ -52,6 +56,77 @@ class ProfileService:
                 "profile_not_found", "You have not created a profile yet", status_code=404
             )
         return _to_profile(row)
+
+    async def export_data(self, *, user_id: str, request_id: str) -> dict:
+        """POPIA §15.6 subject-access export — everything we hold on the caller, in one bundle.
+
+        Excludes by design: the raw SA ID number (write-only PII, TAD §4.4 — we report only that
+        one is on file) and counselling data (never in the main schema, §6.4). RLS-scoped.
+        """
+        subject = await self.exports.subject(user_id)
+        profile_row = await self.profiles.get(user_id)
+        bundle = {
+            "exported_at": datetime.now(UTC).isoformat(),
+            "notice": (
+                "This is everything FundsLink holds on you (POPIA §15.6). Your raw ID number is "
+                "stored encrypted and never exported (TAD §4.4); counselling data is kept entirely "
+                "separate (§6.4)."
+            ),
+            "subject": None
+            if subject is None
+            else {
+                "user_id": user_id,
+                "email": subject[0],
+                "account_state": subject[1],
+                "registered_at": subject[2],
+                "sa_id_on_file": bool(subject[3]),
+            },
+            "profile": None
+            if profile_row is None
+            else {
+                "first_name": profile_row[1],
+                "last_name": profile_row[2],
+                "phone": profile_row[3],
+                "level": profile_row[4],
+                "field_of_study": profile_row[5],
+                "hardship_narrative": profile_row[6],
+                "verification_level": profile_row[7],
+                "created_at": profile_row[8],
+            },
+            "applications": [
+                {
+                    "id": r[0],
+                    "application_type": r[1],
+                    "academic_year": r[2],
+                    "status": r[3],
+                    "priority": r[4],
+                    "requested_amount": None if r[5] is None else str(r[5]),
+                    "currency": r[6],
+                    "needed_by": r[7],
+                    "created_at": r[8],
+                }
+                for r in await self.exports.applications(user_id)
+            ],
+            "documents": [
+                {"id": r[0], "doc_type": r[1], "application_id": r[2],
+                 "av_status": r[3], "uploaded_at": r[4]}
+                for r in await self.documents.list_for_student(user_id)
+            ],
+            "consents": [
+                {"purpose": r[0], "wording_version": r[1], "channel": r[2],
+                 "granted_at": r[3], "withdrawn_at": r[4]}
+                for r in await self.exports.consents(user_id)
+            ],
+        }
+        await self.audit.write(
+            actor_user_id=user_id,
+            action="DATA_EXPORTED",
+            resource_type="user",
+            resource_id=user_id,
+            request_id=request_id,
+            detail={"popia": "S15.6"},
+        )
+        return bundle
 
     async def upsert_profile(
         self, *, user_id: str, data: StudentProfileInput, request_id: str

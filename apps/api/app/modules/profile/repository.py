@@ -150,3 +150,38 @@ class DocumentRepository(BaseRepository):
             " ORDER BY created_at DESC",
             sp=student_profile_id,
         )
+
+
+class DataExportRepository(BaseRepository):
+    """POPIA §15.6 subject-access reads — everything we hold on the caller, scoped to them (RLS).
+
+    Read-only. Never selects the raw SA ID (id_number_enc) — that is write-only PII (TAD §4.4) —
+    only whether one is on file. Counselling data never enters the main schema (§6.4), so there is
+    nothing here to leak.
+    """
+
+    async def subject(self, user_id: str):
+        return await sql.fetch_one(
+            self.session,
+            'SELECT email, account_state, created_at,'
+            ' (id_number_blind_idx IS NOT NULL) AS id_on_file'
+            ' FROM "user" WHERE id = :id',
+            id=user_id,
+        )
+
+    async def applications(self, user_id: str) -> list:
+        return await sql.fetch_all(
+            self.session,
+            "SELECT id, application_type, academic_year, status, priority, requested_amount,"
+            " currency, needed_by, created_at FROM funding_application"
+            " WHERE student_profile_id = :sp AND deleted_at IS NULL ORDER BY created_at DESC",
+            sp=user_id,
+        )
+
+    async def consents(self, user_id: str) -> list:
+        return await sql.fetch_all(
+            self.session,
+            "SELECT purpose, wording_version, channel, granted_at, withdrawn_at"
+            " FROM consent_record WHERE user_id = :uid ORDER BY granted_at DESC",
+            uid=user_id,
+        )

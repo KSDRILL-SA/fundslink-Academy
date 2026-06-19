@@ -6,6 +6,26 @@ from __future__ import annotations
 from tests.profile.conftest import BASE, bearer, register_student, valid_profile
 
 PROFILE = f"{BASE}/students/me/profile"
+DATA_EXPORT = f"{BASE}/students/me/data-export"
+
+
+def test_data_export_bundles_my_data_without_the_raw_id_popia_15_6(profile_client):
+    """POPIA §15.6: the export returns all we hold on the caller — but never the raw SA ID."""
+    secret_id = "9001011234099"
+    token, _ = register_student(profile_client)
+    profile_client.put(PROFILE, headers=bearer(token), json=valid_profile(id_number=secret_id))
+    resp = profile_client.get(DATA_EXPORT, headers=bearer(token))
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["subject"]["sa_id_on_file"] is True  # we say it is on file...
+    assert secret_id not in resp.text  # ...but never echo the number itself (TAD §4.4)
+    assert body["profile"]["first_name"]  # profile present
+    for section in ("applications", "documents", "consents"):
+        assert section in body  # all subject-data sections present (consents from registration)
+
+
+def test_data_export_requires_authentication(profile_client):
+    assert profile_client.get(DATA_EXPORT).status_code == 401
 
 
 def test_get_profile_returns_404_before_creation(profile_client):
