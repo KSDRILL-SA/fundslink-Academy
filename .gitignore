@@ -45,3 +45,8 @@ coverage/
 .DS_Store
 Thumbs.db
 .idea/
+
+# --- Local design-source artifacts ---
+# Source PDFs/exports of design material whose canonical form already lives as markdown
+# (under .ksdrill/ and docs/). Kept locally for reference, never committed at the repo root.
+/*.pdf

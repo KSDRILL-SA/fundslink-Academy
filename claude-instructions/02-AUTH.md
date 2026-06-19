@@ -1,4 +1,4 @@
-# STAGE 02 — AUTH: THE GATEWAY (one vertical slice, API + Angular)
+# Stage 02 — Authentication: one vertical slice (API + Angular)
 **Read first:** TAD §3.1–3.4 · contract /auth paths · UX-SCREEN-MAP S04–S07 · IMPLEMENTATION-PROCESS §4.
 
 **Review framework reference:** After completing this stage, it will be reviewed against the Stage 02 challenge questions in `.ksdrill/workflow/ai-review-challenge-framework.md` and the Universal Final Challenge. Familiarize yourself with these questions during implementation.

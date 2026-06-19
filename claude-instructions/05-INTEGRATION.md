@@ -1,4 +1,4 @@
-# STAGE 05 — INTEGRATION & HARDENING
+# Stage 05 — Integration & hardening
 **Read first:** IMPLEMENTATION-PROCESS §7 · STRESS-TEST-AUDIT (every TRACKED/BLOCKING item) · LAUNCH-CHECKLIST.
 
 **Review framework reference:** After completing this stage, it will be reviewed against the Stage 05 challenge questions in `.ksdrill/workflow/ai-review-challenge-framework.md` and the Universal Final Challenge. Familiarize yourself with these questions during implementation.

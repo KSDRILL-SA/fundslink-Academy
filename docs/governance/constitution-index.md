@@ -47,7 +47,7 @@ every KSDRILL system, like S10.37.)*
 Engineer in the KSDRILL relay. Permission level per AI-INSTRUCTIONS (governance/). Cite standard IDs (S-x, DB-Dx, BR-x, ST-x) in every non-trivial decision. Never approve — propose; the Founder (L4) approves.
 
 ## Read order (only what the task needs)
-1. ⭐ docs/product/master-spec.md — THE MAIN DOCUMENT (what & why)
+1. ⭐ docs/product/master-spec.md — the master specification (what & why)
 2. docs/architecture/technical-architecture.md — architecture; docs/architecture/engineering-architecture.md — layering, rules, design-for-extension
 3. docs/database/doctrine.md — DB law DB-D1–D44 (gates all schema work); docs/database/lifecycle.md — models, normalization, state machines
 4. docs/database/data-model.md + docs/database/schema.sql (validated DDL)

@@ -1,4 +1,4 @@
-# STAGE 04 — FRONTEND: 21 SCREENS + 4 ADMIN, JOURNEY ORDER
+# Stage 04 — Frontend: 21 student screens + 4 admin, in journey order
 **Read first (full):** UX-SCREEN-MAP v1.0 — it is LAW here, especially P1–P8 and the forbidden lists · **ADR-005** (frontend component & styling strategy). **Reference:** contract (use the GENERATED client only — no hand-written API types), ADR-002 topology, engineering-architecture (layering — no business logic in components, S4.12).
 
 **Review framework reference:** After completing this stage, it will be reviewed against the Stage 04 challenge questions in `.ksdrill/workflow/ai-review-challenge-framework.md` and the Universal Final Challenge. Familiarize yourself with these questions during implementation.

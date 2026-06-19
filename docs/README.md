@@ -3,7 +3,7 @@
 The governing documents for FundsLink Academy, filed by concern. This index gives a one-line
 description of every document and the **precedence order** used to resolve conflicts. Stage briefs
 live in [`/claude-instructions`](../claude-instructions); master Claude Code instructions live in
-[`/CLAUDE.md`](../CLAUDE.md).
+[`/CLAUDE.md`](../CLAUDE.md); the system map is in [`/ARCHITECTURE.md`](../ARCHITECTURE.md).
 
 > Design phase complete (+ v1.1 Eligibility Wave). v1 store topology =
 > **PostgreSQL + MongoDB + ChromaDB + Redis** (constitutional polyglot). ADR-004's PostgreSQL-only
@@ -11,11 +11,11 @@ live in [`/claude-instructions`](../claude-instructions); master Claude Code ins
 
 ---
 
-## Build status (as of 2026-06-15)
+## Build status (as of 2026-06-19)
 
 ```mermaid
 graph LR
-  G0["G0 Scaffold ✅"]:::done --> G1["G1 Database ✅"]:::done --> G2["G2 Auth ✅"]:::done --> G3["G3 Backend ▶"]:::now --> G4["G4 Frontend ⬜"]:::todo --> G5["G5 Integration ⬜"]:::todo --> G6["G6 Launch ⬜"]:::todo
+  G0["G0 Scaffold ✅"]:::done --> G1["G1 Database ✅"]:::done --> G2["G2 Auth ✅"]:::done --> G3["G3 Backend ✅"]:::done --> G4["G4 Frontend ▶"]:::now --> G5["G5 Integration ⬜"]:::todo --> G6["G6 Launch ⬜"]:::todo
   classDef done fill:#0e7490,color:#fff,stroke:#155e75;
   classDef now fill:#1d4ed8,color:#fff,stroke:#1e3a8a;
   classDef todo fill:#475569,color:#fff,stroke:#334155;
@@ -72,6 +72,7 @@ graph LR
   DOCS --> AUD["audits · stress-test"]
   DOCS --> OPS["operations · runbooks · launch"]
   DOCS --> GOV["governance · constitution-index · patches"]
+  DOCS --> REV["reviews · stage 00–03"]
   classDef r fill:#1d4ed8,color:#fff,stroke:#1e3a8a;
   class ROOT r;
 ```
@@ -83,7 +84,8 @@ graph LR
 ### `product/` — what & why
 | Document | Description |
 |----------|-------------|
-| [master-spec.md](product/master-spec.md) | ⭐ THE MAIN DOCUMENT — full description of operations, the v1 Release Map, and business rules. |
+| [master-spec.md](product/master-spec.md) | Master specification — the authoritative product reference: operations, the v1 Release Map, and business rules. |
+| [scenarios-and-decisions.md](product/scenarios-and-decisions.md) | Scenarios & Decisions Playbook — the student-edge rulings (D-NNN) every flow consults before building. |
 
 ### `decisions/` — locked technical decisions (ADRs)
 | Document | Description |
@@ -92,12 +94,12 @@ graph LR
 | [adr-0003-data-access.md](decisions/adr-0003-data-access.md) | PostgreSQL hybrid data access — raw SQL for money paths, SQLAlchemy for CRUD. **accepted**. |
 | [adr-0004-store-consolidation.md](decisions/adr-0004-store-consolidation.md) | Proposed v1 PostgreSQL-only consolidation — **REJECTED (L4, 2026-06-13)**; v1 keeps the 3-store polyglot. |
 | [adr-0005-frontend-strategy.md](decisions/adr-0005-frontend-strategy.md) | Angular-native frontend — Tailwind + custom CSS + spartan/ui; Magic/Aceternity reproduced in Angular. **accepted (L4)**. |
-| [adr-0006-institutional-data-feed.md](decisions/adr-0006-institutional-data-feed.md) | Institutional academic+financial data feed — **PROPOSED stub** (design-handoff to Engineer 01; gated on MOUs + POPIA; v2→v4). Not a v1 build item. |
+| [adr-0006-institutional-data-feed.md](decisions/adr-0006-institutional-data-feed.md) | Institutional academic+financial data feed — **PROPOSED stub** (gated on MOUs + POPIA; v2→v4). Not a v1 build item. |
 
 ### `architecture/` — how
 | Document | Description |
 |----------|-------------|
-| [technical-architecture.md](architecture/technical-architecture.md) | TAD — topology, queued matching, MFA, eligibility module, deploy choreography. |
+| [technical-architecture.md](architecture/technical-architecture.md) | TAD — topology, matching execution model, MFA, eligibility module, deploy choreography. |
 | [engineering-architecture.md](architecture/engineering-architecture.md) | Layering (router→service→repository), shared/common homes, enforced hard rules, design-for-extension seams. |
 | [funding-donations-architecture.md](architecture/funding-donations-architecture.md) | Funding intake (donors/institutions/partners) forward design for v1.5+; readiness audit; PROPOSED (L4 lock pending). |
 | [error-codes.md](architecture/error-codes.md) | The stable `error.code` registry (28 codes · HTTP · meaning) — the contract the frontend branches on (S4.12). |
@@ -105,16 +107,17 @@ graph LR
 ### `database/` — database law & schema
 | Document | Description |
 |----------|-------------|
-| [README.md](database/README.md) | **The database capstone** — apply path (migrations 0001→0017), security model (roles, RLS, append-only), triggers, and the backend/auth integration contracts. |
+| [README.md](database/README.md) | The database capstone — apply path (migrations 0001→0017), security model (roles, RLS, append-only), triggers, and the backend/auth integration contracts. |
 | [lifecycle.md](database/lifecycle.md) | Database lifecycle — conceptual/logical/physical models, normalization (1NF→BCNF), status state machines, store assignment. |
 | [doctrine.md](database/doctrine.md) | Database law DB-D1–D44 — gates all schema work. |
 | [data-model.md](database/data-model.md) | Entity-relationship package + business-rule catalog (BR-A/S/E/T/M/N). |
 | [schema.sql](database/schema.sql) | PostgreSQL DDL — auth, applications, tracking, match records. Embeddings → ChromaDB; AI reasoning → MongoDB. |
+| [explain-baseline.md](database/explain-baseline.md) | Committed EXPLAIN baselines for the hot queries — index usage proven, no sequential scans on high-cardinality tables. |
 
 ### `experience/` — UX
 | Document | Description |
 |----------|-------------|
-| [ux-screen-map.md](experience/ux-screen-map.md) | 21 screens, emotional-design law (P1–P8), the kind-rejection spec. |
+| [ux-screen-map.md](experience/ux-screen-map.md) | 21 screens, emotional-design principles (P1–P8), the kind-rejection spec. |
 
 ### `process/` — how we build
 | Document | Description |
@@ -123,11 +126,12 @@ graph LR
 | [implementation-process.md](process/implementation-process.md) | Stage-gated build order G0–G6 (database first) + Human Track. |
 | [docs-manifest.md](process/docs-manifest.md) | The suite index, precedence order, and cross-document consistency record. |
 | [github-workflow.md](process/github-workflow.md) | GitHub workflow: issue → branch → linked PR → self-review → squash-merge; labels & milestones. |
+| [stage-review-playbook.md](process/stage-review-playbook.md) | Sequential stage-review protocol; applies the `.ksdrill` AI review/challenge framework to stages 00–06. |
+| [session-playbook.md](process/session-playbook.md) | Per-phase terminal prompts (Stage 01→06) — one phase per session; each prompt points to the next. |
 | [handoff-s00-s01.md](process/handoff-s00-s01.md) | Relay handoff — Stage 00 → Stage 01. |
 | [handoff-s01-s02.md](process/handoff-s01-s02.md) | Relay handoff — Stage 01 (database) → Stage 02 (auth). |
-| [handoff-s02-s03.md](process/handoff-s02-s03.md) | Relay handoff — Stage 02 (auth, complete + hardened) → Stage 03 (backend); contracts Stage 03 must honor. |
-| [stage-review-playbook.md](process/stage-review-playbook.md) | Sequential stage review protocol; applies the `.ksdrill` AI review/challenge framework to FundsLink stages 00-06. |
-| [session-playbook.md](process/session-playbook.md) | **Per-phase terminal prompts (Stage 01→06)** — one phase per session; each prompt self-contained, ending by pointing to the next session. |
+| [handoff-s02-s03.md](process/handoff-s02-s03.md) | Relay handoff — Stage 02 (auth) → Stage 03 (backend); contracts Stage 03 must honor. |
+| [handoff-s03-s04.md](process/handoff-s03-s04.md) | Relay handoff — Stage 03 (backend) → Stage 04 (frontend); contracts the frontend must honor. |
 
 ### `audits/` — adversarial findings
 | Document | Description |
@@ -139,18 +143,28 @@ graph LR
 |----------|-------------|
 | [runbook-disbursement.md](operations/runbook-disbursement.md) | Monthly disbursement runbook (+ sequence diagram). |
 | [runbook-jwt-key-rotation.md](operations/runbook-jwt-key-rotation.md) | RS256 JWT key-rotation runbook (+ sequence diagram). |
+| [restore-drill-log.md](operations/restore-drill-log.md) | Restore-drill log — backup → restore → constraint-suite runs proving recoverability (DB-D36). |
+| [security-deployment-checklist.md](operations/security-deployment-checklist.md) | Security & deployment checklist — pre-production hardening and cutover controls. |
 | [launch-checklist.md](operations/launch-checklist.md) | Production launch checklist + cutover steps. |
 
 ### `governance/` — the project's constitutional layer
 | Document | Description |
 |----------|-------------|
-| [constitution-index.md](governance/constitution-index.md) | Claude Code entry point — read order, hard rules, standard-ID map (`S10.21`). |
+| [constitution-index.md](governance/constitution-index.md) | Claude Code entry point — read order, hard rules, standard-ID map. |
 | [governance-patches.md](governance/governance-patches.md) | Approved constitutional amendments for this system. |
+
+### `reviews/` — independent stage reviews
+| Document | Description |
+|----------|-------------|
+| [stage-00-review.md](reviews/stage-00-review.md) | Independent review of Stage 00 — Foundation (Gate G0). |
+| [stage-01-review.md](reviews/stage-01-review.md) | Independent review of Stage 01 — Database (Gate G1). |
+| [stage-02-review.md](reviews/stage-02-review.md) | Independent review of Stage 02 — Auth (Gate G2). |
+| [stage-03-review.md](reviews/stage-03-review.md) | Independent review of Stage 03 — Backend modules (Gate G3). |
 
 ### `packages/contracts/` — the API source of truth
 | Document | Description |
 |----------|-------------|
-| [openapi.yaml](../packages/contracts/openapi.yaml) | OpenAPI contract — every endpoint comes FROM here (`S2.7`); CI diffs against it. |
+| [openapi.yaml](../packages/contracts/openapi.yaml) | OpenAPI contract — every endpoint comes from here (`S2.7`); CI diffs against it. |
 
 ---
 

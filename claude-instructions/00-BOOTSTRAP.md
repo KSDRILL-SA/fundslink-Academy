@@ -1,4 +1,4 @@
-# STAGE 00 — BOOTSTRAP: FILE THE DOCS, RAISE THE SCAFFOLD, ARM THE GATES
+# Stage 00 — Bootstrap: documentation, monorepo scaffold, and CI gates
 **Read first (full):** docs-manifest.md · ADR-002 · implementation-process.md §2. **Skim:** MASTER-SPEC §1–3 (know what this system is before touching it).
 
 **Review framework reference:** After completing this stage, it will be reviewed against the Stage 00 challenge questions in `.ksdrill/workflow/ai-review-challenge-framework.md` and the Universal Final Challenge. Familiarize yourself with these questions during implementation.
