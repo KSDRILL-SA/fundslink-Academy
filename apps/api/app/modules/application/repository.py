@@ -83,7 +83,7 @@ class ApplicationRepository(BaseRepository):
         except IntegrityError as exc:
             # uq_app_active_per_year — already one active application this academic year (BR-E06).
             raise AppError(
-                "APPLICATION_ALREADY_ACTIVE",
+                "application_already_active",
                 "You already have an active application for this academic year",
                 status_code=409,
             ) from exc
