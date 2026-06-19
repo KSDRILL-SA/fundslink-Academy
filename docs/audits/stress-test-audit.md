@@ -7,7 +7,7 @@ Six adversarial reviews conducted before implementation. Every finding has an ID
 | # | Finding | Disposition |
 |---|---------|------------|
 | 1.1 | Human verification workflow saturates before any server (interviews, doc review) | TRACKED — triage tiers + volunteer REVIEWER recruitment + published queue-time expectations; ops plan item, pre-1,000 students |
-| 1.2 | Inline AI matching hits OpenAI rate limits + runaway cost | FOLDED — TAD §6.2: queued job, cached profile embeddings, 202 pattern |
+| 1.2 | Inline AI matching hits OpenAI rate limits + runaway cost | FOLDED (v1) — spend circuit breaker + per-user daily quota + local embedding heuristic (no live OpenAI); queued-job/202 worker pattern deferred to v1.x when a paid model lands (TAD §6.2, Founder-approved L4 2026-06-19) |
 | 1.3 | Single outbox worker chokes on reminder fan-out spikes | FOLDED — TAD §7: N workers, SKIP LOCKED; spread scheduling |
 | 1.4 | Email provider throttling on young domains | TRACKED — domain warm-up before launch |
 | 1.5 | Railway volume + no CDN for documents | FOLDED — TAD §4.4: S3-compatible trigger at 1,000 students |

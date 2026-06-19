@@ -9,13 +9,14 @@ MINE = f"{BASE}/matches/me"
 BROWSE = f"{BASE}/bursaries"
 
 
-def test_run_matching_returns_202_queued(match_client, admin_conn):
+def test_run_matching_returns_200_with_matches(match_client, admin_conn):
+    # v1 synchronous advisory: /matches/run scores in-request and returns the match page directly.
     seed_bursary(admin_conn)
     token, _ = student_with_profile(match_client)
     resp = match_client.post(RUN, headers=bearer(token))
-    assert resp.status_code == 202
+    assert resp.status_code == 200
     body = resp.json()
-    assert body["status"] == "QUEUED" and body["job_id"]
+    assert "items" in body and "meta" in body  # MatchPage shape — no fake job_id/QUEUED
 
 
 def test_matched_results_appear_for_the_student_br_m01_br_m02(match_client, admin_conn):
@@ -71,7 +72,7 @@ def test_daily_quota_is_enforced_st_2_6(match_client, admin_conn, monkeypatch):
     monkeypatch.setattr("app.modules.matching.repository.ConfigRepository.get_int", _quota_one)
     seed_bursary(admin_conn)
     token, _ = student_with_profile(match_client)
-    assert match_client.post(RUN, headers=bearer(token)).status_code == 202
+    assert match_client.post(RUN, headers=bearer(token)).status_code == 200
     rate_limited = match_client.post(RUN, headers=bearer(token))
     assert rate_limited.status_code == 429
     assert rate_limited.headers.get("Retry-After")
