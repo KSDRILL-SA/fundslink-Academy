@@ -99,6 +99,7 @@ graph LR
 ### `architecture/` — how
 | Document | Description |
 |----------|-------------|
+| [system-overview.md](architecture/system-overview.md) | **What is built and how it works** — topology, the six-module student journey, the enforced invariants, and the AI layer (current reality + roadmap). |
 | [technical-architecture.md](architecture/technical-architecture.md) | TAD — topology, matching execution model, MFA, eligibility module, deploy choreography. |
 | [engineering-architecture.md](architecture/engineering-architecture.md) | Layering (router→service→repository), shared/common homes, enforced hard rules, design-for-extension seams. |
 | [funding-donations-architecture.md](architecture/funding-donations-architecture.md) | Funding intake (donors/institutions/partners) forward design for v1.5+; readiness audit; PROPOSED (L4 lock pending). |
@@ -156,6 +157,7 @@ graph LR
 ### `reviews/` — independent stage reviews
 | Document | Description |
 |----------|-------------|
+| [README.md](reviews/README.md) | **Reviews index** — verdicts at a glance + how each finding was resolved. |
 | [stage-00-review.md](reviews/stage-00-review.md) | Independent review of Stage 00 — Foundation (Gate G0). |
 | [stage-01-review.md](reviews/stage-01-review.md) | Independent review of Stage 01 — Database (Gate G1). |
 | [stage-02-review.md](reviews/stage-02-review.md) | Independent review of Stage 02 — Auth (Gate G2). |
