@@ -14,6 +14,10 @@ graph LR
 
 ## 0. Status — Stage 01 COMPLETE (Gate G1 passed + review hardening)
 
+**Before implementing Stage 02:** Review the frameworks that govern this relay:
+- `.ksdrill/workflow/ai-assisted-software-development-workflow/SKILL.md` — the 8-step implementation workflow
+- `.ksdrill/workflow/ai-review-challenge-framework/SKILL.md` — stage-specific review questions and the Universal Final Challenge
+
 THE DATABASE is built, hardened, secured, and proven. **9 migrations, 121 tests, all green
 in CI.** Single head = `0009`.
 

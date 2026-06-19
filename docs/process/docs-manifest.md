@@ -30,6 +30,7 @@ Per Founder directive, the documentation set is versioned **as a suite: Suite v1
 | 18b | claude-instructions/00–06 (7 files) | v1.0 | ready | Self-contained stage briefs — Founder says "execute stage NN", nothing more |
 | 16 | ux-screen-map.md | v1.0 | PROPOSED → L4 lock | 21 screens, emotional design law (P1–P8), the kind rejection spec |
 | 17 | implementation-process.md | v1.0 | PROPOSED → L4 lock | Stage-gated build order G0–G6 (database first) + Human Track |
+| 17a | stage-review-playbook.md | v1.0 | ready | Sequential stage review protocol applying the `.ksdrill` AI review/challenge framework to FundsLink stages 00-06 |
 | 8 | docs-manifest.md | v1.0 | this document | Index + precedence + order |
 
 Superseded & retired: SPEC v3.0 (fully superseded by v4.0); TAD v1.0 and DOCTRINE v1.0 (superseded by v1.1 — do not circulate).

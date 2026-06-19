@@ -1,5 +1,7 @@
 # STAGE 01 — THE DATABASE, ALONE, PERFECTLY (Founder's first focus)
 **Read first (full):** docs/database/ (DBLC, DB-DOCTRINE, ERD-PACKAGE, schema.sql) · IMPLEMENTATION-PROCESS §3. **Reference:** TAD §4, ADR-003 (data access), MASTER-SPEC §5.6–5.8 + §14.6 (the rules your schema enforces).
+
+**Review framework reference:** After completing this stage, it will be reviewed against the Stage 01 challenge questions in `.ksdrill/workflow/ai-review-challenge-framework.md` and the Universal Final Challenge. Familiarize yourself with these questions during implementation.
 **Store note:** ADR-004 (PG-only) is **REJECTED** — v1 is 3-store (PostgreSQL + MongoDB + ChromaDB + Redis). This stage builds the **PostgreSQL** schema + constraints only; the MongoDB/ChromaDB collection bootstrap and the DB-D35 cross-store integrity job arrive with the matching module (Stage 03), behind repository seams (its first consumer).
 **Forbidden this stage:** endpoints, services, Angular, auth logic, "quick stubs". The database exists alone until G1.
 

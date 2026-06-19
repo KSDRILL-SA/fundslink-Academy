@@ -48,6 +48,8 @@ graph LR
 - **Governance:** Engineer 02 = L3 build-only; the **Founder (L4) approves/merges**; cite `S{C}.{N}`; flag violations, never silently comply. `.ksdrill/` holds the GOVERNOVA constitutions (gitignored clone).
 - **GitHub workflow** (`docs/process/github-workflow.md`): every task → **Issue first** (type `Task`, assignee `MALULEKE-KS`, labels, stage milestone, `FundsLink Academy` project + Status) → **branch** → **PR** with `Closes #N` → documented self-review → **squash-merge**. One task = one branch = one PR.
 - **Docs standard:** clean, professional **Mermaid** for anything words can't carry — including PR descriptions. Professional naming: semantic folders, clean kebab filenames, version in the control table (never the filename).
+- **Implementation workflow:** Every stage follows the 8-step AI-Assisted Software Development Workflow (design → implementation → hardening → adversarial critique → independent review → findings resolution → Founder approval). See `.ksdrill/workflow/ai-assisted-software-development-workflow/SKILL.md`.
+- **Review framework:** Every stage gate is validated using the AI Review and Challenge Framework with stage-specific challenge questions and the Universal Final Challenge. See `.ksdrill/workflow/ai-review-challenge-framework/SKILL.md` and `docs/process/stage-review-playbook.md`.
 - **Layering (enforced):** router → service → repository; only repositories import DB drivers (import-linter). No business logic in UI (S4.12). No hardcoded business values — config table (DB-D24). Secrets never in code (S3.20).
 - **Tooling:** `gh` via full path `"/c/Program Files/GitHub CLI/gh.exe"`; auto squash-merge granted EXCEPT PRs that change `.claude/` permissions (Founder merges those).
 

@@ -18,6 +18,31 @@ and the edge rulings in **`docs/product/scenarios-and-decisions.md`** (D-NNN). C
 you satisfied (e.g. ST-2.1 MFA, ST-2.3 cross-user 403, ST-2.9 key-rotation, D-015 auth RLS).
 A phase is not "done" until its relevant ST findings are met or explicitly deferred with a reason.
 
+## Independent stage review (MANDATORY when Founder requests "review stage NN")
+Use `docs/process/stage-review-playbook.md` as the project entry point. It applies:
+- `.ksdrill/workflow/ai-assisted-software-development-workflow.md`
+- `.ksdrill/workflow/ai-review-challenge-framework.md`
+
+Review exactly one stage at a time, in implementation order. The reviewer recommends; the Founder
+approves.
+
+## Phase-status sync (MANDATORY on stage completion — S10.23 / proposed S10.38)
+The moment a stage's gate passes, **before** the S10.6 handoff, update the phase status in **every
+living doc** so they all agree on what is done and what is next. **The next terminal engineer must
+never read contradicting "next stage" info** — misinformation causes mistakes. In the same handoff,
+update:
+- **this file** — the *Phase status* table (the canonical source of truth) + the op/migration counts in the read order;
+- `docs/README.md` (stage table + migration refs) · `docs/database/README.md` (migration head) · `docs/database/data-model.md`;
+- `docs/process/docs-manifest.md` (build-progress note);
+- `docs/process/session-playbook.md` — the **next** stage's prompt (REPO-VERIFY baseline + read-first);
+- `.ksdrill/system-contexts/fundslink-context.md` — *Build Phase* + feature table (this lives in the **governance repo**; commit there and re-pin the SHA per ADR-002 §4);
+- the **new** `handoff-sNN-sNN+1.md`.
+
+**Sealed:** historical handoff docs are point-in-time records — **never rewrite them**; add a new
+handoff instead. A handoff that leaves any living doc pointing at the wrong stage is **incomplete
+and not accepted**. *(Pending C0 §8 ratification as a generic C10 standard — S10.38 — so it binds
+every KSDRILL system, like S10.37.)*
+
 ## You are
 Engineer in the KSDRILL relay. Permission level per AI-INSTRUCTIONS (governance/). Cite standard IDs (S-x, DB-Dx, BR-x, ST-x) in every non-trivial decision. Never approve — propose; the Founder (L4) approves.
 

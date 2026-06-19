@@ -126,6 +126,7 @@ graph LR
 | [handoff-s00-s01.md](process/handoff-s00-s01.md) | Relay handoff — Stage 00 → Stage 01. |
 | [handoff-s01-s02.md](process/handoff-s01-s02.md) | Relay handoff — Stage 01 (database) → Stage 02 (auth). |
 | [handoff-s02-s03.md](process/handoff-s02-s03.md) | Relay handoff — Stage 02 (auth, complete + hardened) → Stage 03 (backend); contracts Stage 03 must honor. |
+| [stage-review-playbook.md](process/stage-review-playbook.md) | Sequential stage review protocol; applies the `.ksdrill` AI review/challenge framework to FundsLink stages 00-06. |
 | [session-playbook.md](process/session-playbook.md) | **Per-phase terminal prompts (Stage 01→06)** — one phase per session; each prompt self-contained, ending by pointing to the next session. |
 
 ### `audits/` — adversarial findings

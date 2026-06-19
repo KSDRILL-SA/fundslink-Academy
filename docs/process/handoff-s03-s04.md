@@ -12,6 +12,10 @@ graph LR
 ```
 
 ## 0. Status — Stage 03 COMPLETE (Gate G3 passed)
+
+**Before implementing Stage 04:** Review the frameworks that govern this relay:
+- `.ksdrill/workflow/ai-assisted-software-development-workflow/SKILL.md` — the 8-step implementation workflow
+- `.ksdrill/workflow/ai-review-challenge-framework/SKILL.md` — stage-specific review questions and the Universal Final Challenge
 Six backend modules built in dependency order, one module = one PR = one gate check. The full
 contract surface is implemented; the headless pipeline demo runs end-to-end via API only.
 

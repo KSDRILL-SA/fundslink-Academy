@@ -12,6 +12,10 @@ graph LR
 ```
 
 ## 0. Status — Stage 02 COMPLETE (Gate G2 passed, then hardened, then DB-integrated)
+
+**Before implementing Stage 03:** Review the frameworks that govern this relay:
+- `.ksdrill/workflow/ai-assisted-software-development-workflow/SKILL.md` — the 8-step implementation workflow
+- `.ksdrill/workflow/ai-review-challenge-framework/SKILL.md` — stage-specific review questions and the Universal Final Challenge
 Auth is built, gate-green, hardened against the stress-test audit, and verified to sit on every
 DB security wall. **Migrations 0001→0014, 216 API tests + 7 web tests, contract-diff +
 permission-lint now REAL.**

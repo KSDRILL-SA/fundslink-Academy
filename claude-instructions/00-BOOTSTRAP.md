@@ -1,6 +1,8 @@
 # STAGE 00 — BOOTSTRAP: FILE THE DOCS, RAISE THE SCAFFOLD, ARM THE GATES
 **Read first (full):** docs-manifest.md · ADR-002 · implementation-process.md §2. **Skim:** MASTER-SPEC §1–3 (know what this system is before touching it).
 
+**Review framework reference:** After completing this stage, it will be reviewed against the Stage 00 challenge questions in `.ksdrill/workflow/ai-review-challenge-framework.md` and the Universal Final Challenge. Familiarize yourself with these questions during implementation.
+
 ## TASK 1 — File the 18 documents (they are loose in repo root)
 Create and move:
 ```
