@@ -356,7 +356,9 @@ The physical schema is now applied by **Alembic migrations** (the authoritative 
 `schema.sql` is the consolidated readable reference. **0001** = v1.0/v1.1 baseline · **0002** =
 seeds · **0003** = review hardening · **0004** = application lifecycle · **0005–0007** =
 security (least-privilege role, privilege lockdown, Row-Level Security) · **0008** = updated_at
-alignment · **0009** = RLS completeness. Single head = `0009`. Overview: [`README.md`](README.md).
+alignment · **0009** = RLS completeness · **0010–0014** = auth (table-RLS, token_version, MFA,
+auth_token, SELECT-only reference) · **0015** = matching config · **0016–0017** = eligibility
+signals + rulesets v2 (Part 7). Single head = `0017`. Overview: [`README.md`](README.md).
 
 ## 6.1 New business rules
 
@@ -418,3 +420,29 @@ partitioned tables are overflow safety nets.
 Backend integration contracts and the "enforced where" matrix: [`README.md`](README.md).
 Deployment-side controls (TLS, PgBouncer, backups/PITR, key rotation):
 [`../operations/security-deployment-checklist.md`](../operations/security-deployment-checklist.md).
+
+---
+
+# PART 7 — ELIGIBILITY SIGNALS (migrations 0016–0017, master-spec v1.2, Founder-approved 2026-06-18)
+
+Self-declared signals that let the Pre-Screening Engine **annotate** an application for the human
+reviewer — never decide it (§5.7, D-010). We do **not** build a means-test (we don't oppose NSFAS,
+§1.7): UG Category C reads the reason off the already-required NSFAS outcome letter; postgrad gets
+its own income line because no public rail reaches that level.
+
+## 7.1 New reference lookups (read-only to `fundslink_app`, the 0014 pattern)
+| Lookup | Values | Note |
+|--------|--------|------|
+| `lk_income_band` | `SASSA_GRANT`(rank 1) · `LTE_350K`(2) · `MISSING_MIDDLE_350_600K`(3) · `GT_600K`(4) · `PREFER_NOT_TO_SAY`(9) | rank = income ascending; need-severity ordering (E4/§16). Rand thresholds live in config/ruleset, not code (DB-D24) |
+| `lk_nsfas_decline_reason` | `MEANS_INCOME` · `DOCUMENTATION` · `ADMINISTRATIVE` · `ACADEMIC_NPLUS` · `OTHER` | bounds §5.4's old free-text "various reasons" (D-016) |
+| `lk_prior_funder` | `NSFAS` · `OTHER_BURSARY` · `SELF` · `NONE` | D-016 NSFAS-first redirect signal |
+
+## 7.2 New columns on `funding_application` (inherit the table's 0007 RLS; all nullable)
+`household_income_band` → `lk_income_band` · `nsfas_decline_reason` → `lk_nsfas_decline_reason` ·
+`prior_funder` → `lk_prior_funder` · `defunded_by` (free text) · `needed_by` (date — the student's
+urgency *request*, D-002/D-013). Priority itself is `priority` → `lk_priority` (from 0004).
+
+## 7.3 Ruleset evolution (config-as-data, `eligibility_ruleset`)
+`0017` adds **version 2** rulesets (`ers_ug_cat_c_v2`, `ers_postgrad_v2`) carrying `field_flag`
+annotation checks (severity `review_flag` — surface to the human, never return/reject). v1 versions
+are **preserved** and remain pinned for in-flight applications (§5.7 "history is preserved").

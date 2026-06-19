@@ -23,8 +23,11 @@
 | `0012` | Auth — MFA state (`mfa_enabled`, encrypted recovery codes) for TOTP (Stage 02, TAD §3.1) |
 | `0013` | **Security** — `auth_token` table (email-verify + password-reset single-use tokens) + RLS |
 | `0014` | **Security** — least privilege: `fundslink_app` is SELECT-only on reference + RBAC-matrix tables (no escalation/tamper) |
+| `0015` | Matching config (DB-D24) — spend cost-per-call + per-user daily quota (Stage 03 · module 4) |
+| `0016` | Eligibility signals (D-016/017) — `lk_income_band`/`lk_nsfas_decline_reason`/`lk_prior_funder` + 4 self-declared columns on `funding_application` (0014 SELECT-only pattern) |
+| `0017` | Eligibility rulesets v2 (BR-E02/§5.7) — `ers_ug_cat_c_v2` + `ers_postgrad_v2` with the `field_flag` annotation checks (D-016/017); v1 versions preserved |
 
-Single head = `0014`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
+Single head = `0017`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
 
 ## Stores (3-store polyglot — ADR-004 rejected)
 PostgreSQL is the **system of record** (auth, applications, tracking, match records, outbox,
@@ -98,7 +101,7 @@ The auth layer is built squarely on every DB hardening wall, and proves it at ru
 | PII encryption / key mgmt | columns ready | ✅ app-side AES-256-GCM (Stage 02) |
 
 ## Verification (Gate G1+)
-`alembic upgrade head` (0001→0010) clean · downgrade→upgrade roundtrip clean · constraint +
+`alembic upgrade head` (0001→0017) clean · downgrade→upgrade roundtrip clean · constraint +
 security + RLS suite green in CI · `make integrity` clean · restore drill PASS · EXPLAIN shows
 index scans. Deployment-side security: [`../operations/security-deployment-checklist.md`](../operations/security-deployment-checklist.md).
 

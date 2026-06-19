@@ -5,7 +5,9 @@
 | Stage | State | Proof |
 |-------|-------|-------|
 | 00 Scaffold · 01 Database (G1) · 02 Auth (G2) | ✅ DONE | migrations 0001→0014; 216 API + 7 web tests; contract-diff + permission-lint REAL |
-| 03 Backend modules (G3) | ✅ DONE | migrations 0001→0015; 315 API tests; 30 contract ops; store-isolation (S5.3) CI gate; pipeline demo green — see `docs/process/handoff-s03-s04.md` |
+| 03 Backend modules (G3) | ✅ DONE | migrations 0001→0017; 315+ API tests; 32 contract ops; store-isolation (S5.3) CI gate; pipeline demo green — see `docs/process/handoff-s03-s04.md` |
+| 03+ Eligibility-policy pass | ✅ DONE | D-016/017/018 (income/NSFAS-eligibility, postgrad income ceiling); master-spec **v1.2**; migrations 0016/0017; `field_flag` annotate-not-decide engine |
+| 03+ Hardening pass (H1–H8) | ✅ DONE | D-007 SA-ID gate · D-005 doc-expiry RETURN · ST-3.7 list N+1 · D-002/D-013 priority lane · POPIA §15.6 dataExport · D-019 channel↔consent · error-code registry. **H5 post-approval lifecycle → v1.5** (money-coupled) |
 | 04 Frontend (G4) | ▶ NEXT (new session) | `claude-instructions/04-FRONTEND.md` |
 Money/donations are **v1.5+ (deferred-not-promised, MASTER-SPEC §3.3)** — forward design: `docs/architecture/funding-donations-architecture.md`.
 
@@ -24,8 +26,9 @@ Engineer in the KSDRILL relay. Permission level per AI-INSTRUCTIONS (governance/
 2. docs/architecture/technical-architecture.md — architecture; docs/architecture/engineering-architecture.md — layering, rules, design-for-extension
 3. docs/database/doctrine.md — DB law DB-D1–D44 (gates all schema work); docs/database/lifecycle.md — models, normalization, state machines
 4. docs/database/data-model.md + docs/database/schema.sql (validated DDL)
-5. packages/contracts/openapi.yaml — endpoints come FROM here (S2.7), never invented
-6. docs/decisions/ADR-002..005 — locked decisions (monorepo, hybrid data access, store topology, frontend). **ADR-004 (PG-only) is REJECTED — v1 = PostgreSQL + MongoDB + ChromaDB + Redis.**
+5. packages/contracts/openapi.yaml — endpoints come FROM here (S2.7), never invented (32 ops live)
+5a. docs/architecture/error-codes.md — the stable `error.code` registry; the frontend branches on `code`, never `message` (S4.12)
+6. docs/decisions/ADR-002..006 — locked decisions (monorepo, hybrid data access, store topology, frontend; **ADR-006 institutional-data-feed = PROPOSED stub for Engineer 01, not a build item**). **ADR-004 (PG-only) is REJECTED — v1 = PostgreSQL + MongoDB + ChromaDB + Redis.**
 7. docs/process/sdlc.md — FRs/NFRs/traceability/gated lifecycle
 7a. ⭐ docs/product/scenarios-and-decisions.md — the Scenarios & Decisions Playbook: student-edge rulings (D-NNN) every phase consults before building a flow; append new decisions, never guess
 8. docs/audits/stress-test-audit.md — ST findings; BLOCKING gates live here
