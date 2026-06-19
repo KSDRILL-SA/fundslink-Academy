@@ -15,8 +15,9 @@ committed straight to `main`.
 
 1. **Open an Issue first.** Set the type (`Task` / `Bug` / `Feature`), assignee, a type label +
    `stage:NN-…`, the stage milestone, and add it to the project board (`Todo → In Progress → Done`).
-2. **Branch off `main`**, kebab-case Conventional prefix: `feat/…`, `fix/…`, `docs/…`, `ci/…`,
-   `chore/…`.
+2. **Branch off `main`** (solo mode today), kebab-case Conventional prefix: `feat/…`, `fix/…`,
+   `docs/…`, `ci/…`, `chore/…`. *(Future team mode branches off `Dev`, the integration branch,
+   leaving `main` production-only — see the [branching model](docs/process/github-workflow.md#0-branching-model).)*
 3. **Do the work** in logical commits — subjects `type(scope): summary`, bodies citing standards.
 4. **Open the PR into `main`** — first line `Closes #N`; body = **What / Why / How verified**.
 5. **Document the self-review** as a PR comment (the four quadrants: Architecture, Code Quality,

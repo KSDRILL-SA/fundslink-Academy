@@ -12,6 +12,25 @@
 
 ---
 
+## 0. Branching model
+
+**Today — solo mode (in force):** one long-lived branch, `main`. Every task branches off `main`,
+opens a PR into `main`, and squash-merges. `main` is the single source of truth.
+
+**Future — team mode (planned):** when the team grows, adopt a GitFlow-style two-tier model.
+
+| Branch | Role |
+|--------|------|
+| `main` | **Production-ready code only.** Protected — receives merges from `Dev` (releases) or hotfixes, never day-to-day work. |
+| `Dev`  | **The team's integration branch.** Engineers branch `feature/*` / `fix/*` off `Dev` and PR back into `Dev`; `Dev` is promoted to `main` for each release. |
+
+`Dev` already exists, pre-positioned for this. **Onboarding step 1:** sync `Dev` ← `main` (so the
+team starts from the current production state), make `Dev` the default working branch, and enable
+**branch protection on `main`** (require PR + green CI; no direct pushes — see §4). Until that
+switch is made, the solo *branch-off-`main`* flow below remains in force.
+
+---
+
 ## 1. The loop (do this for every task)
 
 1. **Open an Issue first** — before the branch.
