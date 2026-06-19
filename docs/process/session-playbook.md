@@ -25,6 +25,12 @@ The shared skeleton in every prompt: **load context → run governance startup �
 prior gate → operate with discipline → execute the stage → STOP at the gate → point to the next
 session.** Only the bold stage block changes.
 
+> **Before every gate handoff, run the Phase-status sync** (CONSTITUTION-INDEX rule, proposed S10.38):
+> update *every* living doc — this playbook's next prompt, the constitution-index phase table,
+> `docs/README.md`, `database/README.md`, `data-model.md`, `docs-manifest.md`, and the governance
+> `.ksdrill/system-contexts/fundslink-context.md` — so they all agree on what's done and what's next.
+> The incoming engineer must never read contradicting "next stage" info. Historical handoffs are sealed.
+
 ---
 
 ## §1 — Stage 01: THE DATABASE (Gate G1)
