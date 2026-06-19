@@ -4,10 +4,17 @@ on:
   push:
     paths:
       - "apps/api/**"
+      # The contract-diff gate (S2.7) compares FastAPI's schema against this spec, and the gate
+      # scripts themselves live in scripts/ — a change to either MUST re-run this workflow, else
+      # spec drift or a weakened gate slips through unchecked.
+      - "packages/contracts/**"
+      - "scripts/**"
       - ".github/workflows/api.yml"
   pull_request:
     paths:
       - "apps/api/**"
+      - "packages/contracts/**"
+      - "scripts/**"
       - ".github/workflows/api.yml"
 
 jobs:
