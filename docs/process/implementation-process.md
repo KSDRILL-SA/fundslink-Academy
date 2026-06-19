@@ -3,6 +3,20 @@
 
 ---
 
+## CRITICAL REFERENCES
+
+**Every engineer must read and follow these governing documents:**
+
+- **`.ksdrill/workflow/ai-assisted-software-development-workflow/SKILL.md`** — The 8-step implementation workflow (design → implementation → hardening → adversarial critique → independent review → findings resolution → Founder approval). This is HOW you build each stage.
+
+- **`.ksdrill/workflow/ai-review-challenge-framework/SKILL.md`** — The review framework with stage-specific challenge questions and the Universal Final Challenge (11 critical questions every stage must answer before approval). This is HOW your stage will be reviewed.
+
+- **`docs/process/stage-review-playbook.md`** — How to conduct sequential stage reviews.
+
+**These frameworks are not optional.** They define quality and prevent rework at the gate.
+
+---
+
 ## 0. THE LAW OF THIS DOCUMENT
 
 > **One stage at a time. A stage is DONE when its gate passes — not when it feels done. No stage may begin while the previous gate is open. "Done" is verified by command output, not by confidence.**

@@ -5,7 +5,7 @@
 > Re-run with `make explain`.
 
 Volume: funding_application=20000, tracked_application=20000, match_result=20000, notification_outbox=60000 (PENDING).
-Generated: 2026-06-14T04:52:48Z · PostgreSQL 16.
+Generated: 2026-06-14T05:39:44Z · PostgreSQL 16.
 
 ## 1. My applications (student dashboard)
 
@@ -54,13 +54,13 @@ SELECT * FROM notification_outbox WHERE state='PENDING' AND next_attempt_at<=now
 ```
 
 ```
-                                                                                   QUERY PLAN                                                                                    
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Limit  (cost=2.06..269.84 rows=100 width=105)
-   ->  LockRows  (cost=2.06..2947.60 rows=1100 width=105)
-         ->  Merge Append  (cost=2.06..2936.60 rows=1100 width=105)
+                                                                                   QUERY PLAN                                                                                   
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=2.06..323.40 rows=100 width=108)
+   ->  LockRows  (cost=2.06..1962.19 rows=610 width=108)
+         ->  Merge Append  (cost=2.06..1956.09 rows=610 width=108)
                Sort Key: notification_outbox.next_attempt_at
-               ->  Index Scan using notification_outbox_202606_next_attempt_at_idx on notification_outbox_202606 notification_outbox_1  (cost=0.29..2812.73 rows=1088 width=105)
+               ->  Index Scan using notification_outbox_202606_next_attempt_at_idx on notification_outbox_202606 notification_outbox_1  (cost=0.29..1843.75 rows=598 width=105)
                      Index Cond: (next_attempt_at <= now())
                      Filter: (state = 'PENDING'::text)
                ->  Index Scan using notification_outbox_202607_next_attempt_at_idx on notification_outbox_202607 notification_outbox_2  (cost=0.13..8.15 rows=1 width=222)

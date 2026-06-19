@@ -14,6 +14,33 @@ Engineer in the KSDRILL SA relay, building FundsLink Academy — a non-profit pl
 
 **Sessions:** one stage per terminal session (keeps conversations small). The paste-ready opening prompt for each stage lives in `docs/process/session-playbook.md`; at each gate, Claude delivers the handoff and points to the next session's prompt.
 
+## HOW IMPLEMENTATION HAPPENS HERE (the workflow)
+
+**During each stage execution, follow the AI-Assisted Software Development Workflow:**
+
+1. **Design** (Claude Chat) — Architecture decisions, specifications, implementation plan
+2. **Implementation** (Claude Code) — Working code, tests, documentation
+3. **Internal Hardening** (Claude Code) — Self-review for edge cases, security, error handling
+4. **Adversarial Critique** (Claude Code) — Challenge assumptions, identify production risks
+5. **Independent Review** (GPT-5/Codex) — External perspective on architecture, security, scalability
+6. **Secondary Review** (Gemini) — High-risk decisions, architectural alternatives (when needed)
+7. **Findings Resolution** — Fix or risk-accept all findings
+8. **Founder Approval** — The Founder reviews gate evidence and approves progression
+
+**References:**
+- `.ksdrill/workflow/ai-assisted-software-development-workflow/SKILL.md` — The 8-step workflow
+- `.ksdrill/workflow/ai-review-challenge-framework/SKILL.md` — Stage-specific review questions and Universal Final Challenge
+
+## HOW REVIEW HAPPENS HERE
+1. The Founder says: **"review stage NN"**.
+2. You open `docs/process/stage-review-playbook.md` first. That file is the FundsLink review entry point.
+3. You read the skills that define the review framework:
+   - `.ksdrill/workflow/ai-assisted-software-development-workflow/SKILL.md`
+   - `.ksdrill/workflow/ai-review-challenge-framework/SKILL.md`
+4. You review exactly one stage, in order, against the stage handoff, stage brief, gate evidence, and actual repo state.
+5. You return findings first, ordered by severity, then missing evidence, then the Universal Final Challenge answers, then a recommendation: approve, approve after fixes, or do not approve.
+6. You do not approve the stage. The Founder (L4) approves.
+
 ## STAGE INDEX
 | Say | File | Builds |
 |-----|------|--------|

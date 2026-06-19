@@ -1,6 +1,8 @@
 # STAGE 03 — BACKEND MODULES (six, in THIS order; one module = one PR = gate check)
 **Read first:** IMPLEMENTATION-PROCESS §5 · TAD §2, §5–§7 · ERD BR sections per module · contract per module. Per-module reads listed below — read only those.
 
+**Review framework reference:** After completing this stage, it will be reviewed against the Stage 03 challenge questions in `.ksdrill/workflow/ai-review-challenge-framework.md` and the Universal Final Challenge. Familiarize yourself with these questions during implementation.
+
 1. **profile** (BR-A03/A04; UX S09): student_profile CRUD; documents pipeline — magic-byte validation, size caps, AV hook, EXIF strip, sha256, signed URLs from separate origin (ST-2.4); ID-number encrypt + blind index.
 2. **application** (BR-S01–S08, E1/E5/E13; UX S10–S14): state-machine service over transition tables; status event + outbox enqueue in ONE transaction (BR-N01); duplicate-active → friendly 409 APPLICATION_ALREADY_ACTIVE; OTHER requires motivation object (BR-E05); withdraw path.
 3. **eligibility** (BR-E01–E04, E10; MASTER-SPEC §5.7): ruleset evaluator over eligibility_ruleset JSONB (version-pinned at submission — BR-E02); pre_screen_result append; RETURNED fix-list + application_return cycles; cycle-3 outreach flag; UNSCREENED degradation path; discrepancies = annotations never failures.

@@ -1,6 +1,8 @@
 # STAGE 05 — INTEGRATION & HARDENING
 **Read first:** IMPLEMENTATION-PROCESS §7 · STRESS-TEST-AUDIT (every TRACKED/BLOCKING item) · LAUNCH-CHECKLIST.
 
+**Review framework reference:** After completing this stage, it will be reviewed against the Stage 05 challenge questions in `.ksdrill/workflow/ai-review-challenge-framework.md` and the Universal Final Challenge. Familiarize yourself with these questions during implementation.
+
 1. Playwright E2E: golden journey + painful journeys (return-cycle x3 → outreach flag; rejection → appeal by DIFFERENT reviewer; waitlist position display; engine-down UNSCREENED flow).
 2. k6 baseline vs staging: p95 < 2s @ 200 concurrent (ST-6.5) — commit results.
 3. External port scan: only 443 public (ST-2.8). Dependency audit + gitleaks full-history.

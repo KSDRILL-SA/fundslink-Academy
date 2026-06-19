@@ -18,6 +18,14 @@ and the edge rulings in **`docs/product/scenarios-and-decisions.md`** (D-NNN). C
 you satisfied (e.g. ST-2.1 MFA, ST-2.3 cross-user 403, ST-2.9 key-rotation, D-015 auth RLS).
 A phase is not "done" until its relevant ST findings are met or explicitly deferred with a reason.
 
+## Independent stage review (MANDATORY when Founder requests "review stage NN")
+Use `docs/process/stage-review-playbook.md` as the project entry point. It applies:
+- `.ksdrill/workflow/ai-assisted-software-development-workflow.md`
+- `.ksdrill/workflow/ai-review-challenge-framework.md`
+
+Review exactly one stage at a time, in implementation order. The reviewer recommends; the Founder
+approves.
+
 ## Phase-status sync (MANDATORY on stage completion — S10.23 / proposed S10.38)
 The moment a stage's gate passes, **before** the S10.6 handoff, update the phase status in **every
 living doc** so they all agree on what is done and what is next. **The next terminal engineer must

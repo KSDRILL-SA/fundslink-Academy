@@ -11,6 +11,10 @@ from this file**.
 3. Claude loads context, verifies the prior gate, builds the stage, stops at the gate.
 4. On approval, Claude points you here for the next stage. Repeat to launch.
 
+**Implementation workflow reference:** Every stage follows the 8-step AI-Assisted Software Development Workflow defined in `.ksdrill/workflow/ai-assisted-software-development-workflow/SKILL.md`. Familiarize yourself with this workflow to understand how design, implementation, hardening, and review fit together.
+
+**Review framework reference:** Every stage will be reviewed against the AI Review and Challenge Framework (`.ksdrill/workflow/ai-review-challenge-framework/SKILL.md`). That framework includes stage-specific challenge questions and a Universal Final Challenge (11 critical questions that every stage must answer before approval).
+
 > Foundation (Stage 00) is complete. Full build history + how-we-work: [handoff-s00-s01.md](handoff-s00-s01.md).
 > Each prompt is self-contained — it re-loads context and re-verifies, so a brand-new session starts strong.
 
