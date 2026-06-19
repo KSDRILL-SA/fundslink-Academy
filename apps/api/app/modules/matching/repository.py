@@ -95,16 +95,18 @@ class MatchResultRepository(BaseRepository):
         mode: str,
     ) -> str:
         match_id = cuid()
-        # ON CONFLICT (student, bursary, model_version): a re-run refreshes the score/mode rather
-        # than duplicating (uq_match). RETURNING gives the id whether inserted or updated.
+        # ON CONFLICT (student, bursary): one match per pair (uq_match) — a re-run, including a
+        # LIVE<->FALLBACK mode flip, refreshes score/mode/model_version instead of duplicating.
+        # RETURNING gives the id whether inserted or updated.
         row = await sql.fetch_one(
             self.session,
             "INSERT INTO match_result"
             " (id, student_profile_id, external_bursary_id, score, model_version, prompt_version,"
             "  mode, created_by)"
             " VALUES (:id, :sp, :eb, :score, :mv, :pv, :mode, 'SYSTEM')"
-            " ON CONFLICT (student_profile_id, external_bursary_id, model_version)"
-            " DO UPDATE SET score = EXCLUDED.score, mode = EXCLUDED.mode"
+            " ON CONFLICT (student_profile_id, external_bursary_id)"
+            " DO UPDATE SET score = EXCLUDED.score, mode = EXCLUDED.mode,"
+            " model_version = EXCLUDED.model_version"
             " RETURNING id",
             id=match_id,
             sp=student_profile_id,

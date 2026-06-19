@@ -64,16 +64,17 @@ def test_uq_match(conn):
     pid = helpers.insert_profile(conn)
     bid = helpers.insert_bursary(conn)
 
-    def add_match():
+    def add_match(model_version):
         conn.execute(
             "INSERT INTO match_result(id, student_profile_id, external_bursary_id, score,"
             " model_version, prompt_version) VALUES (%s, %s, %s, %s, %s, %s)",
-            (cuid(), pid, bid, "0.5000", "m1", "p1"),
+            (cuid(), pid, bid, "0.5000", model_version, "p1"),
         )
 
-    add_match()
+    add_match("m1")
+    # one match per (student, bursary): a different model_version (LIVE vs FALLBACK) still collides
     with _expect_unique(conn), conn.transaction():
-        add_match()
+        add_match("m2")
 
 
 def test_uq_user_role(conn):
