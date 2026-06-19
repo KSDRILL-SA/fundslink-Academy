@@ -33,14 +33,70 @@ def _backoff(attempts: int) -> datetime:
     return datetime.now(UTC) + timedelta(seconds=_BASE_BACKOFF_SECONDS * (2 ** (attempts - 1)))
 
 
+# Student-facing copy per trigger (the content track). Voice law: docs/experience/ux-screen-map.md
+# §0 — P1 dignity first · P2 never a dead end · P4 a return is NOT a rejection · P5 humans are
+# visible. No IDs/PII in any body (P3 / POPIA — the student signs in for detail); channel-agnostic
+# and concise so the same warm words serve email, SMS, and in-app (P6).
+_TEMPLATES: dict[str, tuple[str, str]] = {
+    "APPLICATION_SUBMITTED": (
+        "We've received your FundsLink application",
+        "Thank you — your application is in. A person reviews every application (our system never"
+        " decides that), so it's now with our team. We'll tell you the moment there's an update;"
+        " you don't need to do anything right now.",
+    ),
+    "APPLICATION_STATUS_CHANGED": (
+        "There's an update on your FundsLink application",
+        "Your application has moved to its next step. Sign in to FundsLink to see where it is and"
+        " what happens next — a person is looking after it.",
+    ),
+    "APPLICATION_RETURNED_FOR_INFO": (
+        "A few small things to add to your application",
+        "Your application is moving — we just need a little more to continue. There are a few small"
+        " things to add or fix. Sign in to see the short list, then resubmit. This is not a"
+        " decline; it's how we make your application as strong as it can be.",
+    ),
+    "INTERVIEW_SCHEDULED": (
+        "Your FundsLink interview is scheduled",
+        "An interview has been scheduled as part of your application. Sign in to see the details"
+        " and confirm — if the time doesn't work, you can tell us there.",
+    ),
+    "DECISION_APPROVED": (
+        "Good news about your FundsLink application",
+        "We're glad to share that your application has been approved. Sign in for the details and"
+        " next steps. Congratulations — this is a real milestone, and we're with you from here.",
+    ),
+    "DECISION_REJECTED": (
+        "An update on your FundsLink application",
+        "Thank you for applying to FundsLink. After a person carefully reviewed it, we're not able"
+        " to fund your application this time. This reflects the funding available — not your worth"
+        " or your potential. A few doors stay open: view bursaries matched to your profile, appeal"
+        " once if you have new information, and you're welcome to apply again next intake. Sign in"
+        " to see your options — we'll help you take the next step.",
+    ),
+    "TRACKED_DEADLINE_REMINDER": (
+        "A bursary deadline is coming up",
+        "Heads up — a bursary you're tracking has a deadline in a few days. Sign in to check the"
+        " date and make sure your application is in on time. You've got this.",
+    ),
+    "TRACKED_FOLLOW_UP": (
+        "Still waiting to hear back?",
+        "It's been a while since there was movement on a bursary you're tracking. A gentle"
+        " follow-up is worth it — sign in to see which one and update its status when you hear"
+        " back. Quiet doesn't always mean no.",
+    ),
+}
+
+_DEFAULT_MESSAGE: tuple[str, str] = (
+    "There's an update on your FundsLink account",
+    "There's an update on your FundsLink account — sign in to FundsLink to see the details.",
+)
+
+
 def _render(trigger: str, payload: dict) -> tuple[str, str]:
-    """A minimal human message per trigger (real templates land with the content track)."""
-    subject = f"FundsLink update — {trigger.replace('_', ' ').title()}"
-    ref = payload.get("application_id") or payload.get("tracked_application_id") or ""
-    body = f"There is an update on your FundsLink account ({trigger})."
-    if ref:
-        body += f" Ref: {ref}"
-    return subject, body
+    """The student-facing copy for a trigger (content track). Warm, dignified, channel-agnostic per
+    the UX emotional-design law (ux-screen-map §0, P1–P8); never embeds an id/PII (P3 / POPIA).
+    `payload` is intentionally unused — detail lives behind sign-in. Unknown triggers fall back."""
+    return _TEMPLATES.get(trigger, _DEFAULT_MESSAGE)
 
 
 class NotificationWorker:
