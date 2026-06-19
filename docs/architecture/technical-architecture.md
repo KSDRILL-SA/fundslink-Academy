@@ -297,7 +297,7 @@ auth:      POST /auth/register · /auth/login · /auth/refresh · /auth/logout
 profile:   GET/PUT /students/me/profile · POST /students/me/documents
 apply:     POST /applications · GET /applications/me · GET /applications/{id}
            POST /applications/{id}/submit          (state machine guard)
-matching:  POST /matches/run → 202 + job id (queued — §6.3) · GET /matches/me
+matching:  POST /matches/run → 200 + match page (v1 sync advisory; async 202 queue → v1.x — §6.2) · GET /matches/me
            GET /bursaries (browse-all, equal prominence — Spec §17.2)
 tracking:  POST /tracked-applications · GET /tracked-applications
            POST /tracked-applications/{id}/status  (self-report)
@@ -333,7 +333,17 @@ bursary_id, score, model_ver, created_at)  tags, prompt/version snapshot
 
 ## 6.2 Execution Model [ST-1]
 
-Matching runs as a **queued background job**, never inline in the request: `POST /matches/run` enqueues and returns 202; the worker computes; the SPA polls `GET /matches/me`. Profile embeddings are **cached** and re-computed only on profile change; bursary embeddings re-index on bursary update. OpenAI calls are wrapped in a **spend circuit breaker** (daily budget in config; breaker OPEN → fallback mode) and per-user quotas. This removes the rate-limit/cost failure mode at 10k users.
+**v1 — synchronous advisory (Founder-approved L4 2026-06-19):** `POST /matches/run` scores the open,
+non-expired bursaries **in-request** and returns **200 + the match page** directly (no fake job id).
+The cost/rate-limit failure mode is held off not by a queue but by a **spend circuit breaker** (daily
+budget in config; breaker OPEN → fallback mode), a **per-user daily quota**, and a **local embedding
+heuristic** (no live OpenAI calls in v1). Profile embeddings are **cached** and re-computed only on
+profile change; bursary embeddings re-index on bursary update.
+
+**v1.x target (deferred):** move matching to a **queued background job** — `POST /matches/run`
+enqueues and returns 202, a worker computes, the SPA polls `GET /matches/me` — once a real (paid)
+embedding model lands and volume warrants offloading the request path. This is what removes the
+rate-limit/cost failure mode at 10k users.
 
 ## 6.3 Governance Hooks (Spec §17 → code)
 

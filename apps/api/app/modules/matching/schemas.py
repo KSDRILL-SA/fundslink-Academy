@@ -13,11 +13,6 @@ from pydantic import BaseModel, Field
 from app.modules.application.schemas import PageMeta
 
 
-class JobAccepted(BaseModel):
-    job_id: str
-    status: str = "QUEUED"
-
-
 class Bursary(BaseModel):
     id: str
     name: str

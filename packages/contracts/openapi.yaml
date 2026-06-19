@@ -252,10 +252,14 @@ paths:
   /matches/run:
     post:
       operationId: runMatching
-      summary: Enqueue AI matching job (202 pattern — TAD §6.2, queued, spend-guarded)
+      summary: Run AI matching — synchronous advisory in v1 (spend-guarded; async queue deferred to v1.x, TAD §6.2)
+      description: >-
+        Scores the open, non-expired bursaries for the caller and returns the refreshed match page
+        directly. Idempotent — a re-run converges via uq_match (ON CONFLICT refresh), never
+        duplicates. (v1 runs in-request; the queued 202 worker pattern is deferred to v1.x.)
       parameters: [ { $ref: '#/components/parameters/IdempotencyKey' } ]
       responses:
-        '202': { description: Queued, content: { application/json: { schema: { $ref: '#/components/schemas/JobAccepted' } } } }
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/MatchPage' } } } }
         '429': { $ref: '#/components/responses/RateLimited' }
 
   /matches/me:
@@ -627,13 +631,6 @@ components:
                     Never an auto-decision (§5.7, D-010).
                 cycle_no: { type: integer }
             created_at: { type: string, format: date-time }
-
-    JobAccepted:
-      type: object
-      required: [job_id, status]
-      properties:
-        job_id: { type: string }
-        status: { type: string, const: QUEUED }
 
     Match:
       type: object

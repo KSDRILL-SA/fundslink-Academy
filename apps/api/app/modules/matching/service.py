@@ -17,7 +17,6 @@ from decimal import Decimal
 from app.common.errors import AppError
 from app.common.pagination import clamp_limit, decode_cursor, encode_cursor
 from app.db.context import set_system_context
-from app.db.cuid import cuid
 from app.modules.application.schemas import PageMeta
 from app.modules.auth.repository import AuditRepository
 from app.modules.matching.repository import (
@@ -26,7 +25,7 @@ from app.modules.matching.repository import (
     MatchResultRepository,
     ProfileReadRepository,
 )
-from app.modules.matching.schemas import Bursary, BursaryPage, JobAccepted, Match, MatchPage
+from app.modules.matching.schemas import Bursary, BursaryPage, Match, MatchPage
 from app.modules.matching.spend import MatchQuota, MatchSpendBreaker
 from app.modules.matching.stores import (
     embed_text,
@@ -74,7 +73,7 @@ class MatchingService:
         self.quota = MatchQuota(redis)
         self.breaker = MatchSpendBreaker(redis)
 
-    async def run(self, *, actor_id: str, request_id: str) -> JobAccepted:
+    async def run(self, *, actor_id: str, request_id: str) -> MatchPage:
         await set_system_context(self.session)
         quota_limit = await self.config.get_int("matching_user_daily_quota", 5)
         if not await self.quota.within_quota(actor_id, limit=quota_limit):
@@ -134,7 +133,10 @@ class MatchingService:
             request_id=request_id,
             detail={"mode": mode, "candidates": len(candidates), "matched": len(scored)},
         )
-        return JobAccepted(job_id=cuid(), status="QUEUED")
+        # v1 is synchronous-advisory: the work above is done, so return the refreshed match page
+        # directly (async 202/worker queue deferred to v1.x — TAD §6.2). Same transaction, so the
+        # just-written rows are visible to this read.
+        return await self.get_matches(actor_id=actor_id, cursor=None, limit=None)
 
     async def _score(self, student_id, level, field, candidates, *, live: bool):
         if not live:

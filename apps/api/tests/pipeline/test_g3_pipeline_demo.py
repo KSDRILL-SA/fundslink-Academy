@@ -104,7 +104,7 @@ def test_g3_end_to_end_match_track_notify(api, admin_conn):
         " created_by) VALUES (%s, 'Tech Bursary', 'ACME', %s, %s, 'OPEN', 'SYSTEM')",
         (bid, ["UG"], ["computer", "science"]),
     )
-    assert api.post(f"{BASE}/matches/run", headers=bearer(token)).status_code == 202
+    assert api.post(f"{BASE}/matches/run", headers=bearer(token)).status_code == 200
     matches = api.get(f"{BASE}/matches/me", headers=bearer(token)).json()["items"]
     assert any(m["bursary"]["id"] == bid for m in matches)
 
