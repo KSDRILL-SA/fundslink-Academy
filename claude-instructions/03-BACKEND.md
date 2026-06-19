@@ -1,4 +1,4 @@
-# STAGE 03 — BACKEND MODULES (six, in THIS order; one module = one PR = gate check)
+# Stage 03 — Backend modules (six, in dependency order; one module = one PR = one gate)
 **Read first:** IMPLEMENTATION-PROCESS §5 · TAD §2, §5–§7 · ERD BR sections per module · contract per module. Per-module reads listed below — read only those.
 
 **Review framework reference:** After completing this stage, it will be reviewed against the Stage 03 challenge questions in `.ksdrill/workflow/ai-review-challenge-framework.md` and the Universal Final Challenge. Familiarize yourself with these questions during implementation.

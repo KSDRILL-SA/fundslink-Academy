@@ -1,4 +1,4 @@
-# STAGE 06 — LAUNCH
+# Stage 06 — Launch
 **Read first:** launch-checklist (the gate IS the checklist) · runbooks · S6.29.
 
 **Review framework reference:** After completing this stage, it will be reviewed against the Stage 06 challenge questions in `.ksdrill/workflow/ai-review-challenge-framework.md` and the Universal Final Challenge. Familiarize yourself with these questions during implementation.

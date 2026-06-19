@@ -45,7 +45,7 @@ Engineer in the KSDRILL SA relay, building FundsLink Academy — a non-profit pl
 | Say | File | Builds |
 |-----|------|--------|
 | execute stage 00 | claude-instructions/00-BOOTSTRAP.md | Doc filing, monorepo scaffold, env, CI gates |
-| execute stage 01 | claude-instructions/01-DATABASE.md | THE DATABASE — alone, perfectly, completely |
+| execute stage 01 | claude-instructions/01-DATABASE.md | The database — schema, migrations, integrity (built alone, first) |
 | execute stage 02 | claude-instructions/02-AUTH.md | Auth vertical slice (API + Angular libs/auth) |
 | execute stage 03 | claude-instructions/03-BACKEND.md | Six backend modules, dependency order |
 | execute stage 04 | claude-instructions/04-FRONTEND.md | 21 screens + 4 admin, journey order |

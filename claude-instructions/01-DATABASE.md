@@ -1,4 +1,4 @@
-# STAGE 01 — THE DATABASE, ALONE, PERFECTLY (Founder's first focus)
+# Stage 01 — Database: schema, migrations, and integrity (built alone, first)
 **Read first (full):** docs/database/ (DBLC, DB-DOCTRINE, ERD-PACKAGE, schema.sql) · IMPLEMENTATION-PROCESS §3. **Reference:** TAD §4, ADR-003 (data access), MASTER-SPEC §5.6–5.8 + §14.6 (the rules your schema enforces).
 
 **Review framework reference:** After completing this stage, it will be reviewed against the Stage 01 challenge questions in `.ksdrill/workflow/ai-review-challenge-framework.md` and the Universal Final Challenge. Familiarize yourself with these questions during implementation.
