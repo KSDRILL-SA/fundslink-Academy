@@ -64,7 +64,7 @@ def test_duplicate_active_application_rejected_br_e06(app_client):
         APPS, headers=bearer(token), json={"application_type": "UG_CAT_A", "academic_year": "2026"}
     )
     assert dup.status_code == 409
-    assert dup.json()["error"]["code"] == "APPLICATION_ALREADY_ACTIVE"
+    assert dup.json()["error"]["code"] == "application_already_active"
     # A different academic year is NOT a duplicate.
     other_year = app_client.post(
         APPS, headers=bearer(token), json={"application_type": "UG_CAT_A", "academic_year": "2027"}
