@@ -73,6 +73,28 @@ versioned, so in-flight applications keep v1. Full record: `docs/product/scenari
 (D-016/017/018). **Build-host note:** local PG exes won't launch (Windows UCRT) — the migration
 roundtrip + full pytest were proven in CI (`postgres:16`), not locally.
 
+## 2c. Post-G3 — Stage-03 hardening pass (2026-06-19, Founder-approved L4)
+After the eligibility pass, a smart/lightweight hardening pass landed (7 PRs, all CI-green). It
+**closes the S10.37 flagged-deferred list** (§3) — 5 resolved, 1 deferred with cause.
+
+| PR | Item | Brings |
+|----|------|--------|
+| #124 | **H1** (D-007) | SA ID required before SUBMIT — guard in `submit_application` → `409 sa_id_required`; makes the BR-A04 blind index actually bite |
+| #126 | **H2** (D-005/BR-E10) | Expired document → RETURN not reject — `document_types` excludes expired; a kind "expired; upload a current one" fix-list line |
+| #128 | **H3** (ST-3.7) | List N+1 killed — `_to_application(detail=False)`; the row's `status` already carries the pre-screen outcome |
+| #130 | **H4** (D-002/D-013) | Priority/emergency lane — `adminSetPriority` (ADMIN_REVIEWER+ only, anti-gaming); `needed_by` on create; `priority` surfaced |
+| #132 | **H6** (POPIA §15.6) | `dataExport` — subject-access bundle; raw SA ID never echoed (TAD §4.4), counselling absent (§6.4) |
+| #134 | **H7** (D-019) | Channel↔consent ratified — SMS needs `MARKETING_SMS`; EMAIL/IN_APP transactional (already enforced by the worker) |
+| #136 | **H8** (S4.12/ST-3.7) | `error.code` uniform `lower_snake_case` + the canonical registry `docs/architecture/error-codes.md` (28 codes) |
+
+**⚠️ H5 (D-003/D-012 post-approval lifecycle: SUSPEND/REVOKE/COMPLETE) — DEFERRED to v1.5.**
+`APPROVED` is unreachable via the v1 API (no authorize endpoint; the second-authorizer APPROVE is
+`BR-S05`, money/v1.5), so building SUSPEND/REVOKE/COMPLETE now would be dead, untestable code ahead
+of the §3 Release Map. It ships with the disbursement/authorizer work.
+
+**Net since G3:** migrations →**0017**; **32 contract ops** (added `adminSetPriority`, `dataExport`);
+D-016…D-019 adopted; master-spec **v1.2**. The six modules' security walls were not touched.
+
 ## 2a. How this engineer worked — mirror this discipline
 - **"Done" = command output.** Every gate above was re-run from a clean tree and pasted.
 - **Issue → branch → linked PR (`Closes #N`) → documented self-review (S10.27) → squash-merge → delete branch.** One module per PR.
