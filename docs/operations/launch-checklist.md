@@ -16,5 +16,9 @@
 - [ ] Seeds loaded: roles/permissions, lookups, transitions, config (allowance=1000.00 ZAR)
 - [ ] Bursary database: ≥50 curated bursaries with deadlines (matching has something to match)
 - [ ] governance/ synced + pinned; GOVERNANCE-PATCHES v1.2 applied to system-design-template (incl. A-1 C5 S5.65 ledger immutability + A-2 C10 S10.37 post-phase verification)
+## Background workers & schedulers (deploy wiring — TAD §7)
+- [ ] Notification outbox worker runs **continuously**: `python -m app.modules.notification.worker --loop` under a process supervisor / Railway worker — drains `notification_outbox` with `FOR UPDATE SKIP LOCKED`, retry/backoff/DEAD. *Without a running worker, no email/SMS/in-app message is delivered.*
+- [ ] Tracking reminders scheduled **daily**: the T-3 deadline + 30/45/60-day silence jobs (`app.modules.tracking.jobs`) run on a daily cron; they enqueue into the same outbox the worker drains.
+- [ ] Both run under the least-privileged `fundslink_app` role (SYSTEM RLS context) — never the owner/superuser.
 ## Done-when (MASTER-SPEC §3)
 - [ ] One real student: register → profile → apply → matched → tracked, end-to-end in production
