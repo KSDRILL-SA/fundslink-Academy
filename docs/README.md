@@ -125,6 +125,7 @@ graph LR
 | [design-system.md](experience/design-system.md) | Stage 04 design — the token foundation ("Trusted Institution, humanised"): semantic color (light+dark, navy+gold), IBM Plex Sans type, spacing/radii/motion, the a11y + performance budget. |
 | [brand-identity.md](experience/brand-identity.md) | Stage 04 design — logo (**Concept A — Rising Door — canonical**: `assets/logo/logo-mark.svg`), construction/usage/variants, brand colour, and the brand voice. |
 | [component-library.md](experience/component-library.md) | Stage 04 design — the premium component catalogue (buttons, forms, cards, tables, overlays, the four states, status chips, avatar+upload, stepper) with a11y + spartan/ui mapping. |
+| [navigation-and-shells.md](experience/navigation-and-shells.md) | Stage 04 design — the 3 layout shells, headers & footers, and the signature horizontal auto-scroll navbar (mobile swipe · desktop edge-arrow scroll · double-tap step mode) — fully accessible. |
 
 ### `process/` — how we build
 | Document | Description |
