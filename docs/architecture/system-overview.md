@@ -115,6 +115,10 @@ Five invariants are **CI gates that fail the merge** — the architecture cannot
 
 ## 6. The AI layer — honest reality and the roadmap
 
+> **Fully specified, ready to build:** the decisions are locked in
+> [ADR-007](../decisions/adr-0007-ai-enablement.md) and the design + phased build plan in
+> [ai-enablement.md](ai-enablement.md) — so when the milestone opens it is execution, not design.
+
 **Where it lives:** the **`matching` module** — a citizen of the FastAPI app, not a separate
 service. It accesses data **through repositories** (only those touch a driver), under `SYSTEM` RLS
 context with explicit ownership predicates, and it is **forbidden from writing money** to
