@@ -4,13 +4,14 @@
 |-----------|-------|
 | **ID** | ADR-007 |
 | **Date** | 2026-06-20 |
-| **Status** | **PROPOSED — awaits Founder (L4) ratification** |
+| **Status** | **RATIFIED — Founder (L4), 2026-06-20** (build deferred to the v1.x AI-Enablement milestone) |
 | **Relates To** | ADR-003 (data access), TAD §6 (matching execution model), `S5.3`/`S5.33`/`S5.45`, MASTER-SPEC §6.4 (counselling), the `matching` module, `docs/architecture/ai-enablement.md` (the design + build plan) |
 | **Owner** | Design ratified by Founder (L4); built by Engineer 02 (L3) when the AI-Enablement milestone opens |
 
 > This ADR records *what we decide* about the AI. The *how* — components, model references, the
 > phased build plan, the eval harness, and the privacy envelope — lives in
-> [`ai-enablement.md`](../architecture/ai-enablement.md). No build happens until this is ratified.
+> [`ai-enablement.md`](../architecture/ai-enablement.md). These decisions are **ratified (L4)**; the
+> build still waits for the v1.x AI-Enablement milestone — no code yet.
 
 ## Context
 
@@ -63,9 +64,16 @@ decisions *before* a real model is introduced, so the build is execution, not im
 - **Scope:** v1 remains shippable on the heuristic stub; this is a **v1.x** upgrade (see placement
   in the design doc), wired during/after Stage 05.
 
-## Open questions for ratification
+## Ratified decisions (Founder L4, 2026-06-20)
 
-- Local embedding model choice (size vs. SA-language quality) — decided empirically by the eval set.
-- Whether v1.x ships local-only, or also enables a hosted embeddings option behind the privacy gate.
-- The LLM reasoning budget (calls/day) and the FALLBACK summary quality bar.
-- Who curates the golden eval set (a human-judged profile→bursary sample) and how it is refreshed.
+The open questions are closed as follows:
+
+1. **Embeddings: local-only at v1.x.** A hosted embeddings option is deferred to a future decision,
+   allowed only behind the privacy gate and only if the eval set shows a material lift.
+2. **Model: a multilingual sentence-transformer** (SA official languages — P7); the **final pick is
+   decided empirically by the golden eval set** before P0 ships.
+3. **Reasoning budget: governed by the existing spend breaker** — a ZAR daily budget in PG config
+   (DB-D24, no hardcoded value); a conservative initial cap is set at deploy and tuned by
+   observation. Breaker OPEN ⇒ FALLBACK.
+4. **Golden eval set: Founder-curated** — an initial human-judged profile→bursary sample, refreshed
+   before any model/prompt change or a material change to the bursary corpus.
