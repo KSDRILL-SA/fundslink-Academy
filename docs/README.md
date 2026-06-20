@@ -126,6 +126,7 @@ graph LR
 | [brand-identity.md](experience/brand-identity.md) | Stage 04 design — logo (**Concept A — Rising Door — canonical**: `assets/logo/logo-mark.svg`), construction/usage/variants, brand colour, and the brand voice. |
 | [component-library.md](experience/component-library.md) | Stage 04 design — the premium component catalogue (buttons, forms, cards, tables, overlays, the four states, status chips, avatar+upload, stepper) with a11y + spartan/ui mapping. |
 | [navigation-and-shells.md](experience/navigation-and-shells.md) | Stage 04 design — the 3 layout shells, headers & footers, and the signature horizontal auto-scroll navbar (mobile swipe · desktop edge-arrow scroll · double-tap step mode) — fully accessible. |
+| [marketing-site.md](experience/marketing-site.md) | Stage 04 design — the public site: hero (image + navy scrim so text never fights it), the "Enterprise Gateway" path, the pages, the premium section toolkit, performance/SEO, and trust/POPIA signals. |
 
 ### `process/` — how we build
 | Document | Description |
