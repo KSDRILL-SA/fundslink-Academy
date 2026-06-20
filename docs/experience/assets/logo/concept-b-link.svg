@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FundsLink Academy — The Link">
+  <title>FundsLink Academy — The Link</title>
+  <desc>Two interlocking links — navy (the fund) and gold (the student) — connected. The name made visible.</desc>
+  <!-- Navy link: the fund / institution -->
+  <rect x="9" y="23" width="30" height="18" rx="9" fill="none" stroke="#1b2c4d" stroke-width="6"/>
+  <!-- Gold link: the student, interlocking -->
+  <rect x="25" y="23" width="30" height="18" rx="9" fill="none" stroke="#f59e0b" stroke-width="6"/>
+</svg>

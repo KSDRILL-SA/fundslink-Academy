@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FundsLink Academy — Rising Door">
+  <title>FundsLink Academy — Rising Door</title>
+  <desc>A navy doorway/portal (trust, access) framing a gold rising figure (the student stepping up).</desc>
+  <!-- Navy portal / doorway: trust, access -->
+  <path d="M15 56 V31 a17 17 0 0 1 34 0 V56" fill="none" stroke="#1b2c4d" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Gold rising figure: head -->
+  <circle cx="32" cy="27" r="5" fill="#f59e0b"/>
+  <!-- Gold rising path/arms -->
+  <path d="M23 47 L32 36 L41 47" fill="none" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

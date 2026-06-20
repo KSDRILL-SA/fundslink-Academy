@@ -123,6 +123,7 @@ graph LR
 | [ux-screen-map.md](experience/ux-screen-map.md) | 21 screens, emotional-design principles (P1–P8), the kind-rejection spec. |
 | [frontend-structure.md](experience/frontend-structure.md) | Stage 04 design — the Angular workspace file/folder architecture (shells, features, libs, token wiring). The foundation of the frontend design package. |
 | [design-system.md](experience/design-system.md) | Stage 04 design — the token foundation ("Trusted Institution, humanised"): semantic color (light+dark, navy+gold), IBM Plex Sans type, spacing/radii/motion, the a11y + performance budget. |
+| [brand-identity.md](experience/brand-identity.md) | Stage 04 design — logo (3 SVG concepts + `assets/logo/preview.html` gallery), construction/usage/variants, brand colour, and the brand voice. Founder picks the mark. |
 
 ### `process/` — how we build
 | Document | Description |
