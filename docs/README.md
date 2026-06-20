@@ -95,7 +95,7 @@ graph LR
 | [adr-0004-store-consolidation.md](decisions/adr-0004-store-consolidation.md) | Proposed v1 PostgreSQL-only consolidation — **REJECTED (L4, 2026-06-13)**; v1 keeps the 3-store polyglot. |
 | [adr-0005-frontend-strategy.md](decisions/adr-0005-frontend-strategy.md) | Angular-native frontend — Tailwind + custom CSS + spartan/ui; Magic/Aceternity reproduced in Angular. **accepted (L4)**. |
 | [adr-0006-institutional-data-feed.md](decisions/adr-0006-institutional-data-feed.md) | Institutional academic+financial data feed — **PROPOSED stub** (gated on MOUs + POPIA; v2→v4). Not a v1 build item. |
-| [adr-0007-ai-enablement.md](decisions/adr-0007-ai-enablement.md) | AI Enablement — locked decisions for the real matching AI (local-first embeddings, ChromaDB ANN, Claude RAG, advisory-only, grounding, eval gate). **PROPOSED (L4)**; design in `architecture/ai-enablement.md`. |
+| [adr-0007-ai-enablement.md](decisions/adr-0007-ai-enablement.md) | AI Enablement — locked decisions for the real matching AI (local-first embeddings, ChromaDB ANN, Claude RAG, advisory-only, grounding, eval gate). **RATIFIED (L4, 2026-06-20)**; design in `architecture/ai-enablement.md`. |
 
 ### `architecture/` — how
 | Document | Description |

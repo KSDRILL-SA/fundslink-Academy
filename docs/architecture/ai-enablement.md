@@ -120,9 +120,15 @@ Each phase is **one issue → one branch → one PR**, advisory-only and human-f
 - **No live external calls in CI:** the embedder/reasoner are ports — tests inject deterministic
   fakes (the existing pattern), exactly as today.
 
-## 10. Open questions (carried to ADR-007 ratification)
+## 10. Ratified decisions (ADR-007, Founder L4 — 2026-06-20)
 
-- Local embedding model choice (size vs. SA-language quality).
-- v1.x: local-only, or also a privacy-gated hosted embeddings option?
-- LLM reasoning daily budget + the FALLBACK quality bar.
-- Who curates and refreshes the golden eval set.
+- **Embeddings: local-only** at v1.x (a hosted option is deferred behind the privacy gate + an
+  eval-justified lift).
+- **Model: a multilingual sentence-transformer** (SA languages); the final pick is decided by the
+  golden eval set before P0.
+- **Reasoning budget:** governed by the existing spend breaker (ZAR in PG config, DB-D24);
+  a conservative initial cap is set at deploy and tuned by observation.
+- **Golden eval set: Founder-curated**, refreshed before any model/prompt change or a material
+  change to the bursary corpus.
+
+See [ADR-007](../decisions/adr-0007-ai-enablement.md) for the authoritative record.
