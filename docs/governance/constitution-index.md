@@ -53,7 +53,7 @@ Engineer in the KSDRILL relay. Permission level per AI-INSTRUCTIONS (governance/
 4. docs/database/data-model.md + docs/database/schema.sql (validated DDL)
 5. packages/contracts/openapi.yaml — endpoints come FROM here (S2.7), never invented (32 ops live)
 5a. docs/architecture/error-codes.md — the stable `error.code` registry; the frontend branches on `code`, never `message` (S4.12)
-6. docs/decisions/ADR-002..006 — locked decisions (monorepo, hybrid data access, store topology, frontend; **ADR-006 institutional-data-feed = PROPOSED stub for Engineer 01, not a build item**). **ADR-004 (PG-only) is REJECTED — v1 = PostgreSQL + MongoDB + ChromaDB + Redis.**
+6. docs/decisions/ADR-002..007 — locked decisions (monorepo, hybrid data access, store topology, frontend; **ADR-006 institutional-data-feed = PROPOSED stub for Engineer 01, not a build item**; **ADR-007 AI-Enablement = PROPOSED, design in `architecture/ai-enablement.md`, build at v1.x — not yet**). **ADR-004 (PG-only) is REJECTED — v1 = PostgreSQL + MongoDB + ChromaDB + Redis.**
 7. docs/process/sdlc.md — FRs/NFRs/traceability/gated lifecycle
 7a. ⭐ docs/product/scenarios-and-decisions.md — the Scenarios & Decisions Playbook: student-edge rulings (D-NNN) every phase consults before building a flow; append new decisions, never guess
 8. docs/audits/stress-test-audit.md — ST findings; BLOCKING gates live here

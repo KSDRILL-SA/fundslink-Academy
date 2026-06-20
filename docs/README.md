@@ -95,6 +95,7 @@ graph LR
 | [adr-0004-store-consolidation.md](decisions/adr-0004-store-consolidation.md) | Proposed v1 PostgreSQL-only consolidation — **REJECTED (L4, 2026-06-13)**; v1 keeps the 3-store polyglot. |
 | [adr-0005-frontend-strategy.md](decisions/adr-0005-frontend-strategy.md) | Angular-native frontend — Tailwind + custom CSS + spartan/ui; Magic/Aceternity reproduced in Angular. **accepted (L4)**. |
 | [adr-0006-institutional-data-feed.md](decisions/adr-0006-institutional-data-feed.md) | Institutional academic+financial data feed — **PROPOSED stub** (gated on MOUs + POPIA; v2→v4). Not a v1 build item. |
+| [adr-0007-ai-enablement.md](decisions/adr-0007-ai-enablement.md) | AI Enablement — locked decisions for the real matching AI (local-first embeddings, ChromaDB ANN, Claude RAG, advisory-only, grounding, eval gate). **PROPOSED (L4)**; design in `architecture/ai-enablement.md`. |
 
 ### `architecture/` — how
 | Document | Description |
@@ -104,6 +105,7 @@ graph LR
 | [engineering-architecture.md](architecture/engineering-architecture.md) | Layering (router→service→repository), shared/common homes, enforced hard rules, design-for-extension seams. |
 | [funding-donations-architecture.md](architecture/funding-donations-architecture.md) | Funding intake (donors/institutions/partners) forward design for v1.5+; readiness audit; PROPOSED (L4 lock pending). |
 | [error-codes.md](architecture/error-codes.md) | The stable `error.code` registry (28 codes · HTTP · meaning) — the contract the frontend branches on (S4.12). |
+| [ai-enablement.md](architecture/ai-enablement.md) | The real-AI design & phased build plan (embeddings → ChromaDB ANN → Claude RAG reasoning → eval gate); paired with ADR-007. **Planned v1.x.** |
 
 ### `database/` — database law & schema
 | Document | Description |
