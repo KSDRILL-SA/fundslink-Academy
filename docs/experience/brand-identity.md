@@ -25,8 +25,11 @@ themeable, < 1 KB).
 **Concept A (Rising Door).** It carries the exact story the whole platform tells — *a door of access,
 a person rising* — in one clean mark; it's warm without being soft, institutional without being cold,
 and it reads at 16px. **B** is the safe, literal runner-up (great if you want the name spelled in the
-mark); **C** leans most "finance dashboard" and least human. *Your pick decides; I then refine the
-chosen mark to pixel-perfection and set it canonical.*
+mark); **C** leans most "finance dashboard" and least human.
+
+**✅ Chosen: Concept A — Rising Door** (Founder L4, 2026-06-20). Canonical:
+[`logo-mark.svg`](assets/logo/logo-mark.svg) (full-colour) + [`logo-mark-mono.svg`](assets/logo/logo-mark-mono.svg)
+(`currentColor`, themes light/dark). The `concept-*.svg` files remain as the archive.
 
 ## 2. Construction & usage
 
@@ -80,6 +83,9 @@ Tagline candidates (for your pick): *"Funding that finds you." · "The bridge pa
 
 ## 7. Decision
 
-**Founder (L4) picks A, B, or C** (open the gallery). On your word, I finalise the chosen mark
-(refined geometry, the four variants, favicon set) and mark it canonical here — then the design
-package moves to components (#4).
+**✅ DECIDED — Concept A (Rising Door), Founder (L4), 2026-06-20.** Canonical mark:
+[`logo-mark.svg`](assets/logo/logo-mark.svg) + [`logo-mark-mono.svg`](assets/logo/logo-mark-mono.svg).
+Favicon = the mark; the wordmark lockup is composed in the header component (mark + IBM Plex Sans
+Semibold — "Funds" navy, "Link" gold, "ACADEMY" muted small-caps), per the gallery. The build
+engineer exports the four variants (full-colour / reversed / mono / maskable) into
+`apps/web/src/assets/logo/`. The design package now moves to **components (#4)**.

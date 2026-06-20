@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="FundsLink Academy">
+  <title>FundsLink Academy — monochrome</title>
+  <desc>Single-colour mark using currentColor — inherits text colour so it themes (navy on light, white on dark).</desc>
+  <path d="M14 57 V31 a18 18 0 0 1 36 0 V57" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="32" cy="26" r="5.5" fill="currentColor"/>
+  <path d="M22 48 L32 35 L42 48" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
