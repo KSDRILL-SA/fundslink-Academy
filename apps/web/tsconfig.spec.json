@@ -1,0 +1,16 @@
+/* TypeScript configuration for the unit-test build.
+   Separate from tsconfig.app.json so test-only types (vitest globals, node's
+   fs/path for the specs that read design docs off disk) are available to specs
+   without widening the application's type surface. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "types": ["vitest/globals", "node"]
+  },
+  "include": [
+    "src/**/*.spec.ts",
+    "src/**/*.d.ts",
+    "libs/**/*.spec.ts"
+  ]
+}

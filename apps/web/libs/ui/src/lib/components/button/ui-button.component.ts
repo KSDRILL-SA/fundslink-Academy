@@ -100,9 +100,12 @@ export type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>['size']
           </svg>
         </span>
       }
-      <!-- Kept in layout so the width never changes; hidden from both sight and
-           screen readers while the spinner owns the button's meaning. -->
-      <span [class.invisible]="loading()" [attr.aria-hidden]="loading() ? 'true' : null">
+      <!-- Kept in layout so the width never changes, and hidden from sight
+           only. It must NOT be aria-hidden: the spinner is decorative, so the
+           label is the button's entire accessible name and hiding it leaves a
+           screen-reader user on an unnamed button. aria-busy above already
+           says it is working. Caught by axe as button-name, critical. -->
+      <span [class.invisible]="loading()">
         <ng-content />
       </span>
     </button>
