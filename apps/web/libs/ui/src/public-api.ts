@@ -19,6 +19,10 @@ export * from './lib/components/badge/ui-badge.component';
 export * from './lib/components/badge/ui-status-chip.component';
 export * from './lib/components/badge/status-presentation';
 
+// Navigation
+export * from './lib/nav/ui-scroll-nav.component';
+export * from './lib/utils/reduced-motion';
+
 // The four mandatory states (§7) — first-class, never afterthoughts.
 export * from './lib/states/ui-skeleton.component';
 export * from './lib/states/ui-empty-state.component';
