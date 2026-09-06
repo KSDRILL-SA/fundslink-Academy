@@ -22,6 +22,13 @@ export * from './lib/components/badge/ui-badge.component';
 export * from './lib/components/badge/ui-status-chip.component';
 export * from './lib/components/badge/status-presentation';
 
+// Forms (component-library.md §2)
+export * from './lib/forms/ui-form-field.component';
+export * from './lib/forms/ui-control.directives';
+export * from './lib/forms/ui-input-affix.component';
+export * from './lib/forms/ui-password-field.component';
+export * from './lib/forms/ui-error-summary.component';
+
 // Navigation
 export * from './lib/nav/ui-scroll-nav.component';
 export * from './lib/utils/reduced-motion';
