@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - "packages/contracts/**"
+      - "apps/web/libs/data-access/src/lib/generated/**"
       - ".github/workflows/contract.yml"
   pull_request:
     paths:
       - "packages/contracts/**"
+      - "apps/web/libs/data-access/src/lib/generated/**"
       - ".github/workflows/contract.yml"
 
 jobs:
@@ -22,3 +24,23 @@ jobs:
         run: pip install openapi-spec-validator
       - name: Validate OpenAPI contract (S2.7 — single source of truth)
         run: openapi-spec-validator packages/contracts/openapi.yaml
+
+      # "The client is generated" was a line in a README. This makes it a gate.
+      # Regenerating must produce no diff, which fails the build in both
+      # directions: a contract edited without regenerating, and a generated
+      # file edited by hand. Either one is drift between the contract and the
+      # code that consumes it (S2.7, handoff-s03-s04 §4.1).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Regenerate the TypeScript client from the contract
+        working-directory: packages/contracts
+        run: |
+          npm ci
+          npm run generate
+      - name: Fail if the generated client has drifted
+        run: |
+          if ! git diff --exit-code -- apps/web/libs/data-access/src/lib/generated; then
+            echo "::error::The generated client is out of date. Run 'npm run generate' in packages/contracts and commit the result."
+            exit 1
+          fi

@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:watch": "ng test --watch",
-    "build:libs": "ng build util && ng build auth && ng build data-access && ng build ui"
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
   },
   "private": true,
   "dependencies": {

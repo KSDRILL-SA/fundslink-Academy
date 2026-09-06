@@ -1,0 +1,18 @@
+/* Typechecks the ENTIRE workspace in one program — application, all four
+   libraries, and every spec — including files nothing imports yet.
+
+   tsconfig.spec.json only pulls in what the specs reach, so a library with no
+   spec (data-access, today) would be invisible to it. `ng build` only compiles
+   what the application imports, for the same reason. This config is the one
+   that sees everything. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["vitest/globals", "node"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "libs/**/*.ts"
+  ]
+}
