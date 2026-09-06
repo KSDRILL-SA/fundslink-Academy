@@ -1,0 +1,121 @@
+/* =============================================================================
+   FundsLink Academy — design tokens
+   The single source of visual truth. Generated from docs/experience/design-system.md
+   (§2 colour · §3 type · §4 spacing/radii/elevation · §5 motion).
+
+   Direction: "Trusted Institution, humanised" — navy authority warmed by gold.
+     navy #1b2c4d = trust, structure, safe with money.
+     gold #f59e0b = hope, warmth, the human moments.
+
+   Convention: colours are `H S% L%` triplets consumed as hsl(var(--token))
+   (shadcn/spartan), so spartan/ui components inherit the brand without patching.
+
+   RULES (S4.15/S4.16):
+     - Components consume these tokens. No raw hex in a component, ever.
+     - A value lives HERE or in tailwind.config.ts — never in both.
+     - Light and dark are designed together; dark is tonal, not inverted.
+   ========================================================================== */
+
+@layer base {
+  :root {
+    /* --- Surfaces & ink ------------------------------------------------- */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%; /* near-navy ink, ~16:1 on white */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* --- Brand ----------------------------------------------------------- */
+    /* primary (navy) = the serious institutional action */
+    --primary: 222 47% 20%;
+    --primary-foreground: 210 40% 98%; /* white on navy, ~13:1 */
+    /* accent (gold) = warm, hopeful highlights. NEVER for errors. */
+    --accent: 38 92% 50%;
+    --accent-foreground: 222 47% 11%; /* navy on gold, ~8:1 */
+
+    --secondary: 215 28% 95%;
+    --secondary-foreground: 222 47% 20%;
+    --muted: 215 28% 95%;
+    --muted-foreground: 215 16% 42%; /* ~5.3:1 on white — AA for body */
+
+    /* --- Functional ------------------------------------------------------ */
+    /* Functional colour NEVER carries meaning alone — always icon + text too. */
+    --success: 142 64% 30%;
+    --success-foreground: 0 0% 100%; /* forest, white ~5.4:1 */
+    --warning: 32 95% 44%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 72% 45%; /* irreversible actions only */
+    --destructive-foreground: 0 0% 100%; /* deep red, white ~5.9:1 */
+
+    /* --- Lines & focus --------------------------------------------------- */
+    --border: 215 20% 88%;
+    --input: 215 20% 88%;
+    --ring: 222 47% 25%; /* navy focus ring */
+
+    /* --- Radii (§4) — "just rounded enough": warm, not bubbly ------------- */
+    --radius: 0.625rem; /* ~10px */
+
+    /* --- Elevation (§4) — navy-tinted, subtle, 5 steps -------------------- */
+    /* One scale for cards/sheets/modals. Never invent a shadow value. */
+    --shadow-xs: 0 1px 2px 0 hsl(222 47% 11% / 0.04);
+    --shadow-sm: 0 1px 3px 0 hsl(222 47% 11% / 0.08), 0 1px 2px -1px hsl(222 47% 11% / 0.08);
+    --shadow-md: 0 4px 12px -2px hsl(222 47% 11% / 0.1);
+    --shadow-lg: 0 12px 28px -6px hsl(222 47% 11% / 0.12);
+    --shadow-xl: 0 24px 48px -12px hsl(222 47% 11% / 0.16);
+
+    /* --- Type (§3) — ONE family; hierarchy is weight + size --------------- */
+    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+    /* --- Motion (§5) — restrained, meaningful, reduced-motion-safe -------- */
+    /* Animate transform/opacity ONLY. Exit is ~60-70% of enter. */
+    --motion-fast: 150ms;
+    --motion-base: 200ms;
+    --motion-enter: 300ms;
+    --motion-exit: 140ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  /* --- Dark: tonal, not inverted (§2) ------------------------------------ */
+  .dark {
+    --background: 222 47% 9%;
+    --foreground: 210 40% 96%;
+    --card: 222 44% 12%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 44% 12%;
+    --popover-foreground: 210 40% 96%;
+
+    /* Navy cannot carry the primary action on a navy ground — it lightens to
+       a trust-blue so contrast survives the theme flip. */
+    --primary: 213 84% 65%;
+    --primary-foreground: 222 47% 11%;
+    --accent: 38 92% 52%;
+    --accent-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 18%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 70%;
+
+    --success: 142 60% 42%;
+    --success-foreground: 222 47% 11%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 222 47% 11%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 22%;
+    --input: 217 33% 24%;
+    --ring: 213 84% 65%;
+
+    /* Shadows read as depth on light grounds and as murk on dark ones; dark
+       elevation comes from the surface step (background -> card), so the
+       scale is dialled back rather than reused at full strength. */
+    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.36);
+    --shadow-lg: 0 12px 28px -6px hsl(0 0% 0% / 0.42);
+    --shadow-xl: 0 24px 48px -12px hsl(0 0% 0% / 0.5);
+  }
+}

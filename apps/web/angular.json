@@ -27,6 +27,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "ibm-plex-sans-latin-{400,500,600}-normal.woff2",
+                "input": "node_modules/@fontsource/ibm-plex-sans/files",
+                "output": "fonts"
               }
             ],
             "styles": [
@@ -39,8 +44,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "420kB",
+                  "maximumError": "550kB"
                 },
                 {
                   "type": "anyComponentStyle",

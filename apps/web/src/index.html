@@ -1,11 +1,60 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-ZA">
 <head>
   <meta charset="utf-8">
-  <title>Web</title>
+  <title>FundsLink Academy</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FundsLink Academy helps South African students who fall through the NSFAS gap find, apply for and track funding.">
+
+  <!-- Brand mark. SVG scales to every icon slot from one 684-byte file; the .ico
+       remains for legacy Windows/Explorer contexts that ignore SVG favicons. -->
+  <link rel="icon" type="image/svg+xml" href="logo-mark.svg">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="logo-mark.svg">
+
+  <!-- Paints the browser chrome to match the theme, in both schemes. -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
+
+  <!-- IBM Plex Sans — one family, hierarchy by weight (design-system.md §3).
+       Self-hosted (see styles/fonts.css): same-origin, so no DNS + TLS handshake
+       stands between the document and readable text on 3G, and no third party
+       learns who is reading a bursary application.
+
+       Only 400 (body) and 600 (headings) are preloaded — they are on the
+       critical path for every first paint. 500 is used for UI labels further
+       down the page and is left to load normally. `crossorigin` is required on
+       font preloads even same-origin, or the browser fetches the file twice. -->
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="fonts/ibm-plex-sans-latin-400-normal.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+        href="fonts/ibm-plex-sans-latin-600-normal.woff2">
+
+  <!-- Theme, resolved before first paint.
+       Without this a dark-mode user sees a white flash while Angular boots —
+       the one moment a "premium" product looks broken. Kept deliberately tiny
+       and dependency-free; it must stay in sync with ThemeService
+       (THEME_STORAGE_KEY = 'fl-theme'), and a unit test pins that agreement.
+       NOTE (Stage 04/06): when the strict CSP header lands (ST-2.4), this
+       inline script needs its sha256 hash in `script-src`. -->
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('fl-theme');
+        var dark =
+          stored === 'dark' ||
+          ((stored === null || stored === 'system') &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) {
+          document.documentElement.classList.add('dark');
+        }
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+      } catch (e) {
+        /* Blocked storage: fall through to the light default. Never block paint. */
+      }
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>
