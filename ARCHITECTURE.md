@@ -19,7 +19,7 @@ handled with deliberate, audited care.
 
 ```mermaid
 flowchart LR
-  SPA["apps/web<br/>Angular 18 SPA"] -->|"HTTPS · OpenAPI client"| API["apps/api<br/>FastAPI"]
+  SPA["apps/web<br/>Angular 22 SPA"] -->|"HTTPS · OpenAPI client"| API["apps/api<br/>FastAPI"]
   API --> PG[("PostgreSQL<br/>auth · applications · tracking · money (NUMERIC)")]
   API --> MG[("MongoDB<br/>AI match reasoning")]
   API --> CH[("ChromaDB<br/>embeddings / RAG")]
@@ -27,7 +27,7 @@ flowchart LR
   API -.->|"outbox worker"| MAIL["email / SMS / in-app"]
 ```
 
-- **Stack** (ADR-001): Angular 18 (Vercel) + FastAPI (Railway). RS256 JWT auth; refresh token in an
+- **Stack** (ADR-001): Angular 22 (Vercel) + FastAPI (Railway). RS256 JWT auth; refresh token in an
   HttpOnly cookie, access token in Angular memory.
 - **Store topology** (ADR-003; ADR-004 *rejected*): **PostgreSQL** is the system of record and the
   *only* home of monetary values (NUMERIC, append-only); **MongoDB** holds AI reasoning; **ChromaDB**
@@ -38,7 +38,7 @@ flowchart LR
 ```
 apps/
   api/                 FastAPI service — app/{core,common,db,modules}/ ; Alembic migrations
-  web/                 Angular 18 workspace — libs/{ui,auth,data-access,util}
+  web/                 Angular 22 workspace — libs/{ui,auth,data-access,util}
 packages/
   contracts/           openapi.yaml — the single source of truth for every endpoint (S2.7)
 infra/                 docker-compose.dev.yml — the full dev stack in one command

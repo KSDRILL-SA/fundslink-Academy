@@ -1,15 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
-  selector: 'lib-util',
-  standalone: true,
-  imports: [],
-  template: `
+    selector: 'lib-util',
+    imports: [],
+    template: `
     <p>
       util works!
     </p>
   `,
-  styles: ``
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styles: ``
 })
 export class UtilComponent {
 

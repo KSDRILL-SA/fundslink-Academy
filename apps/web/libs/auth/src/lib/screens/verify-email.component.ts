@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -6,10 +6,10 @@ import { AuthApiService } from '../auth-api.service';
 
 /** S06 — Verify email. Consumes a `?token=` single-use link; offers a resend form otherwise. */
 @Component({
-  selector: 'fl-verify-email',
-  standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
-  template: `
+    selector: 'fl-verify-email',
+    imports: [ReactiveFormsModule, RouterLink],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    template: `
     <section class="mx-auto max-w-sm p-6">
       <h1 class="text-2xl font-semibold text-slate-900">Verify your email</h1>
 
@@ -35,7 +35,7 @@ import { AuthApiService } from '../auth-api.service';
         }
       }
     </section>
-  `,
+  `
 })
 export class VerifyEmailComponent {
   private readonly route = inject(ActivatedRoute);

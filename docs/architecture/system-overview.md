@@ -36,7 +36,7 @@ flowchart TB
   W -->|"email · SMS · in-app"| Student(["the student"])
 ```
 
-- **Stack** (ADR-001): Angular 18 (Vercel) + FastAPI (Railway); RS256 JWT auth.
+- **Stack** (ADR-001): Angular 22 (Vercel) + FastAPI (Railway); RS256 JWT auth.
 - **Store law** (ADR-003; ADR-004 *rejected*): **PostgreSQL is the only home of money** (`NUMERIC`,
   append-only). MongoDB holds AI reasoning, ChromaDB holds embeddings, Redis is a cache/limiter —
   never a store of record. This law is **machine-enforced** (§5).

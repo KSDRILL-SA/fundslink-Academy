@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -6,10 +6,10 @@ import { AuthApiService } from '../auth-api.service';
 
 /** S07b — Reset password. Consumes the `?token=` link; the API revokes all sessions on success. */
 @Component({
-  selector: 'fl-reset-password',
-  standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
-  template: `
+    selector: 'fl-reset-password',
+    imports: [ReactiveFormsModule, RouterLink],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    template: `
     <section class="mx-auto max-w-sm p-6">
       <h1 class="text-2xl font-semibold text-slate-900">Choose a new password</h1>
       @if (done()) {
@@ -31,7 +31,7 @@ import { AuthApiService } from '../auth-api.service';
         </form>
       }
     </section>
-  `,
+  `
 })
 export class ResetPasswordComponent {
   private readonly route = inject(ActivatedRoute);

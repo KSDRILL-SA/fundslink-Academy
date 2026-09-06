@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
@@ -7,10 +7,10 @@ import { AuthService } from '../auth.service';
 /** S05 — Login. The access token returns in memory (S3.14); the refresh cookie is set by the
  *  server. mfa_code is shown only when the server reports a privileged account needs it. */
 @Component({
-  selector: 'fl-login',
-  standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
-  template: `
+    selector: 'fl-login',
+    imports: [ReactiveFormsModule, RouterLink],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    template: `
     <section class="mx-auto max-w-sm p-6">
       <h1 class="text-2xl font-semibold text-slate-900">Welcome back</h1>
       <p class="mt-1 text-sm text-slate-500">Sign in to continue your funding journey.</p>
@@ -46,7 +46,7 @@ import { AuthService } from '../auth.service';
         New here? <a routerLink="/register" class="font-medium text-blue-700">Create an account</a>
       </p>
     </section>
-  `,
+  `
 })
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
