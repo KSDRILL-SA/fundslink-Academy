@@ -29,6 +29,25 @@ team starts from the current production state), make `Dev` the default working b
 **branch protection on `main`** (require PR + green CI; no direct pushes — see §4). Until that
 switch is made, the solo *branch-off-`main`* flow below remains in force.
 
+### The state of `Dev` today — nothing to merge
+
+`Dev` is a **pre-Stage-00 snapshot** (`Add files via upload`, 2026-06-12) that is **fully contained
+in `main`'s history**. It holds no work of its own. Verified:
+
+| Check | Command | Result |
+|-------|---------|--------|
+| `Dev` is an ancestor of `main` | `git merge-base --is-ancestor origin/Dev origin/main` | **true** |
+| Commits `Dev` has that `main` lacks | `git rev-list --count origin/main..origin/Dev` | **0** |
+| Commits `main` has that `Dev` lacks | `git rev-list --count origin/Dev..origin/main` | **90** |
+
+Two standing rules follow, and they are not optional:
+
+- **Never merge `Dev` into `main`.** There is nothing in it to gain and ~43k lines to lose. If a
+  session is ever asked to "merge `Dev`", the correct move is the ancestor check above — then say
+  so and stop.
+- **Never delete `Dev`.** It is deliberately reserved for team mode. Its staleness is expected;
+  onboarding step 1 re-syncs it from `main`, it is not repaired before then.
+
 ---
 
 ## 1. The loop (do this for every task)

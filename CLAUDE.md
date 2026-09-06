@@ -70,6 +70,7 @@ Engineer in the KSDRILL SA relay, building FundsLink Academy — a non-profit pl
 Founder standing order. Auto squash-merge is an explicit, Founder-authorized (L4) deviation from the strict S10.8 manual-merge gate, taken for solo velocity. Full detail: docs/process/github-workflow.md.
 1. **Issue first.** Every task opens a GitHub Issue (before the branch). Set the **Type** (`Task`/`Bug`/`Feature`); assign the Founder (MALULEKE-KS); set labels + the stage milestone; add it to the **`FundsLink Academy` project** with its **Status** field (`Todo`→`In Progress`→`Done`).
 2. **Branch** off `main` — Conventional, kebab-case (`docs/…`, `chore/…`, `feat/…`, `ci/…`, `fix/…`). One task = one branch = one PR.
+   **Branching model:** solo mode — `main` is the single long-lived branch and the source of truth. The `Dev` branch is **reserved for future team mode**: it is a pre-Stage-00 snapshot fully contained in `main`, so **never merge it into `main`** (nothing to gain, ~43k lines to lose) and **never delete it**. Full detail + the verification commands: docs/process/github-workflow.md §0.
 3. **PR** links its issue with `Closes #N` (merge auto-closes it), is assigned to the Founder, and carries labels + the stage milestone + the project (Status set). Body = What / Why / How verified, citing standard IDs.
 4. **Self-review** documented on the PR (S10.27 / S1.45 four quadrants) before merge.
 5. **Squash-merge** (Claude Code is authorized to auto squash-merge), then delete the branch.
