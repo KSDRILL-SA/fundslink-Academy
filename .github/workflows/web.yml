@@ -29,5 +29,7 @@ jobs:
         run: npm ci
       - name: Test (Vitest)
         run: npm test
+      - name: Build libs (strict AOT typecheck of libs/ui — ng build only builds the app)
+        run: npm run build:libs
       - name: Build (strict AOT typecheck)
         run: npm run build
