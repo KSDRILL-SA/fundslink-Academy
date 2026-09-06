@@ -132,6 +132,7 @@ graph LR
 ### `process/` — how we build
 | Document | Description |
 |----------|-------------|
+| [build-doctrine.md](process/build-doctrine.md) | **How we build** — the ten laws behind the standards ("we don't build harder, we build smarter"), each with its cheap test and the in-repo receipt that earned it. |
 | [sdlc.md](process/sdlc.md) | SDLC foundation — gated lifecycle, Functional + Non-Functional Requirements, traceability, quality scenarios. |
 | [implementation-process.md](process/implementation-process.md) | Stage-gated build order G0–G6 (database first) + Human Track. |
 | [docs-manifest.md](process/docs-manifest.md) | The suite index, precedence order, and cross-document consistency record. |
