@@ -38,11 +38,17 @@ flowchart TD
   G -->|yes| G1["Make it a CI gate. Memory is not a control."]
   G1 --> H
   G -->|no| H["L6 · Paste the output. Done = evidence."]
-  H --> I["Stop at the gate"]
+  H --> J{"L11 · Did you find an error<br/>on the way through?"}
+  J -->|"yes, and you can fix it"| J1["Fix it HERE. Not later."]
+  J1 --> H
+  J -->|"yes, but it is above your level"| J2["Escalate NOW, with a recommendation"]
+  J -->|no| I["Stop at the gate"]
+  J2 --> I
   classDef park fill:#78350f,color:#fff,stroke:#451a03;
   classDef gate fill:#0e7490,color:#fff,stroke:#155e75;
+  classDef esc fill:#7c2d12,color:#fff,stroke:#431407;
   classDef stop fill:#1d4ed8,color:#fff,stroke:#1e3a8a;
-  class C1 park; class G1,H gate; class I stop;
+  class C1 park; class G1,H,J1 gate; class J2 esc; class I stop;
 ```
 
 ---
@@ -219,6 +225,37 @@ session ends.*
 approving each. Stage 03 stopped at G3 with a pasted gate table; the eligibility and hardening
 passes then landed *because* the stop created the space to see what was missing. **The pause is
 what made the next pass smart.**
+
+---
+
+## L11 — Fix the error you find, in the work you are doing
+
+Every error a terminal finds along the way — **pre-existing or introduced** — is fixed inside the
+implementation that is happening at that moment. Not flagged for later. Not parked.
+
+A found-and-flagged defect is worse than an unfound one: it now costs a second engineer, a second
+context load, and a second review to fix something that was already understood by someone with the
+file open. That is the definition of building harder.
+
+**Cheap test:** *You found it. You have the context. Is there a reason other than convenience not to
+fix it right now?*
+
+Two boundaries, because this law fails if it swallows the ones either side of it:
+
+1. **Defects are fixed now; ideas are still parked.** A bug, a vulnerability, a broken gate, a wrong
+   number — fixed in the current work. A feature, an improvement, a "while we're here" — still
+   [`PARKED.md`](../../PARKED.md). L2 and L9 are unchanged: this law is about **defects**, not scope.
+2. **A fix above your authority is escalated immediately, with a recommendation — never deferred
+   silently.** Where the fix is a stack change, an ADR amendment, or anything the Founder (L4) owns,
+   you stop and ask *in that moment*, with the evidence and a recommendation attached. Escalating is
+   how you discharge this law. Going quiet is the failure it exists to prevent.
+
+**Receipt.** This law was written because the doctrine's first application broke it. The foundation
+build (#189) found three real defects — Sentry loading on first paint for every visitor, 87
+Dependabot alerts, a missing CSP hash — and **flagged all three rather than fixing them**, citing L9.
+That is a misreading L9 invites, and the Founder corrected it on sight. The correction is now the
+law, and the first thing it produced was the discovery that the framework itself carried unpatched
+XSS advisories — found precisely because "flag it and move on" was no longer available.
 
 ---
 
