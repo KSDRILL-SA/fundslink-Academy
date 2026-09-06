@@ -1,5 +1,5 @@
 import type { ErrorHandler } from '@angular/core';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DeferredErrorHandler } from './observability';
 
 /**
@@ -12,6 +12,12 @@ describe('DeferredErrorHandler', () => {
   let handler: DeferredErrorHandler;
   let reported: unknown[];
   let delegate: ErrorHandler;
+
+  // Without an explicit restore, each beforeEach spies on the PREVIOUS spy and
+  // call counts accumulate across tests — the cap test alone contributes 100.
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
