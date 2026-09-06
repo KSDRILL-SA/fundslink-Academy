@@ -43,7 +43,7 @@ import { AuthService } from '../auth.service';
       </form>
 
       <p class="mt-4 text-sm text-slate-500">
-        New here? <a routerLink="/register" class="font-medium text-blue-700">Create an account</a>
+        New here? <a routerLink="/auth/register" class="font-medium text-primary">Create an account</a>
       </p>
     </section>
   `

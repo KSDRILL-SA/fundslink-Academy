@@ -119,3 +119,36 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* =============================================================================
+   Component rules that reference design tokens.
+
+   These live in the global sheet rather than in an Angular component `styles`
+   block on purpose. Angular namespaces CSS custom properties inside component
+   styles (rewriting `var(--accent)` to `var(--%NS%accent)` and substituting at
+   runtime). It resolves correctly today because the namespace defaults to
+   empty — but our tokens are global and unnamespaced, so a component style
+   referencing them depends on that default staying empty. Global CSS is read
+   verbatim and cannot drift that way.
+   ========================================================================== */
+
+@layer components {
+  /* The nav rail scrolls; its scrollbar is noise. Overflow is signalled by the
+     arrows and the edge of the rail instead. */
+  .ui-nav-rail {
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ui-nav-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* The current destination carries weight AND colour, never colour alone
+     (P3). The gold rule is the brand's hope accent doing the marking. */
+  .ui-nav-active {
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    box-shadow: inset 0 -2px 0 0 hsl(var(--accent));
+  }
+}

@@ -14,7 +14,7 @@ import { AuthApiService } from '../auth-api.service';
       <h1 class="text-2xl font-semibold text-slate-900">Choose a new password</h1>
       @if (done()) {
         <p class="mt-4 text-green-700">Your password has been reset.</p>
-        <a routerLink="/login" class="mt-4 inline-block font-medium text-blue-700">Sign in</a>
+        <a routerLink="/auth/login" class="mt-4 inline-block font-medium text-primary">Sign in</a>
       } @else if (!token) {
         <p class="mt-4 text-red-600">This reset link is missing or malformed.</p>
       } @else {

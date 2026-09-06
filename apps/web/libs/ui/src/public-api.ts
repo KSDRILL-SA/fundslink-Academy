@@ -11,6 +11,9 @@
 // Utilities
 export * from './lib/utils/cn';
 
+// Brand
+export * from './lib/brand/ui-logo.component';
+
 // Components
 export * from './lib/components/icon/ui-icon.component';
 export * from './lib/components/button/ui-button.component';

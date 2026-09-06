@@ -17,7 +17,7 @@ import { AuthApiService } from '../auth-api.service';
         @case ('verifying') { <p class="mt-4 text-slate-600">Verifying…</p> }
         @case ('verified') {
           <p class="mt-4 text-green-700">Your email is verified.</p>
-          <a routerLink="/login" class="mt-4 inline-block font-medium text-blue-700">Continue to sign in</a>
+          <a routerLink="/auth/login" class="mt-4 inline-block font-medium text-primary">Continue to sign in</a>
         }
         @default {
           @if (state() === 'error') {

@@ -132,25 +132,6 @@ const AUTO_SCROLL_SPEED = 8;
       display: block;
       min-width: 0;
     }
-
-    /* The rail scrolls; the scrollbar itself is noise on a nav. Overflow is
-       signalled by the edge fade and the arrows instead. */
-    .ui-nav-rail {
-      scrollbar-width: none;
-      scroll-snap-type: x proximity;
-      -webkit-overflow-scrolling: touch;
-    }
-    .ui-nav-rail::-webkit-scrollbar {
-      display: none;
-    }
-
-    /* Active state carries weight AND colour, never colour alone (P3). The
-       gold rule is the brand's hope accent doing the marking. */
-    .ui-nav-active {
-      font-weight: 600;
-      color: hsl(var(--foreground));
-      box-shadow: inset 0 -2px 0 0 hsl(var(--accent));
-    }
   `,
 })
 export class UiScrollNavComponent {
