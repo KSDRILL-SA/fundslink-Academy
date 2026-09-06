@@ -5,7 +5,7 @@ import { UiEmptyStateComponent } from './ui-empty-state.component';
 import { UiErrorStateComponent } from './ui-error-state.component';
 import { UiSuccessStateComponent } from './ui-success-state.component';
 import { UiSkeletonComponent } from './ui-skeleton.component';
-import { describeViolations, findA11yViolations } from '../../testing/a11y';
+import { describeViolations, findA11yViolations } from 'ui/testing';
 
 @Component({
   standalone: true,

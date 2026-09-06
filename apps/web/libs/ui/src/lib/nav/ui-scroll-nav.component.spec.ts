@@ -5,7 +5,7 @@ import { FileText, House } from 'lucide';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type IconNode } from '../components/icon/ui-icon.component';
 import { type ScrollNavItem, UiScrollNavComponent } from './ui-scroll-nav.component';
-import { describeViolations, findA11yViolations } from '../../testing/a11y';
+import { describeViolations, findA11yViolations } from 'ui/testing';
 
 @Component({ standalone: true, template: '<p>home</p>' })
 class StubPage {}

@@ -16,7 +16,7 @@ import { AuthApiService } from '../auth-api.service';
         <p class="mt-4 text-slate-600">
           If an account exists for that email, we've sent a reset link. Check your inbox.
         </p>
-        <a routerLink="/login" class="mt-4 inline-block font-medium text-blue-700">Back to sign in</a>
+        <a routerLink="/auth/login" class="mt-4 inline-block font-medium text-primary">Back to sign in</a>
       } @else {
         <p class="mt-1 text-sm text-slate-500">We'll email you a link to set a new password.</p>
         <form class="mt-6 space-y-4" [formGroup]="form" (ngSubmit)="submit()">

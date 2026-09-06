@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { UiButtonComponent } from './ui-button.component';
-import { describeViolations, findA11yViolations } from '../../../testing/a11y';
+import { describeViolations, findA11yViolations } from 'ui/testing';
 
 @Component({
   standalone: true,

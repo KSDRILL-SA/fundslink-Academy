@@ -29,6 +29,9 @@
       "ui": [
         "./libs/ui/src/public-api.ts"
       ],
+      "ui/testing": [
+        "./libs/ui/src/testing/a11y.ts"
+      ],
       "util": [
         "./libs/util/src/public-api.ts"
       ]
