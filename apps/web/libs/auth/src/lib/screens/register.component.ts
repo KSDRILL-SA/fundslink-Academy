@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
@@ -7,10 +7,10 @@ import { AuthService } from '../auth.service';
 /** S04 — Register. Consents are recorded server-side as ConsentRecord rows (BR-A05). Password
  *  policy is validated authoritatively by the API (S3.32); this is UX-only pre-validation. */
 @Component({
-  selector: 'fl-register',
-  standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
-  template: `
+    selector: 'fl-register',
+    imports: [ReactiveFormsModule, RouterLink],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    template: `
     <section class="mx-auto max-w-sm p-6">
       <h1 class="text-2xl font-semibold text-slate-900">Create your account</h1>
       <p class="mt-1 text-sm text-slate-500">Funding that sees you. Let's begin.</p>
@@ -46,7 +46,7 @@ import { AuthService } from '../auth.service';
         Already have an account? <a routerLink="/login" class="font-medium text-blue-700">Sign in</a>
       </p>
     </section>
-  `,
+  `
 })
 export class RegisterComponent {
   private readonly fb = inject(FormBuilder);

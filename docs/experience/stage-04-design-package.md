@@ -35,8 +35,8 @@ package together and hands it off ready to build. Read this with the gate brief
 ## 3. Build sequence (the order that avoids rework)
 
 1. **Scaffold** the `apps/web/src/app` tree + `libs/ui` per [frontend-structure.md](frontend-structure.md).
-2. **Tokens & Tailwind** — write `styles/tokens.css` (light+dark) and map `tailwind.config.ts` to
-   them ([design-system.md](design-system.md)). Load IBM Plex Sans (subset, swap, preload 400/600).
+2. **Tokens & Tailwind** — write `styles/tokens.css` (light+dark) and map `styles/theme.css`
+   (Tailwind 4 `@theme inline`) to them ([design-system.md](design-system.md)). Load IBM Plex Sans (subset, swap, preload 400/600).
 3. **Logo & favicon** — drop in `logo-mark.svg`, build the favicon/app-icon set.
 4. **Components** — generate the **spartan/ui** base, theme with tokens, build the **custom** ones and
    the **four states** ([component-library.md](component-library.md)).

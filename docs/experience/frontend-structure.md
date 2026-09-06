@@ -12,7 +12,7 @@ itself reference this structure. Design-only: no code ships this session.
 
 ## 1. Principles (the structure enforces these)
 
-1. **Angular 18, standalone, signals, `OnPush`.** No NgModules; signal-based state; change detection
+1. **Angular 22, standalone, signals, `OnPush`.** No NgModules; signal-based state; change detection
    on push. Lightweight by construction (P6).
 2. **Lazy everything.** Each feature area is a lazily-loaded route group behind a layout shell — the
    marketing visitor never downloads the application bundle, and vice-versa.
@@ -51,11 +51,12 @@ apps/web/
         admin/                 # review queue · review/decide · priority · data-export      (4 admin)
       marketing/               # public pages: home(hero) · about · how-it-works · for-students · for-donors · faq · contact
     styles/
+      fonts.css                # IBM Plex Sans @font-face (self-hosted, latin subset)
       tokens.css               # design tokens (CSS custom properties, HSL) — light + dark
-      base.css                 # reset, base typography, Tailwind @layer wiring
-    assets/                    # logo, imagery (AVIF/WebP), subsetted fonts
+      theme.css                # Tailwind 4 @theme inline: tokens -> utilities (no duplication, S4.15)
+      base.css                 # reset, base typography, the a11y floor
+    assets/                    # logo, imagery (AVIF/WebP)
     environments/
-  tailwind.config.ts           # maps Tailwind scale -> the token custom properties (no duplication, S4.15)
 
 libs/
   ui/                          # the PREMIUM component library + primitives

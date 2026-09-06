@@ -1,0 +1,106 @@
+/* =============================================================================
+   FundsLink Academy — Tailwind theme mapping (Tailwind 4, CSS-first)
+
+   Tailwind 4 replaced tailwind.config.ts with `@theme` in CSS. This file is the
+   same map the old config held: every entry points at a semantic token defined
+   in tokens.css, so a value still lives in exactly ONE place (S4.15).
+
+   `@theme inline` matters. Without `inline`, Tailwind resolves each value at
+   build time and bakes the LIGHT colour into every utility — `.dark` would
+   then override the semantic token and change nothing, because bg-primary
+   would already be a literal. `inline` keeps the var() reference in the
+   generated utility, so the cascade does the theming at use site. This is the
+   single most breakable line in the styling setup; tokens.spec.ts and a build
+   grep both guard it.
+
+   Reference: docs/experience/design-system.md §8.
+   ========================================================================== */
+
+/* Dark is a class on <html> (set by ThemeService and the no-flash resolver),
+   not a media query — Tailwind 4 expresses that as a custom variant. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tailwind 4 discovers templates by scanning from this file outward. `libs/`
+   sits beside `src/` in the workspace, so it is declared explicitly rather
+   than left to detection — a missed source directory silently drops the
+   utilities those components use. */
+@source "../../src";
+@source "../../libs";
+
+@theme inline {
+  /* --- Colour: semantic tokens -> Tailwind colour utilities --------------- */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* --- Radii -------------------------------------------------------------- */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* --- Elevation: the 5-step navy-tinted scale ---------------------------- */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+
+  /* --- Type --------------------------------------------------------------- */
+  --font-sans: var(--font-sans);
+
+  /* Each size ships with its line-height so a heading cannot be sized
+     without also being spaced (design-system.md §3). */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1rem;
+  --text-base--line-height: 1.6;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.5;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.35;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 1.3;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 1.2;
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 1.1;
+  --text-6xl: 3.75rem;
+  --text-6xl--line-height: 1.05;
+
+  /* --- Motion ------------------------------------------------------------- */
+  --ease-out: var(--ease-out);
+  --ease-in: var(--ease-in);
+
+  /* --- Measure: 65-75ch desktop, 35-60 mobile (design-system.md §3) -------- */
+  --container-prose: 70ch;
+  --container-prose-narrow: 55ch;
+}

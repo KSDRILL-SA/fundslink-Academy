@@ -1,15 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
-  selector: 'lib-data-access',
-  standalone: true,
-  imports: [],
-  template: `
+    selector: 'lib-data-access',
+    imports: [],
+    template: `
     <p>
       data-access works!
     </p>
   `,
-  styles: ``
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styles: ``
 })
 export class DataAccessComponent {
 

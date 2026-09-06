@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -6,10 +6,10 @@ import { AuthApiService } from '../auth-api.service';
 
 /** S07a — Forgot password. The response is always the same (enumeration-proof, S3.30). */
 @Component({
-  selector: 'fl-forgot-password',
-  standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
-  template: `
+    selector: 'fl-forgot-password',
+    imports: [ReactiveFormsModule, RouterLink],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    template: `
     <section class="mx-auto max-w-sm p-6">
       <h1 class="text-2xl font-semibold text-slate-900">Reset your password</h1>
       @if (submitted()) {
@@ -29,7 +29,7 @@ import { AuthApiService } from '../auth-api.service';
         </form>
       }
     </section>
-  `,
+  `
 })
 export class ForgotPasswordComponent {
   private readonly fb = inject(FormBuilder);

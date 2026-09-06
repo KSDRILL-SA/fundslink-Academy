@@ -133,16 +133,30 @@ comes from **weight + size + spacing**, not a second font (lighter payload).
 
 ## 8. Tailwind wiring (no duplication — S4.15)
 
-`tailwind.config.ts` maps the scale to the tokens — one source of truth:
-```ts
-colors: {
-  background: 'hsl(var(--background))', foreground: 'hsl(var(--foreground))',
-  primary: { DEFAULT: 'hsl(var(--primary))', foreground: 'hsl(var(--primary-foreground))' },
-  accent:  { DEFAULT: 'hsl(var(--accent))',  foreground: 'hsl(var(--accent-foreground))' },
-  // …secondary, muted, success, warning, destructive, border, input, ring
-},
-borderRadius: { lg: 'var(--radius)', md: 'calc(var(--radius) - 2px)', sm: 'calc(var(--radius) - 4px)' },
+Tailwind 4 is **CSS-first**: there is no `tailwind.config.ts`. `apps/web/src/styles/theme.css` maps
+the scale to the tokens — one source of truth (ADR-005 Amendment 1):
+
+```css
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-accent: hsl(var(--accent));
+  /* …secondary, muted, success, warning, destructive, card, popover, border, input, ring */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
 ```
+
+**`inline` is load-bearing.** Without it Tailwind resolves each colour at build time and bakes the
+*light* value into every utility — `.dark` then overrides the semantic token and changes nothing,
+because `bg-primary` is already a literal. Dark mode fails silently, and only in the built output.
+A test pins it (`styles/styles.spec.ts`).
+
 Tailwind = layout/spacing/responsive; component CSS = brand/complex; **no value lives in both**.
 
 ## 9. Anti-patterns (do NOT)
@@ -157,5 +171,5 @@ Tailwind = layout/spacing/responsive; component CSS = brand/complex; **no value 
 
 `component-library.md` (every component reads these tokens) · `navigation-and-shells.md` ·
 `marketing-site.md` · `brand-identity.md` (the palette's brand rationale + the logo). The build
-engineer writes these tokens into `apps/web/src/styles/tokens.css` and wires `tailwind.config.ts`
+engineer writes these tokens into `apps/web/src/styles/tokens.css` and wires `styles/theme.css`
 before building any screen.

@@ -28,7 +28,7 @@ Stage-gated build (G0 → G6). **Foundation complete through Stage 03**; fronten
 
 ## Stack
 
-Angular 18 (Vercel) · FastAPI (Railway) · PostgreSQL + MongoDB + ChromaDB + Redis · RS256 JWT auth.
+Angular 22 (Vercel) · FastAPI (Railway) · PostgreSQL + MongoDB + ChromaDB + Redis · RS256 JWT auth.
 Monorepo per [ADR-002](docs/decisions/adr-0002-monorepo.md), contract-first per
 [`packages/contracts/openapi.yaml`](packages/contracts/openapi.yaml).
 
@@ -37,7 +37,7 @@ Monorepo per [ADR-002](docs/decisions/adr-0002-monorepo.md), contract-first per
 | Path | What lives here |
 |------|-----------------|
 | [`apps/api/`](apps/api) | FastAPI service — `router → service → repository`; Alembic migrations |
-| [`apps/web/`](apps/web) | Angular 18 workspace — `libs/{ui,auth,data-access,util}` |
+| [`apps/web/`](apps/web) | Angular 22 workspace — `libs/{ui,auth,data-access,util}` |
 | [`packages/contracts/`](packages/contracts) | `openapi.yaml` — the single source of truth for every endpoint (S2.7) |
 | [`infra/`](infra) | `docker-compose.dev.yml` — the full dev stack in one command |
 | [`scripts/`](scripts) | CI gate scripts (contract-diff, permission-lint, store-isolation, drills) |
