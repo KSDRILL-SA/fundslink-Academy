@@ -28,13 +28,13 @@
         "./libs/auth/src/public-api.ts"
       ],
       "data-access": [
-        "./dist/data-access"
+        "./libs/data-access/src/public-api.ts"
       ],
       "ui": [
-        "./dist/ui"
+        "./libs/ui/src/public-api.ts"
       ],
       "util": [
-        "./dist/util"
+        "./libs/util/src/public-api.ts"
       ]
     }
   },

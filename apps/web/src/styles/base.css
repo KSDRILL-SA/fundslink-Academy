@@ -1,0 +1,121 @@
+/* =============================================================================
+   FundsLink Academy — base layer
+   Reset, base typography, and the accessibility floor that every screen
+   inherits whether or not its author remembered it.
+
+   From docs/experience/design-system.md §3 (type), §5 (motion), §7 (a11y budget)
+   and the anti-patterns in §9. Brand/complex styling lives in component CSS
+   (S4.14); layout/spacing/responsive is Tailwind (S4.13).
+   ========================================================================== */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    @apply border-border;
+  }
+
+  html {
+    /* Anchor navigation lands below any sticky header rather than under it. */
+    scroll-padding-top: 5rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    /* 16px minimum: smaller triggers iOS auto-zoom on focus and fails the
+       readability floor for the low-end devices this product targets (P6). */
+    font-size: 1rem;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headings: hierarchy from weight + size, never a second family (§9). */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold text-foreground;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Money, tables and timers use tabular figures so digits keep their column
+     and a value changing in place cannot shift layout (CLS). Money arrives as
+     a decimal string and is rendered as-is — never parseFloat for logic. */
+  .tabular,
+  table,
+  time,
+  [data-money] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  /* Focus is never removed (§7/§9). :focus-visible keeps it off mouse clicks
+     while guaranteeing it for keyboard and switch users. */
+  :focus-visible {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: calc(var(--radius) - 4px);
+  }
+
+  /* Interactive targets: >= 44x44 (§7). Applied to the bare elements so a
+     component that forgets still clears the bar; components may grow it. */
+  button,
+  [role='button'],
+  a[href],
+  input[type='checkbox'],
+  input[type='radio'],
+  summary {
+    min-height: 44px;
+  }
+
+  /* Inputs inherit the family; browsers otherwise substitute their own. */
+  input,
+  textarea,
+  select,
+  button {
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  /* Declared dimensions are the CLS defence; this stops an undeclared image
+     from overflowing while the layout settles. */
+  img,
+  svg,
+  video,
+  canvas {
+    @apply block max-w-full;
+  }
+
+  /* Skip link — the first tab stop on every page, visible only when focused. */
+  .skip-link {
+    @apply sr-only;
+  }
+  .skip-link:focus-visible {
+    @apply not-sr-only fixed left-4 top-4 z-50 rounded-md px-4 py-3 font-medium;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+}
+
+/* Reduced motion is non-negotiable (§5, P6 + a11y). A global kill-switch beats
+   asking every future component author to remember the media query — the rule
+   is enforced here rather than trusted downstream. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
