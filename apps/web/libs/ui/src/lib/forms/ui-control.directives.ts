@@ -38,19 +38,24 @@ abstract class UiControlBase {
   readonly class = input<string>('');
 
   /**
-   * Whatever id the caller put on the element before we touched it.
+   * An id supplied by the caller, for a control used outside a `ui-form-field`.
    *
-   * Without this, a control used outside a field had its id DELETED: the
-   * binding resolved to null and Angular removes an attribute bound to null,
-   * so a hand-written `id` that a hand-written `<label for=...>` pointed at
-   * silently vanished. A directive that quietly removes the caller's id is a
-   * trap, and it left an unlabelled checkbox in the register screen.
+   * Declared as an input rather than read off the element, because a *bound*
+   * `[id]="..."` is applied after construction — reading the attribute at
+   * construction time saw nothing, and the host binding below then wrote null
+   * over the caller's id, leaving an unlabelled control. Taking it as an input
+   * means the directive receives the value instead of racing it.
    */
-  private readonly ownId =
-    (inject(ElementRef).nativeElement as HTMLElement).getAttribute('id') ?? null;
+  readonly id = input<string>('');
+
+  /** A static id, for the plain `id="x"` case where no binding is involved. */
+  private readonly staticId =
+    (inject(ElementRef).nativeElement as HTMLElement).getAttribute('id') || null;
 
   /** The field's id when there is a field; otherwise leave the caller's alone. */
-  protected readonly controlId = computed(() => this.field?.controlId() ?? this.ownId);
+  protected readonly controlId = computed(
+    () => this.field?.controlId() ?? (this.id() || this.staticId),
+  );
   protected readonly describedBy = computed(() => this.field?.describedBy() ?? null);
   protected readonly invalid = computed(() =>
     this.field?.invalid() ? 'true' : null,
