@@ -96,6 +96,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'applications/:id',
+        loadComponent: () =>
+          import('./features/applications/application-detail.component').then(
+            (m) => m.ApplicationDetailComponent,
+          ),
+      },
+      {
         path: 'applications/:id/documents',
         loadComponent: () =>
           import('./features/applications/documents.component').then((m) => m.DocumentsComponent),
