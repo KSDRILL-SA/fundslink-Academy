@@ -76,6 +76,18 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/profile/profile.component').then((m) => m.ProfileComponent),
       },
+      {
+        path: 'applications/new',
+        loadComponent: () =>
+          import('./features/applications/category-picker.component').then(
+            (m) => m.CategoryPickerComponent,
+          ),
+      },
+      {
+        path: 'applications/new/explain',
+        loadComponent: () =>
+          import('./features/applications/motivation.component').then((m) => m.MotivationComponent),
+      },
     ],
   },
 
