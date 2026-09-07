@@ -117,6 +117,22 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/privacy/privacy.component').then((m) => m.PrivacyComponent),
       },
+      // Admin. NOTE: guarded only by authGuard — there is still no client-side
+      // role signal (see #202/#225). The API is the real boundary (S3.19): a
+      // non-reviewer gets a 403 rather than data. An adminGuard lands when the
+      // token carries a role the client can read.
+      {
+        path: 'admin',
+        loadComponent: () =>
+          import('./features/admin/review-queue.component').then((m) => m.ReviewQueueComponent),
+      },
+      {
+        path: 'admin/applications/:id',
+        loadComponent: () =>
+          import('./features/admin/admin-application.component').then(
+            (m) => m.AdminApplicationComponent,
+          ),
+      },
       {
         path: 'matches',
         loadComponent: () =>
