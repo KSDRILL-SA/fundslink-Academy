@@ -88,6 +88,18 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/applications/motivation.component').then((m) => m.MotivationComponent),
       },
+      {
+        path: 'applications/new/:category',
+        loadComponent: () =>
+          import('./features/applications/apply-steps.component').then(
+            (m) => m.ApplyStepsComponent,
+          ),
+      },
+      {
+        path: 'applications/:id/documents',
+        loadComponent: () =>
+          import('./features/applications/documents.component').then((m) => m.DocumentsComponent),
+      },
     ],
   },
 

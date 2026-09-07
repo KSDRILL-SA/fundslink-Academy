@@ -22,6 +22,9 @@ export * from './lib/components/badge/ui-badge.component';
 export * from './lib/components/badge/ui-status-chip.component';
 export * from './lib/components/badge/status-presentation';
 
+// Flow
+export * from './lib/flow/ui-stepper.component';
+
 // Motion
 export * from './lib/motion/ui-reveal.directive';
 
