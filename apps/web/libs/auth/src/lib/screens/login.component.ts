@@ -1,78 +1,154 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { ApiError } from 'data-access';
+import {
+  UiButtonComponent,
+  UiFormFieldComponent,
+  UiInputDirective,
+  UiPasswordFieldComponent,
+  presentError,
+} from 'ui';
 
 import { AuthService } from '../auth.service';
 
-/** S05 — Login. The access token returns in memory (S3.14); the refresh cookie is set by the
- *  server. mfa_code is shown only when the server reports a privileged account needs it. */
+/**
+ * S05 — Login.
+ *
+ * The access token returns in memory only (S3.14); the refresh token is an
+ * HttpOnly cookie this code never sees.
+ *
+ * **The authenticator field is hidden until the server asks for it.** Showing
+ * it to everyone means every student meets a field for a device they do not
+ * have, on the screen where they are already least confident — MFA is required
+ * of privileged accounts (ST-2.1), not of students. The server says so with
+ * `mfa_required`, and the screen reacts to that code.
+ *
+ * Errors are rendered from the stable `error.code` through the presentation
+ * table, never from `error.message` (S4.12).
+ */
 @Component({
-    selector: 'fl-login',
-    imports: [ReactiveFormsModule, RouterLink],
-    changeDetection: ChangeDetectionStrategy.Eager,
-    template: `
-    <section class="mx-auto max-w-sm p-6">
-      <h1 class="text-2xl font-semibold text-slate-900">Welcome back</h1>
-      <p class="mt-1 text-sm text-slate-500">Sign in to continue your funding journey.</p>
+  selector: 'fl-login',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    UiFormFieldComponent,
+    UiInputDirective,
+    UiPasswordFieldComponent,
+    UiButtonComponent,
+  ],
+  template: `
+    <h1 class="text-2xl font-semibold tracking-tight">Welcome back</h1>
+    <p class="mt-1 text-muted-foreground">Sign in to continue your funding journey.</p>
 
-      <form class="mt-6 space-y-4" [formGroup]="form" (ngSubmit)="submit()">
-        <label class="block">
-          <span class="text-sm font-medium text-slate-700">Email</span>
-          <input formControlName="email" type="email" autocomplete="email"
-                 class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
-        </label>
-        <label class="block">
-          <span class="text-sm font-medium text-slate-700">Password</span>
-          <input formControlName="password" type="password" autocomplete="current-password"
-                 class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
-        </label>
-        <label class="block">
-          <span class="text-sm font-medium text-slate-700">Authenticator code (if required)</span>
-          <input formControlName="mfa_code" inputmode="numeric" autocomplete="one-time-code"
-                 class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
-        </label>
+    <form class="mt-6 flex flex-col gap-5" [formGroup]="form" (ngSubmit)="submit()">
+      @if (failure(); as problem) {
+        <div role="alert" class="rounded-lg border border-destructive/30 bg-destructive/8 p-4">
+          <p class="font-medium text-foreground">{{ problem.title }}</p>
+          <p class="mt-1 text-sm text-muted-foreground">{{ problem.message }}</p>
+        </div>
+      }
 
-        @if (error()) {
-          <p role="alert" class="text-sm text-red-600">{{ error() }}</p>
-        }
+      <ui-form-field label="Email" [error]="fieldError('email')" required>
+        <input uiInput formControlName="email" type="email" inputmode="email" autocomplete="email" />
+      </ui-form-field>
 
-        <button type="submit" [disabled]="submitting() || form.invalid"
-                class="w-full rounded-lg bg-blue-700 px-4 py-2 font-medium text-white disabled:opacity-50">
-          {{ submitting() ? 'Signing in…' : 'Sign in' }}
-        </button>
-      </form>
+      <ui-form-field label="Password" [error]="fieldError('password')" required>
+        <ui-password-field>
+          <input uiInput formControlName="password" type="password" autocomplete="current-password" />
+        </ui-password-field>
+      </ui-form-field>
 
-      <p class="mt-4 text-sm text-slate-500">
-        New here? <a routerLink="/auth/register" class="font-medium text-primary">Create an account</a>
+      @if (mfaRequired()) {
+        <ui-form-field
+          label="Authenticator code"
+          hint="Open your authenticator app and enter the 6-digit code."
+        >
+          <input
+            uiInput
+            formControlName="mfa_code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            maxlength="6"
+          />
+        </ui-form-field>
+      }
+
+      <ui-button type="submit" [loading]="submitting()" full>Sign in</ui-button>
+    </form>
+
+    <div class="mt-6 flex flex-col gap-2 text-sm">
+      <a
+        routerLink="/auth/forgot-password"
+        class="rounded-sm text-muted-foreground underline-offset-4 outline-none hover:underline
+               focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >Forgot your password?</a
+      >
+      <p class="text-muted-foreground">
+        New here?
+        <a
+          routerLink="/auth/register"
+          class="rounded-sm font-medium text-primary underline-offset-4 outline-none hover:underline
+                 focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >Create an account</a
+        >
       </p>
-    </section>
-  `
+    </div>
+  `,
 })
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly submitting = signal(false);
-  readonly error = signal<string | null>(null);
+  protected readonly submitting = signal(false);
+  private readonly errorCode = signal<string | null>(null);
+
+  /** The server asked for a second factor; only then does the field appear. */
+  protected readonly mfaRequired = computed(() =>
+    ['mfa_required', 'mfa_invalid_code'].includes(this.errorCode() ?? ''),
+  );
+
+  protected readonly failure = computed(() => {
+    const code = this.errorCode();
+    return code ? presentError(code) : null;
+  });
 
   readonly form = this.fb.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required]],
+    // Validated on blur, not on every keystroke: telling someone their email
+    // is wrong after two characters is scolding them for not having finished.
+    email: ['', { validators: [Validators.required, Validators.email], updateOn: 'blur' }],
+    password: ['', { validators: [Validators.required], updateOn: 'blur' }],
     mfa_code: [''],
   });
 
+  protected fieldError(name: 'email' | 'password'): string | null {
+    const control = this.form.controls[name];
+    if (!control.touched || control.valid) {
+      return null;
+    }
+    if (control.hasError('required')) {
+      return name === 'email' ? 'Enter your email address.' : 'Enter your password.';
+    }
+    return 'Enter a valid email address.';
+  }
+
   submit(): void {
+    this.form.markAllAsTouched();
     if (this.form.invalid) {
       return;
     }
     this.submitting.set(true);
-    this.error.set(null);
+    this.errorCode.set(null);
+
     const { email, password, mfa_code } = this.form.getRawValue();
     this.auth.login({ email, password, mfa_code: mfa_code || undefined }).subscribe({
-      next: () => this.router.navigateByUrl('/'),
-      error: (err) => {
-        this.error.set(err?.error?.error?.message ?? 'Could not sign in. Please try again.');
+      // Into the application, not back to the marketing site.
+      next: () => void this.router.navigateByUrl('/app'),
+      error: (error: unknown) => {
+        this.errorCode.set(error instanceof ApiError ? error.code : null);
         this.submitting.set(false);
       },
     });

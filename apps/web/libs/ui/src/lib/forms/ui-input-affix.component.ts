@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, Directive, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Directive, computed, input,
+  booleanAttribute,
+} from '@angular/core';
 import { cn } from '../utils/cn';
 
 /**
@@ -75,7 +77,7 @@ export class UiInputAffixComponent {
 })
 export class UiMoneyInputDirective {
   /** Extra left padding when an affix sits over the field. */
-  readonly hasPrefix = input(true);
+  readonly hasPrefix = input(true, { transform: booleanAttribute });
 
   protected readonly classes = computed(() =>
     cn('[font-variant-numeric:tabular-nums]', this.hasPrefix() ? 'pl-7' : ''),

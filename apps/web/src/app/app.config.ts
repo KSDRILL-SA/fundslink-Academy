@@ -1,7 +1,11 @@
 import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { authInterceptor } from 'auth';
+// Narrow entry, not the 'auth' barrel: the barrel re-exports the five auth
+// screens, so importing the interceptor at bootstrap pulled every screen into
+// the initial bundle. The interceptor and the guard are the two pieces of a
+// lazy library that must load eagerly, so each has its own entry point.
+import { authInterceptor } from 'auth/interceptor';
 import { API_BASE_URL } from 'data-access';
 
 import { environment } from '../environments/environment';

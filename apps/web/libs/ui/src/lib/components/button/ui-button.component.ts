@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output,
+  booleanAttribute,
+} from '@angular/core';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '../../utils/cn';
 
@@ -123,9 +125,9 @@ export class UiButtonComponent {
   readonly variant = input<ButtonVariant>('primary');
   readonly size = input<ButtonSize>('md');
   readonly type = input<'button' | 'submit' | 'reset'>('button');
-  readonly disabled = input(false);
-  readonly loading = input(false);
-  readonly full = input(false);
+  readonly disabled = input(false, { transform: booleanAttribute });
+  readonly loading = input(false, { transform: booleanAttribute });
+  readonly full = input(false, { transform: booleanAttribute });
   /** Required when the button's only content is an icon (§0). */
   readonly ariaLabel = input<string>('');
   readonly class = input<string>('');

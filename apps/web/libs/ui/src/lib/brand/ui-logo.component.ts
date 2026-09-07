@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input,
+  booleanAttribute,
+} from '@angular/core';
 import { cn } from '../utils/cn';
 
 /** How the mark is coloured. */
@@ -99,7 +101,7 @@ const SIZE_PX: Record<LogoSize, number> = { sm: 28, md: 32, lg: 44 };
 export class UiLogoComponent {
   readonly variant = input<LogoVariant>('mono');
   readonly size = input<LogoSize>('md');
-  readonly showWordmark = input(true);
+  readonly showWordmark = input(true, { transform: booleanAttribute });
   readonly class = input<string>('');
 
   protected readonly px = computed(() => SIZE_PX[this.size()]);

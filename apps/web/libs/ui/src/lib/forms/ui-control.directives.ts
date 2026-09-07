@@ -1,4 +1,4 @@
-import { Directive, computed, inject, input } from '@angular/core';
+import { Directive, ElementRef, computed, inject, input } from '@angular/core';
 import { cn } from '../utils/cn';
 import { UiFormFieldComponent } from './ui-form-field.component';
 
@@ -37,8 +37,20 @@ abstract class UiControlBase {
   protected readonly field = inject(UiFormFieldComponent, { optional: true });
   readonly class = input<string>('');
 
-  /** Only claim an id from the field when the field actually rendered a label for it. */
-  protected readonly controlId = computed(() => this.field?.controlId() ?? null);
+  /**
+   * Whatever id the caller put on the element before we touched it.
+   *
+   * Without this, a control used outside a field had its id DELETED: the
+   * binding resolved to null and Angular removes an attribute bound to null,
+   * so a hand-written `id` that a hand-written `<label for=...>` pointed at
+   * silently vanished. A directive that quietly removes the caller's id is a
+   * trap, and it left an unlabelled checkbox in the register screen.
+   */
+  private readonly ownId =
+    (inject(ElementRef).nativeElement as HTMLElement).getAttribute('id') ?? null;
+
+  /** The field's id when there is a field; otherwise leave the caller's alone. */
+  protected readonly controlId = computed(() => this.field?.controlId() ?? this.ownId);
   protected readonly describedBy = computed(() => this.field?.describedBy() ?? null);
   protected readonly invalid = computed(() =>
     this.field?.invalid() ? 'true' : null,
