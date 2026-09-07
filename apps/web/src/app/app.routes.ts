@@ -32,6 +32,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./marketing/home.component').then((m) => m.MarketingHomeComponent),
       },
+      {
+        path: 'bursaries',
+        loadComponent: () =>
+          import('./features/bursaries/bursaries.component').then((m) => m.BursariesComponent),
+      },
     ],
   },
 
@@ -94,6 +99,23 @@ export const routes: Routes = [
           import('./features/applications/apply-steps.component').then(
             (m) => m.ApplyStepsComponent,
           ),
+      },
+      {
+        path: 'bursaries',
+        loadComponent: () =>
+          import('./features/bursaries/bursaries.component').then((m) => m.BursariesComponent),
+      },
+      {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./features/notifications/notifications.component').then(
+            (m) => m.NotificationsComponent,
+          ),
+      },
+      {
+        path: 'privacy',
+        loadComponent: () =>
+          import('./features/privacy/privacy.component').then((m) => m.PrivacyComponent),
       },
       {
         path: 'matches',
