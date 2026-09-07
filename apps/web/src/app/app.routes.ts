@@ -96,6 +96,25 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'matches',
+        loadComponent: () =>
+          import('./features/matching/matches.component').then((m) => m.MatchesComponent),
+      },
+      {
+        path: 'tracking',
+        loadComponent: () =>
+          import('./features/tracking/tracking-board.component').then(
+            (m) => m.TrackingBoardComponent,
+          ),
+      },
+      {
+        path: 'tracking/new',
+        loadComponent: () =>
+          import('./features/tracking/register-tracked.component').then(
+            (m) => m.RegisterTrackedComponent,
+          ),
+      },
+      {
         path: 'applications/:id',
         loadComponent: () =>
           import('./features/applications/application-detail.component').then(
