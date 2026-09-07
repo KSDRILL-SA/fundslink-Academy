@@ -32,6 +32,12 @@
       "ui/testing": [
         "./libs/ui/src/testing/a11y.ts"
       ],
+      "auth/guards": [
+        "./libs/auth/src/lib/auth.guard.ts"
+      ],
+      "auth/interceptor": [
+        "./libs/auth/src/lib/auth.interceptor.ts"
+      ],
       "util": [
         "./libs/util/src/public-api.ts"
       ]

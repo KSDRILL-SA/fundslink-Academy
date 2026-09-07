@@ -1,87 +1,179 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { ApiError } from 'data-access';
+import {
+  UiButtonComponent,
+  UiCheckboxDirective,
+  UiFormFieldComponent,
+  UiInputDirective,
+  UiPasswordFieldComponent,
+  presentError,
+} from 'ui';
 
 import { AuthService } from '../auth.service';
 
-/** S04 — Register. Consents are recorded server-side as ConsentRecord rows (BR-A05). Password
- *  policy is validated authoritatively by the API (S3.32); this is UX-only pre-validation. */
+/**
+ * S04 — Register.
+ *
+ * Consents are recorded server-side as ConsentRecord rows (BR-A05). The
+ * password policy is enforced authoritatively by the API (S3.32) — the rule
+ * shown here is guidance so someone learns it before submitting, not a second
+ * source of truth.
+ *
+ * The tone is P1: a capable adult starting something, not an applicant being
+ * screened. The page says what this costs (nothing) because that is the first
+ * question a student actually has.
+ */
 @Component({
-    selector: 'fl-register',
-    imports: [ReactiveFormsModule, RouterLink],
-    changeDetection: ChangeDetectionStrategy.Eager,
-    template: `
-    <section class="mx-auto max-w-sm p-6">
-      <h1 class="text-2xl font-semibold text-slate-900">Create your account</h1>
-      <p class="mt-1 text-sm text-slate-500">Funding that sees you. Let's begin.</p>
+  selector: 'fl-register',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    UiFormFieldComponent,
+    UiInputDirective,
+    UiCheckboxDirective,
+    UiPasswordFieldComponent,
+    UiButtonComponent,
+  ],
+  template: `
+    <h1 class="text-2xl font-semibold tracking-tight">Create your account</h1>
+    <p class="mt-1 text-muted-foreground">
+      Free to apply, and a person reads every application.
+    </p>
 
-      <form class="mt-6 space-y-4" [formGroup]="form" (ngSubmit)="submit()">
-        <label class="block">
-          <span class="text-sm font-medium text-slate-700">Email</span>
-          <input formControlName="email" type="email" autocomplete="email"
-                 class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+    <form class="mt-6 flex flex-col gap-5" [formGroup]="form" (ngSubmit)="submit()">
+      @if (failure(); as problem) {
+        <div role="alert" class="rounded-lg border border-destructive/30 bg-destructive/8 p-4">
+          <p class="font-medium text-foreground">{{ problem.title }}</p>
+          <p class="mt-1 text-sm text-muted-foreground">{{ problem.message }}</p>
+        </div>
+      }
+
+      <ui-form-field label="Email" [error]="emailError()" required>
+        <input uiInput formControlName="email" type="email" inputmode="email" autocomplete="email" />
+      </ui-form-field>
+
+      <ui-form-field
+        label="Password"
+        hint="At least 10 characters. A phrase you will remember beats a short password you will not."
+        [error]="passwordError()"
+        required
+      >
+        <ui-password-field>
+          <input uiInput formControlName="password" type="password" autocomplete="new-password" />
+        </ui-password-field>
+      </ui-form-field>
+
+      <div class="flex items-start gap-3">
+        <input uiCheckbox id="consent" type="checkbox" formControlName="consent" class="mt-1" />
+        <label for="consent" class="text-sm text-muted-foreground">
+          I accept the
+          <a
+            routerLink="/terms"
+            class="rounded-sm text-primary underline underline-offset-4 outline-none
+                   focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >Terms of Service</a
+          >
+          and
+          <a
+            routerLink="/privacy"
+            class="rounded-sm text-primary underline underline-offset-4 outline-none
+                   focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >Privacy Policy</a
+          >.
         </label>
-        <label class="block">
-          <span class="text-sm font-medium text-slate-700">Password</span>
-          <input formControlName="password" type="password" autocomplete="new-password"
-                 class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
-          <span class="mt-1 block text-xs text-slate-400">At least 10 characters, with a mix of cases, a number and a symbol.</span>
-        </label>
-        <label class="flex items-start gap-2">
-          <input formControlName="consent" type="checkbox" class="mt-1" />
-          <span class="text-sm text-slate-600">I accept the Terms of Service and Privacy Policy.</span>
-        </label>
+      </div>
+      @if (consentError()) {
+        <p role="alert" class="-mt-3 text-sm font-medium text-destructive">{{ consentError() }}</p>
+      }
 
-        @if (error()) {
-          <p role="alert" class="text-sm text-red-600">{{ error() }}</p>
-        }
+      <ui-button type="submit" [loading]="submitting()" full>Create account</ui-button>
+    </form>
 
-        <button type="submit" [disabled]="submitting() || form.invalid"
-                class="w-full rounded-lg bg-blue-700 px-4 py-2 font-medium text-white disabled:opacity-50">
-          {{ submitting() ? 'Creating…' : 'Create account' }}
-        </button>
-      </form>
-
-      <p class="mt-4 text-sm text-slate-500">
-        Already have an account? <a routerLink="/auth/login" class="font-medium text-primary">Sign in</a>
-      </p>
-    </section>
-  `
+    <p class="mt-6 text-sm text-muted-foreground">
+      Already have an account?
+      <a
+        routerLink="/auth/login"
+        class="rounded-sm font-medium text-primary underline-offset-4 outline-none hover:underline
+               focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >Sign in</a
+      >
+    </p>
+  `,
 })
 export class RegisterComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly submitting = signal(false);
-  readonly error = signal<string | null>(null);
+  protected readonly submitting = signal(false);
+  private readonly errorCode = signal<string | null>(null);
+
+  protected readonly failure = computed(() => {
+    const code = this.errorCode();
+    return code ? presentError(code) : null;
+  });
 
   readonly form = this.fb.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(10)]],
+    email: ['', { validators: [Validators.required, Validators.email], updateOn: 'blur' }],
+    password: [
+      '',
+      { validators: [Validators.required, Validators.minLength(10)], updateOn: 'blur' },
+    ],
     consent: [false, [Validators.requiredTrue]],
   });
 
+  protected emailError(): string | null {
+    const control = this.form.controls.email;
+    if (!control.touched || control.valid) {
+      return null;
+    }
+    return control.hasError('required')
+      ? 'Enter your email address.'
+      : 'Enter a valid email address.';
+  }
+
+  protected passwordError(): string | null {
+    const control = this.form.controls.password;
+    if (!control.touched || control.valid) {
+      return null;
+    }
+    return control.hasError('required')
+      ? 'Choose a password.'
+      : 'Use at least 10 characters.';
+  }
+
+  protected consentError(): string | null {
+    const control = this.form.controls.consent;
+    return control.touched && control.invalid
+      ? 'You need to accept the terms to create an account.'
+      : null;
+  }
+
   submit(): void {
+    this.form.markAllAsTouched();
     if (this.form.invalid) {
       return;
     }
     this.submitting.set(true);
-    this.error.set(null);
+    this.errorCode.set(null);
+
     const { email, password } = this.form.getRawValue();
     this.auth
       .register({
         email,
         password,
-        consents: [
-          { purpose: 'TERMS_OF_SERVICE', wording_version: 'v1' },
-          { purpose: 'PRIVACY_POLICY', wording_version: 'v1' },
-        ],
+        // The consent purpose and wording version are what BR-A05 records; the
+        // checkbox is the evidence, these are the terms it was given under.
+        consents: [{ purpose: 'TERMS_AND_PRIVACY', wording_version: 'v1' }],
       })
       .subscribe({
-        next: () => this.router.navigateByUrl('/'),
-        error: (err) => {
-          this.error.set(err?.error?.error?.message ?? 'Could not create your account.');
+        next: () => void this.router.navigateByUrl('/auth/verify-email'),
+        error: (error: unknown) => {
+          this.errorCode.set(error instanceof ApiError ? error.code : null);
           this.submitting.set(false);
         },
       });

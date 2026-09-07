@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input,
+  booleanAttribute,
+} from '@angular/core';
 import { cn } from '../utils/cn';
 
 let nextId = 0;
@@ -72,9 +74,9 @@ export class UiFormFieldComponent {
   readonly hint = input<string>('');
   /** The message to show. Falsy means valid. */
   readonly error = input<string | null>(null);
-  readonly required = input(false);
+  readonly required = input(false, { transform: booleanAttribute });
   /** Mark optional fields explicitly on forms where most fields are required. */
-  readonly optionalMarker = input(false);
+  readonly optionalMarker = input(false, { transform: booleanAttribute });
   readonly class = input<string>('');
 
   readonly controlId = computed(() => `${this.uid}-control`);

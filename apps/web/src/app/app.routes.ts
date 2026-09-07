@@ -1,5 +1,10 @@
 import { Routes } from '@angular/router';
-import { authGuard } from 'auth';
+// Deliberately NOT from the 'auth' barrel. That barrel re-exports the five
+// auth screens, so importing the guard at module load dragged every one of
+// them — and the ui components they use — into the INITIAL bundle. The
+// budget gate caught it at 459.78 kB. A guard is the one thing in a lazy
+// library that must be eagerly importable, so it gets its own entry point.
+import { authGuard } from 'auth/guards';
 
 /**
  * The routing skeleton (frontend-structure.md §4).

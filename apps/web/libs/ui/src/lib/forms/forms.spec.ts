@@ -301,6 +301,32 @@ describe('select and checkbox', () => {
   });
 });
 
+describe('a control used outside a field', () => {
+  it('keeps the id the caller gave it', () => {
+    // The binding used to resolve to null, and Angular removes an attribute
+    // bound to null — so a hand-written id that a hand-written <label for=...>
+    // pointed at was silently deleted, leaving an unlabelled control.
+    @Component({
+      standalone: true,
+      imports: [UiCheckboxDirective, ReactiveFormsModule],
+      template: `
+        <label for="standalone-consent">I agree</label>
+        <input uiCheckbox id="standalone-consent" type="checkbox" [formControl]="agree" />
+      `,
+    })
+    class StandaloneHost {
+      readonly agree = new FormControl(false);
+    }
+
+    TestBed.configureTestingModule({ imports: [StandaloneHost] });
+    const fixture = TestBed.createComponent(StandaloneHost);
+    fixture.detectChanges();
+
+    const checkbox = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+    expect(checkbox.id).toBe('standalone-consent');
+  });
+});
+
 describe('validation timing (the platform does it)', () => {
   it('supports updateOn: blur, which is exactly what §2 asks for', () => {
     // Telling someone their email is invalid after two characters is scolding
