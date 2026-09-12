@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService, type Page, type Schema } from 'data-access';
-import { Info } from 'lucide';
+import { CalendarDays, GraduationCap, Info } from 'lucide';
 import {
+  UiBadgeComponent,
   UiButtonComponent,
   UiCardComponent,
   UiEmptyStateComponent,
   UiErrorStateComponent,
   UiIconComponent,
+  UiIconTileComponent,
   UiSkeletonComponent,
   type IconNode,
 } from 'ui';
@@ -48,6 +50,8 @@ type Match = Schema<'Match'>;
     UiEmptyStateComponent,
     UiErrorStateComponent,
     UiIconComponent,
+    UiIconTileComponent,
+    UiBadgeComponent,
   ],
   template: `
     <h1 class="text-2xl font-semibold tracking-tight">Bursaries that suit you</h1>
@@ -105,28 +109,46 @@ type Match = Schema<'Match'>;
           @for (match of matches(); track match.id) {
             <li>
               <ui-card variant="interactive">
-                <h2 class="text-lg font-semibold">
-                  <a
-                    [href]="match.bursary.source_url || null"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    class="rounded-sm underline-offset-4 outline-none hover:underline
-                           focus-visible:outline-[3px] focus-visible:outline-offset-2
-                           focus-visible:outline-ring"
-                    >{{ match.bursary.name }}</a
-                  >
-                </h2>
-                <p class="mt-1 text-sm text-muted-foreground">{{ match.bursary.provider }}</p>
+                <div class="flex gap-4">
+                  <ui-icon-tile [icon]="bursaryIcon" tone="gold" size="lg" class="mt-1" />
 
-                @if (match.reasoning_summary) {
-                  <p class="mt-3 max-w-prose">{{ match.reasoning_summary }}</p>
-                }
+                  <div class="min-w-0 flex-1">
+                    <h2 class="text-lg font-semibold tracking-tight">
+                      <a
+                        [href]="match.bursary.source_url || null"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                        class="rounded-sm underline-offset-4 outline-none hover:underline
+                               focus-visible:outline-[3px] focus-visible:outline-offset-2
+                               focus-visible:outline-ring"
+                        >{{ match.bursary.name }}</a
+                      >
+                    </h2>
+                    <p class="mt-1 text-sm text-muted-foreground">{{ match.bursary.provider }}</p>
 
-                @if (match.bursary.next_deadline; as deadline) {
-                  <p class="mt-3 text-sm text-muted-foreground">
-                    Closes {{ deadline }}
-                  </p>
-                }
+                    @if (match.reasoning_summary) {
+                      <p class="mt-3 max-w-prose">{{ match.reasoning_summary }}</p>
+                    }
+
+                    <!-- The facts a student scans for, as chips rather than a
+                         paragraph they have to read to the end of. -->
+                    <div class="mt-4 flex flex-wrap items-center gap-2">
+                      @if (match.bursary.next_deadline; as deadline) {
+                        <ui-badge
+                          tone="neutral"
+                          [icon]="calendarIcon"
+                          [label]="'Closes ' + deadline"
+                        />
+                      }
+                      @for (tag of match.bursary.field_tags ?? []; track tag) {
+                        <ui-badge tone="outline" [label]="tag" />
+                      }
+                      @for (level of match.bursary.level_eligibility ?? []; track level) {
+                        <ui-badge tone="outline" [label]="levelLabel(level)" />
+                      }
+                    </div>
+                  </div>
+                </div>
               </ui-card>
             </li>
           }
@@ -143,6 +165,20 @@ export class MatchesComponent {
   protected readonly state = this.store.state;
   protected readonly matches = computed(() => this.state().data ?? []);
   protected readonly infoIcon = Info as IconNode;
+  protected readonly bursaryIcon = GraduationCap as IconNode;
+  protected readonly calendarIcon = CalendarDays as IconNode;
+
+  /** Contract levels are codes; a student should never meet SCREAMING_SNAKE. */
+  protected levelLabel(level: string): string {
+    const labels: Record<string, string> = {
+      UG: 'Undergraduate',
+      HONOURS: 'Honours',
+      MASTERS: "Master's",
+      PHD: 'PhD',
+      PGDIP: 'Postgraduate diploma',
+    };
+    return labels[level] ?? level;
+  }
 
   /** Any result produced in fallback means the whole list was (S8.51). */
   protected readonly isFallback = computed(() =>

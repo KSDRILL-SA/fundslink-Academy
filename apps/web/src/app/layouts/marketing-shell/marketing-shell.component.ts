@@ -31,16 +31,14 @@ import { ThemeToggleComponent } from '../../core/theme-toggle.component';
     <a class="skip-link" href="#main-content">Skip to content</a>
 
     <div class="flex min-h-dvh flex-col bg-background">
-      <header
-        class="sticky top-0 z-40 h-16 shrink-0 border-b border-border bg-background/95 backdrop-blur"
-      >
+      <header class="fl-glass sticky top-0 z-40 h-16 shrink-0 border-x-0 border-t-0">
         <div class="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-4">
           <a
             routerLink="/"
             class="shrink-0 rounded-md outline-none focus-visible:outline-[3px]
                    focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            <ui-logo size="sm" />
+            <ui-logo variant="plate" size="sm" />
           </a>
 
           <ui-scroll-nav class="min-w-0 flex-1" [items]="navItems" ariaLabel="Site" />
@@ -70,7 +68,7 @@ import { ThemeToggleComponent } from '../../core/theme-toggle.component';
         <div class="mx-auto max-w-[1400px] px-4 py-12">
           <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <ui-logo size="md" />
+              <ui-logo variant="plate" size="md" />
               <p class="mt-4 max-w-prose-narrow text-sm text-muted-foreground">
                 Funding South African students who fall through the NSFAS gap.
               </p>

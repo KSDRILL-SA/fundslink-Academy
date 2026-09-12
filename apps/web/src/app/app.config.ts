@@ -13,7 +13,7 @@ import { routes } from './app.routes';
 import { sentryProviders } from './core/observability';
 // Empty in a production build — the fixtures live in a file that only the
 // development configuration swaps in (see app/dev/preview-api.ts).
-import { previewInterceptors } from './dev/preview-api';
+import { previewInterceptors, previewProviders } from './dev/preview-api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -35,5 +35,7 @@ export const appConfig: ApplicationConfig = {
     // library — libs/data-access must not reach into environment files.
     { provide: API_BASE_URL, useValue: environment.apiBase },
     ...sentryProviders(environment.sentryDsn, environment.name),
+    // Empty in production, by file replacement rather than by flag.
+    ...(environment.useMockApi ? previewProviders : []),
   ],
 };

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { environment } from '../../environments/environment';
-import { previewInterceptors } from './preview-api';
+import { previewInterceptors, previewProviders } from './preview-api';
 
 /**
  * The gate on preview mode (doctrine L5: make the rule a gate, not a memory).
@@ -33,6 +33,14 @@ describe('preview mode cannot reach production', () => {
   it('ships an empty interceptor chain', () => {
     // This is the module the production build compiles.
     expect(previewInterceptors).toEqual([]);
+  });
+
+  it('grants no session', () => {
+    // The development file seeds a signed-in token so any screen opens from
+    // its URL. Shipping anything that hands out a session would be the single
+    // worst bug this codebase could have.
+    expect(previewProviders).toEqual([]);
+    expect(shipped).not.toMatch(/AuthTokenService|provideAppInitializer|token/i);
   });
 
   it('holds no fixture in the file that ships', () => {

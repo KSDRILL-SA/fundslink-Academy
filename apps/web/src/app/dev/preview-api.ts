@@ -1,3 +1,4 @@
+import type { EnvironmentProviders, Provider } from '@angular/core';
 import type { HttpInterceptorFn } from '@angular/common/http';
 
 /**
@@ -19,3 +20,10 @@ import type { HttpInterceptorFn } from '@angular/common/http';
  * and angular.json performs the swap.
  */
 export const previewInterceptors: HttpInterceptorFn[] = [];
+
+/**
+ * Providers preview mode installs at bootstrap. Empty here, and that emptiness
+ * is the point: the development file seeds a signed-in session so any screen
+ * opens from its URL, and nothing that grants a session may ever ship.
+ */
+export const previewProviders: (Provider | EnvironmentProviders)[] = [];

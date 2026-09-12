@@ -1,11 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ApiService, type Page, type Schema } from 'data-access';
+import { CalendarDays, GraduationCap } from 'lucide';
 import {
+  UiBadgeComponent,
   UiButtonComponent,
   UiCardComponent,
   UiEmptyStateComponent,
   UiErrorStateComponent,
+  UiIconTileComponent,
   UiSkeletonComponent,
+  type IconNode,
 } from 'ui';
 import { asyncState } from '../../core/async-state';
 
@@ -37,6 +41,8 @@ type Bursary = Schema<'Bursary'>;
     UiSkeletonComponent,
     UiEmptyStateComponent,
     UiErrorStateComponent,
+    UiIconTileComponent,
+    UiBadgeComponent,
   ],
   template: `
     <div class="mx-auto max-w-[1000px] px-4 py-10">
@@ -74,8 +80,10 @@ type Bursary = Schema<'Bursary'>;
               <li>
                 <ui-card variant="interactive">
                   <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div class="min-w-0">
-                      <h2 class="text-lg font-semibold">
+                    <ui-icon-tile [icon]="bursaryIcon" tone="gold" size="lg" class="mt-1" />
+
+                    <div class="min-w-0 flex-1">
+                      <h2 class="text-lg font-semibold tracking-tight">
                         @if (bursary.source_url) {
                           <a
                             [href]="bursary.source_url"
@@ -94,15 +102,15 @@ type Bursary = Schema<'Bursary'>;
                       </h2>
                       <p class="mt-1 text-sm text-muted-foreground">{{ bursary.provider }}</p>
 
-                      @if (bursary.field_tags?.length) {
-                        <p class="mt-2 text-sm text-muted-foreground">
-                          {{ bursary.field_tags?.join(' · ') }}
-                        </p>
-                      }
+                      <div class="mt-4 flex flex-wrap items-center gap-2">
+                        @for (tag of bursary.field_tags ?? []; track tag) {
+                          <ui-badge tone="outline" [label]="tag" />
+                        }
+                      </div>
                     </div>
 
                     @if (bursary.next_deadline; as deadline) {
-                      <p class="text-sm text-muted-foreground">Closes {{ deadline }}</p>
+                      <ui-badge tone="neutral" [icon]="calendarIcon" [label]="'Closes ' + deadline" />
                     }
                   </div>
                 </ui-card>
@@ -128,6 +136,8 @@ export class BursariesComponent {
   private cursor: string | null = null;
 
   protected readonly state = this.store.state;
+  protected readonly bursaryIcon = GraduationCap as IconNode;
+  protected readonly calendarIcon = CalendarDays as IconNode;
   protected readonly bursaries = computed(() => this.state().data ?? []);
   protected readonly loadingMore = computed(() => false);
   protected readonly nextCursor = computed(() => this.cursor !== null);

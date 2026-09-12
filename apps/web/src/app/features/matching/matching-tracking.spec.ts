@@ -126,7 +126,14 @@ describe('S18 tracking board', () => {
     // platform does not have.
     load([tracked()]);
     expect(text()).toContain('You reported');
-    expect(el().querySelectorAll('ui-status-chip')).toHaveLength(2);
+
+    // The board renders twice — a table on wide screens, cards on narrow ones.
+    // The source chip has to survive in BOTH, or the rule quietly holds on a
+    // laptop and fails on the phone most students actually use.
+    const row = el().querySelector('table tbody tr');
+    expect(row?.querySelectorAll('ui-status-chip')).toHaveLength(2);
+    const card = el().querySelector('ul ui-card');
+    expect(card?.querySelectorAll('ui-status-chip')).toHaveLength(2);
   });
 
   it('labels an email-captured status differently from a self-reported one', () => {
