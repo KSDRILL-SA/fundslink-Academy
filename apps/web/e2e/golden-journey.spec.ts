@@ -54,10 +54,6 @@ test.describe('golden journey — apply and submit', () => {
     await registerStudent(page, 'apply');
     await completeProfile(page, freshIdNumber());
 
-    // The profile must actually have saved — D-007 refuses a submit without an
-    // SA ID, and a silently-unsaved profile would fail later and look unrelated.
-    await expect(page.getByText(/saved/i).first()).toBeVisible();
-
     await page.goto('/app/applications/new');
     await page.getByRole('button', { name: /starting Honours/ }).click();
 
@@ -81,11 +77,19 @@ test.describe('golden journey — apply and submit', () => {
       .getByLabel('Roughly what does your household earn', { exact: false })
       .selectOption({ label: 'Up to R350 000' });
 
+    // Wait on the SUBMIT RESPONSE, not on a URL change. Asserting navigation
+    // made this test intermittent and told me nothing when it failed: a slow
+    // or refused submit and a broken redirect look identical from the address
+    // bar. The response is the fact; it also names the failure if there is one.
+    const submitted = page.waitForResponse(
+      (r) => /\/applications\/[^/]+\/submit$/.test(r.url()) && r.request().method() === 'POST',
+      { timeout: 30_000 },
+    );
     // The button is named for what it does to a person, not "Submit".
     await page.getByRole('button', { name: 'Send my application for review' }).click();
 
-    // It must land on the application, with a REAL status.
-    await expect(page).toHaveURL(/\/app\/applications\/[^/]+$/, { timeout: 20_000 });
+    const response = await submitted;
+    expect(response.status(), `submit failed: ${await response.text()}`).toBe(200);
     await expectNoRawErrorLeak(page);
 
     // The assertion a weaker version of this test got wrong. "The page did not

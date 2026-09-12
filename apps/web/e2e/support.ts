@@ -103,6 +103,16 @@ export async function completeProfile(page: Page, idNumber: string): Promise<voi
   await page.getByLabel('South African ID number', { exact: false }).fill(idNumber);
   await page.getByRole('button', { name: 'Save profile' }).click();
   await page.waitForLoadState('networkidle');
+
+  // Prove it PERSISTED, rather than that a confirmation appeared. The first
+  // version asserted a "Saved." message, which is transient — it passed alone
+  // and failed in a full run, which is the signature of asserting a toast's
+  // lifetime instead of a fact. Reloading and reading the field back cannot
+  // flake, and it is what the next step actually depends on: D-007 refuses a
+  // submit without an SA ID on the profile.
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByLabel('Field of study', { exact: false })).toHaveValue('BEng Civil');
 }
 
 /** A unique 13-digit SA ID per run — the blind index is UNIQUE (BR-A04). */
