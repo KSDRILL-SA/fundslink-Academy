@@ -78,8 +78,14 @@ import { ORGANISATION } from '../content/organisation';
         aria-hidden="true"
       ></span>
 
-      <div class="mx-auto grid max-w-[1200px] gap-16 px-4 py-24 sm:py-32 lg:grid-cols-[1.05fr_1fr]">
-        <div class="max-w-2xl">
+      <!-- 12 columns, split 6/6 with the mock bleeding past the container on
+           the right. An even two-column grid centres everything and reads as a
+           template; an asymmetric one reads as a composition. -->
+      <div
+        class="fl-container fl-on-dark grid items-center gap-x-12 gap-y-16 py-20 sm:py-24
+               lg:grid-cols-12 lg:py-28"
+      >
+        <div class="lg:col-span-6 xl:col-span-6">
           <span class="fl-eyebrow border-[hsl(38_92%_50%/0.4)] text-[hsl(43_96%_78%)]">
             <span class="h-1.5 w-1.5 rounded-full bg-[hsl(38_92%_60%)]" aria-hidden="true"></span>
             Non-profit · South Africa
@@ -87,39 +93,45 @@ import { ORGANISATION } from '../content/organisation';
 
           <!-- The one h1 on the page (§7). The gold sits on the half of the
                sentence that carries the hope — the promise, not the problem. -->
-          <h1 class="fl-display mt-6 text-5xl text-[hsl(210_40%_98%)] sm:text-7xl">
+          <h1 class="fl-display mt-7 text-[2.75rem] text-[hsl(210_40%_98%)] sm:text-6xl xl:text-7xl">
             Past the cracks,<br />
             <span class="fl-text-gold">into your future.</span>
           </h1>
 
-          <p class="mt-7 max-w-prose text-lg text-[hsl(210_40%_92%)] sm:text-xl">
+          <p class="fl-lead mt-7 max-w-[34rem] text-[hsl(213_40%_88%)]">
             {{ positioning }} Free to apply, reviewed by a person, and built to treat you with
             dignity either way.
           </p>
 
-          <!-- The "I am a…" gateway. One primary action in gold; the others
-               are real destinations, deliberately subordinate (§3.1). -->
+          <!--
+            The "I am a…" gateway (§3.1).
+
+            One primary action, not three. The first pass put three
+            equally-weighted buttons in a row, which is the surest way to have
+            none of them taken — and two of those three were for people who are
+            not the main audience of this page. The student's action keeps the
+            gold; the other two audiences are named, addressed and subordinate.
+          -->
           <div class="mt-10">
-            <p id="gateway-label" class="text-sm font-medium text-[hsl(210_40%_88%)]">I am a…</p>
-            <nav aria-labelledby="gateway-label" class="mt-3 flex flex-wrap items-center gap-3">
+            <p id="gateway-label" class="fl-caption text-[hsl(213_32%_78%)]">I am a…</p>
+            <nav aria-labelledby="gateway-label" class="mt-4">
               <a routerLink="/auth/register" class="inline-flex">
                 <ui-button variant="accent" size="lg">Student — apply</ui-button>
               </a>
-              <a routerLink="/for-donors" class="inline-flex">
-                <ui-button variant="secondary" size="lg">Donor — give</ui-button>
-              </a>
-              <a routerLink="/for-donors" class="inline-flex">
-                <ui-button variant="secondary" size="lg">Partner with us</ui-button>
-              </a>
+
+              <div class="mt-5 flex flex-wrap items-center gap-x-7 gap-y-3">
+                <a [routerLink]="'/for-donors'" [class]="quietLink">
+                  Donor — give
+                  <ui-icon [name]="icons.arrow" size="sm" />
+                </a>
+                <a [routerLink]="'/for-donors'" [class]="quietLink">
+                  Partner with us
+                  <ui-icon [name]="icons.arrow" size="sm" />
+                </a>
+              </div>
             </nav>
 
-            <a
-              routerLink="/bursaries"
-              class="mt-6 inline-flex items-center gap-2 rounded-sm text-[hsl(210_40%_92%)]
-                     underline-offset-4 outline-none hover:underline
-                     focus-visible:outline-[3px] focus-visible:outline-offset-2
-                     focus-visible:outline-[hsl(38_92%_60%)]"
-            >
+            <a routerLink="/bursaries" [class]="'mt-7 ' + quietLink">
               <ui-icon [name]="icons.search" size="sm" />
               Just browsing? See the bursaries
             </a>
@@ -134,8 +146,12 @@ import { ORGANISATION } from '../content/organisation';
              elsewhere on the page — so it is hidden from assistive technology
              rather than read out as a fake application. Drawn in HTML and CSS,
              so it costs no bytes and stays sharp on any screen. -->
-        <div class="relative hidden self-center lg:block" aria-hidden="true">
-          <div class="fl-hero-mock fl-on-dark space-y-4 rounded-2xl p-6">
+        <div class="relative hidden lg:col-span-6 lg:block" aria-hidden="true">
+          <!-- A light source above-left, so the card is tilted INTO the page
+               rather than sitting flat on it. Transform only, and removed
+               entirely under reduced motion. -->
+          <div class="fl-hero-tilt">
+            <div class="fl-hero-mock space-y-4 rounded-2xl p-6">
             <div class="flex items-center justify-between">
               <span class="fl-eyebrow border-[hsl(38_92%_50%/0.4)] text-[hsl(43_96%_78%)]">
                 Application · 2026
@@ -163,29 +179,43 @@ import { ORGANISATION } from '../content/organisation';
               }
             </div>
 
-            <div class="rounded-xl border border-border bg-[hsl(222_45%_17%)] p-4">
-              <p class="text-sm text-muted-foreground">Reviewed by</p>
-              <p class="mt-1 text-sm font-medium text-foreground">
-                A person — never an algorithm
-              </p>
-            </div>
-          </div>
+              <!-- The card's own footer, in two columns.
 
-          <!-- A second, smaller card: depth without a screenshot. It clips the
-               corner of the card above rather than sitting on its content. -->
-          <div class="fl-hero-mock absolute -bottom-20 -left-12 w-52 rounded-2xl p-4">
-            <p class="text-xs text-[hsl(213_32%_80%)]">Matches for you</p>
-            <p class="mt-1 text-2xl font-semibold text-[hsl(210_40%_98%)] tabular">7</p>
-            <p class="mt-1 text-xs text-[hsl(213_32%_80%)]">bursaries you fit</p>
+                   The matches figure used to be a card floating outside this
+                   one. It clashed: the tilt throws the outer corners across
+                   the gutter, so a position that looks clear in the markup
+                   crowds the headline on the page — and it did so differently
+                   at every width, which is the kind of fragility a hero should
+                   never carry. Inside the card it cannot collide with anything
+                   and it reads as part of the product, which is the point. -->
+              <div class="grid grid-cols-2 gap-3 border-t border-border pt-4">
+                <div>
+                  <p class="text-xs text-muted-foreground">Reviewed by</p>
+                  <p class="mt-1 text-sm font-medium text-foreground">
+                    A person — never an algorithm
+                  </p>
+                </div>
+                <div>
+                  <p class="text-xs text-muted-foreground">Matches for you</p>
+                  <p class="mt-1 text-sm font-medium text-foreground">
+                    <span class="tabular">7</span> bursaries you fit
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
     </section>
 
     <!-- ================= TRUST BAND ================= -->
     <!-- Three things that are true today. No vanity metrics, and no numbers we
          cannot stand behind (§3.2). -->
-    <fl-section tone="muted" class="!py-14">
+    <!-- Tight on purpose: this band is a reassurance strip under the hero, not
+         a section of its own. Giving it the full rhythm made it read as three
+         paragraphs nobody asked for. -->
+    <fl-section tone="muted" class="!py-10">
       <ul class="grid gap-4 sm:grid-cols-3">
         @for (point of trustPoints; track point.title; let i = $index) {
           <li class="fl-surface flex items-start gap-4 p-5" uiReveal [uiRevealDelay]="i * 40">
@@ -200,29 +230,18 @@ import { ORGANISATION } from '../content/organisation';
     </fl-section>
 
     <!-- ================= HOW IT WORKS ================= -->
-    <fl-section>
-      <fl-section-header
-        eyebrow="How it works"
-        headline="Three steps, and a person at the end of them"
-        lead="No agents, no fees, no guessing. You tell us about you once, and we do the finding."
-        align="center"
-        class="mb-14"
-      />
+    <!-- A journey, drawn as one: three numbered nodes on a single line, rather
+         than three separate cards that happen to be in a row. The line is what
+         says "this is a sequence you will walk", before a word is read. -->
+    <fl-section density="lead">
+      <div class="flex flex-wrap items-end justify-between gap-6">
+        <fl-section-header
+          eyebrow="How it works"
+          headline="Three steps, and a person at the end of them"
+          lead="No agents, no fees, no guessing. You tell us about you once, and we do the finding."
+          class="max-w-2xl"
+        />
 
-      <ol class="grid gap-6 md:grid-cols-3">
-        @for (item of steps; track item.title; let i = $index) {
-          <li uiReveal [uiRevealDelay]="i * 50">
-            <fl-feature-card
-              [step]="'Step ' + (i + 1)"
-              [title]="item.title"
-              [body]="item.body"
-              [icon]="item.icon"
-            />
-          </li>
-        }
-      </ol>
-
-      <div class="mt-10 text-center">
         <a
           routerLink="/how-it-works"
           class="inline-flex items-center gap-2 rounded-sm font-medium text-primary
@@ -233,11 +252,27 @@ import { ORGANISATION } from '../content/organisation';
           <ui-icon [name]="icons.arrow" size="sm" />
         </a>
       </div>
+
+      <ol class="fl-journey mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
+        @for (item of steps; track item.title; let i = $index) {
+          <li class="fl-journey-step relative" uiReveal [uiRevealDelay]="i * 60">
+            <div class="relative flex items-center gap-4">
+              <span class="fl-journey-node tabular">{{ i + 1 }}</span>
+              <ui-icon-tile [icon]="item.icon" tone="gold" />
+            </div>
+            <h3 class="mt-6 text-xl font-semibold tracking-tight">{{ item.title }}</h3>
+            <p class="mt-3 max-w-prose text-muted-foreground">{{ item.body }}</p>
+          </li>
+        }
+      </ol>
     </fl-section>
 
     <!-- ================= TWO DOORS ================= -->
+    <!-- Not two equal halves. The student door is wider, because this page is
+         read by far more students than donors, and a layout that treats both
+         audiences identically is a layout that has not decided anything. -->
     <fl-section tone="muted">
-      <div class="grid gap-6 md:grid-cols-2">
+      <div class="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
         <div uiReveal>
           <fl-feature-card
             title="For students"
@@ -325,6 +360,24 @@ import { ORGANISATION } from '../content/organisation';
         0 40px 80px -32px hsl(0 0% 0% / 0.8);
     }
 
+    /* The tilt. A card lying perfectly flat on a page reads as a diagram; a
+       few degrees of rotation with a lifted right edge reads as an object on a
+       desk. Perspective is on the wrapper so the child keeps crisp text. */
+    .fl-hero-tilt {
+      transform: perspective(1600px) rotateY(-7deg) rotateX(2deg) rotate(-1.2deg);
+      transform-style: preserve-3d;
+      position: relative;
+    }
+
+    /* Nobody should be shown a rotated interface if they have asked for less
+       motion — the tilt is static, but it is still a spatial effect, and it
+       makes the mock harder to read for some people. */
+    @media (prefers-reduced-motion: reduce) {
+      .fl-hero-tilt {
+        transform: none;
+      }
+    }
+
     .fl-hero-scrim {
       background:
         radial-gradient(60% 80% at 85% 20%, hsl(38 92% 50% / 0.14) 0%, transparent 70%),
@@ -351,6 +404,16 @@ export class MarketingHomeComponent {
    * true is simpler and says more: we fund what other funding does not reach.
    */
   protected readonly positioning = ORGANISATION.positioning;
+
+  /**
+   * A quiet link on the navy hero: readable, clearly interactive, and
+   * deliberately not a button. Three buttons of equal weight was the problem.
+   */
+  protected readonly quietLink =
+    'inline-flex items-center gap-2 rounded-sm font-medium text-[hsl(213_40%_88%)] ' +
+    'underline-offset-4 outline-none transition-colors hover:text-[hsl(43_96%_72%)] ' +
+    'hover:underline focus-visible:outline-[3px] focus-visible:outline-offset-2 ' +
+    'focus-visible:outline-[hsl(38_92%_60%)] motion-reduce:transition-none';
 
   protected readonly icons = {
     search: Search as IconNode,

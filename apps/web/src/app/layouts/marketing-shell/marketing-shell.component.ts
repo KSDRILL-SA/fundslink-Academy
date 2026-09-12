@@ -65,20 +65,35 @@ import { ThemeToggleComponent } from '../../core/theme-toggle.component';
         <router-outlet />
       </main>
 
-      <footer class="shrink-0 border-t border-border bg-secondary/40">
-        <div class="mx-auto max-w-[1400px] px-4 py-12">
-          <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+      <!-- The footer closes the argument the page has been making, so it gets
+           the brand at full size and the same atmosphere as the hero — not
+           four columns of small grey links under a product that has just spent
+           a whole page earning trust. -->
+      <footer
+        class="fl-on-dark relative shrink-0 overflow-hidden border-t border-[hsl(213_25%_30%)]
+               bg-[hsl(224_52%_7%)]"
+      >
+        <span
+          class="fl-arch-motif -top-40 left-1/2 hidden h-[34rem] w-[34rem] -translate-x-1/2 lg:block"
+          aria-hidden="true"
+        ></span>
+
+        <div class="fl-container relative py-16">
+          <div class="grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
             <div>
               <ui-logo variant="plate" size="md" />
-              <p class="mt-4 max-w-prose-narrow text-sm text-muted-foreground">
+              <!-- No call to action here. The band directly above this one is
+                   the page's closing ask; repeating it two centimetres lower
+                   does not make it more likely to be taken. -->
+              <p class="mt-5 max-w-prose-narrow text-muted-foreground">
                 {{ positioning }}
               </p>
             </div>
 
             @for (column of footerColumns; track column.title) {
               <nav [attr.aria-label]="column.title">
-                <h2 class="text-sm font-semibold text-foreground">{{ column.title }}</h2>
-                <ul class="mt-4 space-y-3">
+                <h2 class="fl-caption">{{ column.title }}</h2>
+                <ul class="mt-5 space-y-3">
                   @for (link of column.links; track link.route) {
                     <li>
                       <a
@@ -101,11 +116,12 @@ import { ThemeToggleComponent } from '../../core/theme-toggle.component';
           <ng-content select="[footer-extra]" />
 
           <div
-            class="mt-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-6
+            class="mt-14 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border pt-6
                    text-sm text-muted-foreground"
           >
             <span>&copy; 2026 FundsLink Academy</span>
             <span>A non-profit funding South African students.</span>
+            <span class="ml-auto">Built in South Africa.</span>
           </div>
         </div>
       </footer>
