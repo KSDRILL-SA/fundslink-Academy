@@ -251,7 +251,10 @@ export class ApplyStepsComponent {
   });
 
   readonly form = this.fb.nonNullable.group({
-    academic_year: ['', { validators: [Validators.required], updateOn: 'blur' }],
+    // A dropdown commits on change; only the text fields wait for blur. See
+    // the note in profile.component.ts — choosing and immediately continuing
+    // showed "choose a year" to someone who had just chosen one.
+    academic_year: ['', { validators: [Validators.required] }],
     // A string, and it stays one. No numeric validator, because a numeric
     // validator is the first step toward treating money as a number.
     requested_amount: ['', { validators: [Validators.required], updateOn: 'blur' }],
