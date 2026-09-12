@@ -16,7 +16,7 @@
  *    An unknown code degrades to a safe, honest sentence rather than echoing
  *    whatever the server said.
  *
- * Source of truth for the codes: docs/architecture/error-codes.md (28 codes).
+ * Source of truth for the codes: docs/architecture/error-codes.md (29 codes).
  */
 export interface ErrorPresentation {
   /** A short heading — plain, not alarming. */
@@ -101,6 +101,16 @@ export const ERROR_PRESENTATION: Readonly<Record<string, ErrorPresentation>> = {
   invalid_consent_purpose: {
     title: "We couldn't save that preference",
     message: 'Reload the page and set it again.',
+    retryable: true,
+  },
+  // FastAPI's schema-validation failure. It reached students as the generic
+  // "Something went wrong on our side — this wasn't you", which was wrong in
+  // both directions: it blamed the system for an email the validator refuses,
+  // and it offered no way forward. The cause can genuinely be either side, so
+  // the copy names the form without accusing the person (rule 2).
+  validation_error: {
+    title: "Something in the form wasn't accepted",
+    message: 'Check the details you entered — an email address is the usual one — and try again.',
     retryable: true,
   },
   sa_id_required: {
