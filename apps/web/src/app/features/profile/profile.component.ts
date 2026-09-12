@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiError } from 'data-access';
+import { UserRound } from 'lucide';
 import {
   UiButtonComponent,
   UiErrorStateComponent,
@@ -11,8 +12,10 @@ import {
   UiSkeletonComponent,
   UiTextareaDirective,
   presentError,
+  type IconNode,
 } from 'ui';
 import { ProfileStore } from './profile.store';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 /**
  * S09 — Profile builder.
@@ -44,12 +47,14 @@ import { ProfileStore } from './profile.store';
     UiButtonComponent,
     UiSkeletonComponent,
     UiErrorStateComponent,
+    PageHeaderComponent,
   ],
   template: `
-    <h1 class="text-2xl font-semibold tracking-tight">Your profile</h1>
-    <p class="mt-1 max-w-prose text-muted-foreground">
-      Tell us about you once. Every bursary you apply for uses this — you will not retype it.
-    </p>
+    <fl-page-header
+      title="Your profile"
+      lead="Tell us about you once. Every bursary you apply for uses this — you will not retype it."
+      [icon]="profileIcon"
+    />
 
     @switch (store.state().status) {
       @case ('loading') {
@@ -157,6 +162,7 @@ import { ProfileStore } from './profile.store';
   `,
 })
 export class ProfileComponent {
+  protected readonly profileIcon = UserRound as IconNode;
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   protected readonly store = inject(ProfileStore);

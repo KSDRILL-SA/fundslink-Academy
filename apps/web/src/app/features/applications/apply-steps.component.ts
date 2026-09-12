@@ -13,6 +13,7 @@ import {
   presentError,
 } from 'ui';
 import type { ApplicationType } from './application-categories';
+import { INCOME_BAND_LABELS } from './application-labels';
 
 /**
  * S11 — Apply: guided steps.
@@ -128,12 +129,16 @@ import type { ApplicationType } from './application-categories';
             hint="This is not a test you can fail. It gives the reviewer context, and you may choose not to say."
             optionalMarker
           >
+            <!-- The bands and their figures are the contract's, translated in
+                 one place (application-labels.ts). A rand figure typed into a
+                 screen cannot be told apart from an invented one, which is why
+                 the account-data-integrity gate refuses them here. -->
             <select uiSelect formControlName="household_income_band">
               <option value="">Choose one…</option>
               <option value="SASSA_GRANT">We receive a SASSA grant</option>
-              <option value="LTE_350K">Up to R350 000</option>
-              <option value="MISSING_MIDDLE_350_600K">R350 000 to R600 000</option>
-              <option value="GT_600K">More than R600 000</option>
+              @for (band of incomeBands; track band.value) {
+                <option [value]="band.value">{{ band.label }}</option>
+              }
               <option value="PREFER_NOT_TO_SAY">I would rather not say</option>
             </select>
           </ui-form-field>
@@ -172,6 +177,12 @@ import type { ApplicationType } from './application-categories';
   `,
 })
 export class ApplyStepsComponent {
+  /** The contract's income bands, translated once (application-labels.ts). */
+  protected readonly incomeBands = Object.entries(INCOME_BAND_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  }));
+
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);

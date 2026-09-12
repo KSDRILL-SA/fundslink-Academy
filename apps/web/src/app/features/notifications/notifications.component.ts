@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ApiError, ApiService, type Page, type Schema } from 'data-access';
+import { Bell } from 'lucide';
 import {
   UiButtonComponent,
   UiCardComponent,
@@ -8,9 +9,11 @@ import {
   UiErrorStateComponent,
   UiSkeletonComponent,
   presentError,
+  type IconNode,
 } from 'ui';
 import { asyncState } from '../../core/async-state';
 import { ShellSignalsService } from '../../core/shell-signals.service';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 type Notification = Schema<'Notification'>;
 
@@ -48,9 +51,14 @@ const TRIGGERS = [
     UiSkeletonComponent,
     UiEmptyStateComponent,
     UiErrorStateComponent,
+    PageHeaderComponent,
   ],
   template: `
-    <h1 class="text-2xl font-semibold tracking-tight">Notifications</h1>
+    <fl-page-header
+      title="Notifications"
+      lead="What we have told you, and how you would like us to reach you."
+      [icon]="bellIcon"
+    />
 
     <section class="mt-8" aria-labelledby="prefs-heading">
       <h2 id="prefs-heading" class="text-lg font-semibold">How we reach you</h2>
@@ -141,6 +149,7 @@ const TRIGGERS = [
   `,
 })
 export class NotificationsComponent {
+  protected readonly bellIcon = Bell as IconNode;
   private readonly api = inject(ApiService);
   private readonly shell = inject(ShellSignalsService);
   private readonly store = asyncState<readonly Notification[]>((items) => items.length === 0);

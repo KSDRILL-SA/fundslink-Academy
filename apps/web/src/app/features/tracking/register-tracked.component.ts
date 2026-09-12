@@ -2,12 +2,15 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiError, ApiService, type Schema } from 'data-access';
+import { Send } from 'lucide';
 import {
   UiButtonComponent,
   UiFormFieldComponent,
   UiInputDirective,
   presentError,
+  type IconNode,
 } from 'ui';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 /**
  * S19 — Register a tracked application.
@@ -24,13 +27,16 @@ import {
   selector: 'fl-register-tracked',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, UiFormFieldComponent, UiInputDirective, UiButtonComponent],
+  imports: [ReactiveFormsModule, UiFormFieldComponent, UiInputDirective, UiButtonComponent, PageHeaderComponent,
+  ],
   template: `
-    <h1 class="text-2xl font-semibold tracking-tight">Track another application</h1>
-    <p class="mt-2 max-w-prose text-muted-foreground">
-      Tell us which bursary you applied for and we will watch the deadline, and chase them if they
-      go quiet.
-    </p>
+    <fl-page-header
+      title="Track another application"
+      lead="Tell us which bursary you applied for and we will watch the deadline, and chase them if they go quiet."
+      [icon]="trackIcon"
+      backRoute="/app/tracking"
+      backLabel="Back to your applications"
+    />
 
     <form class="mt-8 flex max-w-2xl flex-col gap-6" [formGroup]="form" (ngSubmit)="submit()">
       @if (failure(); as problem) {
@@ -60,6 +66,7 @@ import {
   `,
 })
 export class RegisterTrackedComponent {
+  protected readonly trackIcon = Send as IconNode;
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);

@@ -12,6 +12,9 @@ import {
   type IconNode,
 } from 'ui';
 import { ApplicationsStore } from '../dashboard/applications.store';
+import { APPLICATION_TYPE_LABELS } from './application-labels';
+import { formatRands } from '../../shared/money';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 /**
  * The student's applications, in one list.
@@ -44,19 +47,19 @@ import { ApplicationsStore } from '../dashboard/applications.store';
     UiSkeletonComponent,
     UiEmptyStateComponent,
     UiErrorStateComponent,
+    PageHeaderComponent,
   ],
   template: `
-    <div class="flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 class="fl-display text-3xl">Your applications</h1>
-        <p class="mt-2 max-w-prose text-muted-foreground">
-          Every application you have made through FundsLink, and where each one stands.
-        </p>
-      </div>
-      <a routerLink="/app/applications/new" class="inline-flex">
+    <fl-page-header
+      title="Your applications"
+      lead="Every application you have made through FundsLink, and where each one stands."
+      [icon]="icons.application"
+      tone="gold"
+    >
+      <a actions routerLink="/app/applications/new" class="inline-flex">
         <ui-button variant="accent">Start an application</ui-button>
       </a>
-    </div>
+    </fl-page-header>
 
     @switch (store.state().status) {
       @case ('loading') {
@@ -109,10 +112,10 @@ import { ApplicationsStore } from '../dashboard/applications.store';
                         @if (application.requested_amount; as amount) {
                           <div>
                             <dt class="text-muted-foreground">Amount requested</dt>
-                            <!-- A decimal string from the API, rendered exactly
-                                 as received. Money is never parsed to a float
-                                 on the way to a screen (handoff §4.4). -->
-                            <dd class="tabular font-medium">R {{ amount }}</dd>
+                            <!-- Grouped by rewriting the string, never by
+                                 parsing it: money stays a decimal string end
+                                 to end (handoff §4.4, DB-D29). -->
+                            <dd class="tabular font-medium">{{ money(amount) }}</dd>
                           </div>
                         }
                         <div>
@@ -159,14 +162,12 @@ export class ApplicationsListComponent {
    * redeployed.
    */
   protected typeLabel(type: string): string {
-    const labels: Record<string, string> = {
-      POSTGRAD: 'Postgraduate funding',
-      UG_CAT_A: 'Undergraduate — category A',
-      UG_CAT_B: 'Undergraduate — category B',
-      UG_CAT_C: 'Undergraduate — category C',
-      OTHER: 'Funding application',
-    };
-    return labels[type] ?? 'Funding application';
+    return APPLICATION_TYPE_LABELS[type] ?? 'Funding application';
+  }
+
+  /** The amount, grouped for reading. Still the server's exact digits. */
+  protected money(amount: string): string {
+    return formatRands(amount);
   }
 
   /** A date a person reads, from the ISO timestamp the API returns. */

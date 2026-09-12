@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ApiError, ApiService, type Schema } from 'data-access';
+import { FileUp } from 'lucide';
 import {
   UiButtonComponent,
   UiFormFieldComponent,
@@ -8,7 +9,9 @@ import {
   UiSelectDirective,
   UiSuccessStateComponent,
   presentError,
+  type IconNode,
 } from 'ui';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 /** What the server accepts (ST-2.4). Stated here only to fail early and kindly. */
 const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'] as const;
@@ -45,13 +48,14 @@ export const DOCUMENT_TYPES = [
     UiSelectDirective,
     UiButtonComponent,
     UiSuccessStateComponent,
+    PageHeaderComponent,
   ],
   template: `
-    <h1 class="text-2xl font-semibold tracking-tight">Add your documents</h1>
-    <p class="mt-2 max-w-prose text-muted-foreground">
-      A photo from your phone is fine, as long as the text is readable. PDF, JPG or PNG, up to 5 MB
-      each.
-    </p>
+    <fl-page-header
+      title="Add your documents"
+      lead="A photo from your phone is fine, as long as the text is readable. PDF, JPG or PNG, up to 5 MB each."
+      [icon]="documentIcon"
+    />
 
     <form class="mt-8 flex max-w-2xl flex-col gap-6" (submit)="upload($event)">
       @if (problem(); as message) {
@@ -104,6 +108,7 @@ export const DOCUMENT_TYPES = [
   `,
 })
 export class DocumentsComponent {
+  protected readonly documentIcon = FileUp as IconNode;
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
 

@@ -21,6 +21,7 @@ import {
   type TabItem,
 } from 'ui';
 import { asyncState } from '../../core/async-state';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 type Tracked = Schema<'Tracked'>;
 
@@ -53,19 +54,18 @@ const SILENCE_NUDGE_DAYS = 25;
     UiEmptyStateComponent,
     UiErrorStateComponent,
     UiTabsComponent,
+    PageHeaderComponent,
   ],
   template: `
-    <div class="flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-semibold tracking-tight">Your other applications</h1>
-        <p class="mt-2 max-w-prose text-muted-foreground">
-          Bursaries you applied for elsewhere, in one place. We will keep an eye on them with you.
-        </p>
-      </div>
-      <a routerLink="/app/tracking/new" class="inline-flex">
+    <fl-page-header
+      title="Your other applications"
+      lead="Bursaries you applied for elsewhere, in one place. We will keep an eye on them with you."
+      [icon]="boardIcon"
+    >
+      <a actions routerLink="/app/tracking/new" class="inline-flex">
         <ui-button variant="secondary">Track another</ui-button>
       </a>
-    </div>
+    </fl-page-header>
 
     @switch (state().status) {
       @case ('loading') {
@@ -188,6 +188,7 @@ const SILENCE_NUDGE_DAYS = 25;
   `,
 })
 export class TrackingBoardComponent {
+  protected readonly boardIcon = LayoutList as IconNode;
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   private readonly store = asyncState<readonly Tracked[]>((items) => items.length === 0);
