@@ -32,7 +32,7 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
   template: `
     <fl-page-header
       title="Track another application"
-      lead="Tell us which bursary you applied for and we will watch the deadline, and chase them if they go quiet."
+      lead="Tell us which bursary you applied for. We will watch the deadline with you, and check in if it goes quiet."
       [icon]="trackIcon"
       backRoute="/app/tracking"
       backLabel="Back to your applications"

@@ -193,9 +193,9 @@ export class HelpComponent {
           ],
         },
         {
-          question: 'Is what I tell a counsellor part of my application?',
+          question: 'Who reads what I write about my situation?',
           answer: [
-            'No. Counselling information is stored apart from your application, is not visible to reviewers, and can never affect a funding decision.',
+            'A reviewer deciding your application, and nobody else. It is not used for marketing, it is not shared with anyone deciding something else about you, and every access to your application is recorded.',
           ],
         },
       ],

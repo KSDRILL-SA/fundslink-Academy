@@ -40,11 +40,19 @@ import { ORGANISATION } from '../../content/organisation';
     <fl-section>
       <div class="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-center">
         <div>
+          <!--
+            This headline used to read "See exactly where the money goes", and
+            the page described an append-only financial ledger. There is no
+            money table in this system: v1 records applications and the
+            decisions made on them, and funds do not move through it. Saying
+            otherwise to the people being asked for money was the worst claim
+            on the site.
+          -->
           <fl-section-header
             [level]="1"
             eyebrow="For donors and partners"
-            headline="See exactly where the money goes"
-            lead="FundsLink Academy is built so that every rand can be traced to a decision, and every decision to a named person who is accountable for it."
+            headline="See exactly how every decision was made"
+            lead="FundsLink Academy is built so that each funding decision traces to a named person who is accountable for it, on a record that cannot be quietly rewritten."
           />
 
           <div class="mt-8 flex flex-wrap gap-3">
@@ -107,6 +115,14 @@ import { ORGANISATION } from '../../content/organisation';
           </p>
         }
 
+        <!-- Stated plainly, in the place a funder will ask about it. -->
+        <p class="fl-surface mt-4 p-5 text-left text-muted-foreground">
+          <span class="font-medium text-foreground">What this platform does not do yet:</span>
+          hold or move funds. It records applications, the decisions made on them and who made
+          them. Disbursement is handled outside the platform today, and when it is brought in, this
+          page will say exactly how it is tracked.
+        </p>
+
         <div class="mt-8 flex justify-center">
           <a routerLink="/contact" class="inline-flex">
             <ui-button variant="primary">Ask us anything before you give</ui-button>
@@ -136,8 +152,8 @@ export class ForDonorsComponent {
     {
       icon: ScrollText as IconNode,
       tone: 'gold' as const,
-      label: 'Money records are append-only',
-      body: 'Financial entries can be added and corrected by counter-entry, never edited or deleted in place. The history is the record.',
+      label: 'The record cannot be rewritten',
+      body: 'Decisions, status changes, consents and configuration changes are append-only in the database: they can be added and corrected, never edited or deleted in place.',
     },
     {
       icon: FileCheck2 as IconNode,
@@ -166,8 +182,8 @@ export class ForDonorsComponent {
     },
     {
       icon: FileCheck2 as IconNode,
-      title: 'Reporting you can check',
-      body: 'Because the underlying record is append-only and event-based, reporting to a funder is derived from the same data the decisions were made on.',
+      title: 'Reporting from the same record',
+      body: 'Because the history is append-only and event-based, what we report to a funder is derived from the same data the decisions were made on — not re-keyed into a separate spreadsheet.',
     },
   ];
 

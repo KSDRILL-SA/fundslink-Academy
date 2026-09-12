@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ApiService, type Schema } from 'data-access';
+import { ApiError, ApiService, type Schema } from 'data-access';
 import {
   UiButtonComponent,
   UiCardComponent,
@@ -141,11 +141,57 @@ const STAGE_INDEX: Readonly<Record<string, number>> = {
               <!-- The SLA, stated honestly rather than implied. E12 makes this
                    config-driven; until the config endpoint is contracted, the
                    screen says what it can defend. -->
+              <!-- We say where an update WILL appear, not how it will be
+                   delivered. The notification outbox is real and drives this
+                   screen and the notifications list; email delivery is not
+                   switched on yet (the adapter logs rather than sends), so
+                   promising an email is promising something that will not
+                   arrive. -->
               <p class="mt-2 text-sm text-muted-foreground">
-                Reviews are done by people, in the order they arrive. We will email you the moment
-                there is a decision.
+                Reviews are done by people, in the order they arrive. Every update appears here and
+                in your notifications the moment it happens.
               </p>
             </ui-card>
+
+            <!--
+              A draft is not an application anyone will read.
+
+              Someone who left the apply flow part-way lands here, and until
+              now this screen had no way to finish: the draft simply sat,
+              while the dashboard told them it was "saved". Saved is not
+              submitted, and only one of those gets read by a reviewer.
+            -->
+            @if (isDraft(app.status)) {
+              <ui-card variant="highlight" class="mt-6">
+                <h2 class="text-lg font-semibold">This is still a draft</h2>
+                <p class="mt-2 max-w-prose text-muted-foreground">
+                  Nobody has seen it yet. Send it for review and a person will read it — you can
+                  still add documents afterwards.
+                </p>
+
+                @if (needsSaId()) {
+                  <p role="alert" class="mt-4 max-w-prose rounded-lg bg-secondary/60 p-4">
+                    We need your South African ID number before this can go to a reviewer. Funders
+                    require it on every application. Nothing here is lost.
+                  </p>
+                }
+
+                <div class="mt-5 flex flex-wrap gap-3">
+                  @if (needsSaId()) {
+                    <a routerLink="/app/profile" class="inline-flex">
+                      <ui-button>Add my ID number</ui-button>
+                    </a>
+                  } @else {
+                    <ui-button [loading]="submitting()" (clicked)="sendForReview(app.id)">
+                      Send for review
+                    </ui-button>
+                  }
+                  <a [routerLink]="['/app/applications', app.id, 'documents']" class="inline-flex">
+                    <ui-button variant="secondary">Add a document first</ui-button>
+                  </a>
+                </div>
+              </ui-card>
+            }
 
             <div class="mt-6 flex flex-wrap gap-3">
               <a [routerLink]="['/app/applications', app.id, 'documents']" class="inline-flex">
@@ -167,6 +213,10 @@ export class ApplicationDetailComponent {
   protected readonly application = computed(() => this.state().data ?? null);
   protected readonly timeline = TIMELINE;
 
+  protected readonly submitting = signal(false);
+  /** D-007 stopped the submission: the ID number is missing, nothing is lost. */
+  protected readonly needsSaId = signal(false);
+
   constructor() {
     this.load();
   }
@@ -185,6 +235,43 @@ export class ApplicationDetailComponent {
 
   protected isReturned(app: Application): boolean {
     return app.status === 'RETURNED_FOR_INFO';
+  }
+
+  protected isDraft(status: string | undefined): boolean {
+    return status === 'DRAFT';
+  }
+
+  /**
+   * Hand a saved draft to a person.
+   *
+   * The same call the apply flow makes at its last step. It lives here too
+   * because the flow is not the only way to arrive at a draft: a student who
+   * closed the tab half-way, or who came back to add a document first, has to
+   * be able to finish from the screen they actually land on.
+   */
+  protected sendForReview(id: string): void {
+    this.submitting.set(true);
+    this.needsSaId.set(false);
+
+    this.api
+      .post<Application>('/applications/{id}/submit', undefined, { path: { id } })
+      .subscribe({
+        next: () => {
+          this.submitting.set(false);
+          // Re-read rather than patch the status locally: submitting moves the
+          // application through the server's state machine, and the server is
+          // the only thing that knows where it landed.
+          this.load();
+        },
+        error: (error: unknown) => {
+          this.submitting.set(false);
+          if (error instanceof ApiError && error.code === 'sa_id_required') {
+            this.needsSaId.set(true);
+            return;
+          }
+          this.store.failed(error);
+        },
+      });
   }
 
   protected isPreScreening(status: string | undefined): boolean {

@@ -9,8 +9,13 @@ import { DocPageComponent, type DocSection } from './doc-page.component';
  * Distinct from S21 inside the account, which is where a signed-in student
  * *exercises* their rights. This page is what a person reads before they trust
  * us with an identity number, and it therefore describes what the system
- * actually does — encryption at rest, the separation of counselling data, the
- * export and deletion routes that exist — rather than reciting the Act.
+ * actually does — encryption at rest, recorded access, the export and deletion
+ * routes that exist — rather than reciting the Act.
+ *
+ * It says nothing about counselling. §6.4 does require that counselling data
+ * never enters this schema, and it does not — because there is no counselling
+ * service in the platform at all. Describing how we would protect data from a
+ * service we do not offer implies the service exists.
  *
  * It deliberately publishes no retention period and names no Information
  * Officer, because neither is settled. POPIA requires the officer to be
@@ -66,7 +71,11 @@ export class PrivacyStatementComponent {
       bullets: [
         'Your identity number is encrypted before it is stored, and is never displayed back in full — not to you, not to a reviewer, not in any export.',
         'Access is limited to the people who need it to do the work, and every change to your application is recorded with who made it and when.',
-        'Anything you share with a counsellor is stored separately from your application. It is never visible to reviewers and can never influence a funding decision.',
+        // No counselling claim here. There is no counselling service in this
+        // platform — a role exists in the permission model and nothing else —
+        // and describing how we would protect data from a service we do not
+        // offer implies the service. It returns when the service does.
+        'Reviewers see your application. Nobody else in the organisation browses it, and every access is recorded.',
         'Information is transmitted over encrypted connections only.',
       ],
     },

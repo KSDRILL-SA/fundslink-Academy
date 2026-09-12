@@ -57,11 +57,40 @@ import { INCOME_BAND_LABELS } from './application-labels';
 
     <h1 class="mt-6 text-2xl font-semibold tracking-tight">{{ steps[step()].heading }}</h1>
 
+    <!--
+      D-007 stopped the submission. This is not an error state: the application
+      is saved, one required thing is missing, and the screen says exactly what
+      and where — a stop with a door in it (P2).
+    -->
+    @if (needsSaId()) {
+      <div role="alert" class="fl-surface mt-8 max-w-2xl p-6">
+        <h2 class="text-lg font-semibold">Your application is saved</h2>
+        <p class="mt-2 max-w-prose text-muted-foreground">
+          Before we can send it to a reviewer we need your South African ID number. Funders require
+          it on every application, and it is the one thing we cannot continue without. We encrypt
+          it, and we never show it back in full.
+        </p>
+        <p class="mt-2 max-w-prose text-muted-foreground">
+          Nothing you have entered is lost — add the number and come straight back.
+        </p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <ui-button (clicked)="addIdNumber()">Add my ID number</ui-button>
+          <ui-button variant="secondary" (clicked)="openDraft()">Open my saved application</ui-button>
+        </div>
+      </div>
+    }
+
     <form class="mt-8 flex max-w-2xl flex-col gap-6" [formGroup]="form" (ngSubmit)="next()">
       @if (failure(); as problem) {
         <div role="alert" class="rounded-lg border border-destructive/30 bg-destructive/8 p-4">
           <p class="font-medium text-foreground">{{ problem.title }}</p>
           <p class="mt-1 text-sm text-muted-foreground">{{ problem.message }}</p>
+          @if (draftId()) {
+            <!-- The work survived the failure, and the student is told so. -->
+            <p class="mt-3 text-sm text-muted-foreground">
+              Your application is saved. You can try again, or open it from your applications.
+            </p>
+          }
         </div>
       }
 
@@ -169,8 +198,11 @@ import { INCOME_BAND_LABELS } from './application-labels';
         @if (step() > 0) {
           <ui-button type="button" variant="ghost" (clicked)="back()">Back</ui-button>
         }
+        <!-- The label states what the button actually does. It used to say
+             "Create my application", which was true and deeply misleading: it
+             created a draft nobody would ever read. -->
         <ui-button type="submit" [loading]="submitting()">
-          {{ isLastStep() ? 'Create my application' : 'Continue' }}
+          {{ isLastStep() ? 'Send my application for review' : 'Continue' }}
         </ui-button>
       </div>
     </form>
@@ -191,6 +223,11 @@ export class ApplyStepsComponent {
   protected readonly step = signal(0);
   protected readonly submitting = signal(false);
   private readonly errorCode = signal<string | null>(null);
+
+  /** The saved application, once it exists. Nothing is lost after this point. */
+  protected readonly draftId = signal<string | null>(null);
+  /** D-007 stopped the submission: the work is saved, one thing is missing. */
+  protected readonly needsSaId = signal(false);
 
   protected readonly steps = [
     { label: 'Your year', heading: 'Which year is this for?' },
@@ -309,11 +346,59 @@ export class ApplyStepsComponent {
     };
 
     this.api.post<Schema<'Application'>>('/applications', body).subscribe({
-      next: (application) => void this.router.navigateByUrl(`/app/applications/${application.id}`),
+      next: (application) => this.sendForReview(application.id),
       error: (error: unknown) => {
         this.errorCode.set(error instanceof ApiError ? error.code : null);
         this.submitting.set(false);
       },
     });
+  }
+
+  /**
+   * Hand the application to a person.
+   *
+   * This step was missing, and its absence was the most serious defect in the
+   * product: `POST /applications` only creates a DRAFT, so an application
+   * finished here sat unread forever while the student believed a reviewer had
+   * it. Creating and submitting are two calls because they are two facts — the
+   * work is saved first, and only then offered for review, so a failure at the
+   * second one cannot lose the first.
+   */
+  private sendForReview(applicationId: string): void {
+    this.draftId.set(applicationId);
+
+    this.api
+      .post<Schema<'Application'>>('/applications/{id}/submit', undefined, {
+        path: { id: applicationId },
+      })
+      .subscribe({
+        next: () => void this.router.navigateByUrl(`/app/applications/${applicationId}`),
+        error: (error: unknown) => {
+          this.submitting.set(false);
+          const code = error instanceof ApiError ? error.code : null;
+
+          // D-007: the SA ID must be on file before submitting, because it is
+          // what makes duplicate detection real at the moment money is at
+          // stake. It is a missing step, not a failure — the application is
+          // already saved, and the student is shown the way to finish it (P2).
+          if (code === 'sa_id_required') {
+            this.needsSaId.set(true);
+            return;
+          }
+          this.errorCode.set(code);
+        },
+      });
+  }
+
+  /** Keep the work, go and add the one missing thing, come back to it. */
+  protected addIdNumber(): void {
+    void this.router.navigateByUrl('/app/profile');
+  }
+
+  protected openDraft(): void {
+    const id = this.draftId();
+    if (id) {
+      void this.router.navigateByUrl(`/app/applications/${id}`);
+    }
   }
 }

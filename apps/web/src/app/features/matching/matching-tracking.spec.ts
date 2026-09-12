@@ -142,19 +142,22 @@ describe('S18 tracking board', () => {
     expect(text()).not.toContain('You reported');
   });
 
-  it('promises to chase a quiet funder, rather than warning the student', () => {
-    // §12.5 — the student should know someone is acting, not feel they need
-    // to nag a funder themselves.
+  it('tells the truth about what happens when an application goes quiet', () => {
+    // §12.5 says the student should not be left wondering. It does NOT say we
+    // contact the funder — and we do not: BR-T06 runs at 30/45/60 days and
+    // notifies the STUDENT (apps/api/app/modules/tracking/jobs.py). This
+    // screen used to promise "we will nudge them for you", which was a promise
+    // about somebody else's behaviour that nothing in this system could keep.
     const quiet = new Date(Date.now() - 26 * 86_400_000).toISOString();
     load([tracked({ last_activity_at: quiet })]);
-    expect(text()).toContain('We will nudge them for you on day 30');
-    expect(text()).toContain('you do not need to do anything');
+    expect(text()).toContain('check in with you on day 30');
+    expect(text(), 'must not promise to contact the funder').not.toMatch(/nudge them|chase them/);
   });
 
   it('stays quiet about silence before day 25', () => {
     const recent = new Date(Date.now() - 3 * 86_400_000).toISOString();
     load([tracked({ last_activity_at: recent })]);
-    expect(text()).not.toContain('nudge them');
+    expect(text()).not.toContain('check in with you on day 30');
   });
 
   it('teaches S19 from the empty state (§4)', () => {
