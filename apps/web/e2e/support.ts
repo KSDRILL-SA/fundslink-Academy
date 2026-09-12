@@ -85,3 +85,28 @@ export async function expectNoRawErrorLeak(page: Page): Promise<void> {
     expect(body, `a raw "${leak}" reached the student`).not.toContain(leak);
   }
 }
+
+/**
+ * A complete student profile, including the SA ID that D-007 requires before submit.
+ *
+ * The ID is a structurally valid 13 digits; the API stores it encrypted with a
+ * blind index (BR-A04) and does not verify the check digit, so a fixture value
+ * is honest here rather than a shortcut. It must be unique per student — the
+ * blind index is UNIQUE.
+ */
+export async function completeProfile(page: Page, idNumber: string): Promise<void> {
+  await page.goto('/app/profile');
+  await page.getByLabel('First name', { exact: false }).fill('Lebo');
+  await page.getByLabel('Last name', { exact: false }).fill('Dlamini');
+  await page.getByLabel('Level of study', { exact: false }).selectOption({ label: 'Undergraduate' });
+  await page.getByLabel('Field of study', { exact: false }).fill('BEng Civil');
+  await page.getByLabel('South African ID number', { exact: false }).fill(idNumber);
+  await page.getByRole('button', { name: 'Save profile' }).click();
+  await page.waitForLoadState('networkidle');
+}
+
+/** A unique 13-digit SA ID per run — the blind index is UNIQUE (BR-A04). */
+export function freshIdNumber(): string {
+  const digits = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-13);
+  return digits.padStart(13, '9');
+}
