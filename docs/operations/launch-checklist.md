@@ -1,4 +1,9 @@
 # FUNDSLINK ACADEMY — v1 LAUNCH CHECKLIST | Gate: ALL boxes before public traffic
+
+> **Stage 05 / Gate G5 evidence:** [`../process/g5-evidence.md`](../process/g5-evidence.md).
+> Three of G5's five items (k6 vs staging, external port scan, PITR restore drill) are
+> **BLOCKED on a staging environment that does not exist** — issue #252. The boxes below
+> stay unticked until they are earned.
 ## Blocking (from STRESS-TEST-AUDIT)
 - [ ] MFA enrolled + enforced on every ADMIN_* account (ST-2.1)
 - [ ] `/readyz` returns 200 on staging+prod — app connected as `fundslink_app` (non-superuser, NOBYPASSRLS); a bypassing role returns 503 (auth↔DB least-privilege guard)
