@@ -356,7 +356,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Browse ALL bursaries (equal-prominence path — MASTER-SPEC §17.2) */
+        /**
+         * Browse ALL bursaries (equal-prominence path — MASTER-SPEC §17.2)
+         * @description PUBLIC — no account required (L4 ruling, 2026-09-12). §17.2 makes browse-all the equal-prominence path and marketing-site.md §1 puts it in front of visitors who have not signed up: someone deciding whether to trust this platform with an ID number must be able to see what it funds first. Nothing in the response is personal data; the catalogue table carries no RLS.
+         */
         get: operations["browseBursaries"];
         put?: never;
         post?: never;
