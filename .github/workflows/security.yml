@@ -19,3 +19,37 @@ jobs:
           gitleaks version
       - name: Secret scan (S3.20 / CF-04)
         run: gitleaks detect --redact --no-banner
+
+  # Stage 05 item 3 — dependency audit. Both ecosystems, on every push, because
+  # a dependency audit that runs when someone remembers to run it is not a gate.
+  # It found one high advisory the first time it was run by hand (#257).
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # --audit-level=high: a moderate advisory in a build-time devDependency
+      # should not block a fix a student is waiting for. High and critical do.
+      - name: npm audit — apps/web
+        working-directory: apps/web
+        run: npm audit --audit-level=high
+      - name: npm audit — packages/contracts
+        working-directory: packages/contracts
+        run: npm audit --audit-level=high
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install uv
+        run: python -m pip install uv
+      # The venv is what actually runs, and it is synced --frozen from uv.lock,
+      # so auditing the installed tree audits the lockfile's resolution.
+      - name: pip-audit — apps/api
+        working-directory: apps/api
+        run: |
+          python -m uv sync --frozen
+          python -m uv pip install pip-audit
+          python -m uv run pip-audit --progress-spinner off
