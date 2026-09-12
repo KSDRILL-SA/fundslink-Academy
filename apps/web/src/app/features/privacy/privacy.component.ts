@@ -1,12 +1,15 @@
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ApiError, ApiService } from 'data-access';
+import { ShieldCheck } from 'lucide';
 import {
   UiButtonComponent,
   UiCardComponent,
   UiSuccessStateComponent,
   presentError,
+  type IconNode,
 } from 'ui';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 /**
  * S21 — Data and privacy. POPIA self-service (MASTER-SPEC §15.6).
@@ -29,12 +32,15 @@ import {
   selector: 'fl-privacy',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [UiCardComponent, UiButtonComponent, UiSuccessStateComponent],
+  imports: [UiCardComponent, UiButtonComponent, UiSuccessStateComponent, PageHeaderComponent],
   template: `
-    <h1 class="text-2xl font-semibold tracking-tight">Your data</h1>
-    <p class="mt-2 max-w-prose text-muted-foreground">
-      Under POPIA this information is yours. Here is what we hold and how to get a copy of it.
-    </p>
+    <fl-page-header
+      eyebrow="Data & privacy"
+      title="Your data"
+      lead="Under POPIA this information is yours. Here is what we hold and how to get a copy of it."
+      [icon]="shieldIcon"
+      tone="success"
+    />
 
     <ui-card class="mt-8 max-w-2xl">
       <h2 class="text-lg font-semibold">Get a copy of everything</h2>
@@ -99,6 +105,7 @@ import {
   `,
 })
 export class PrivacyComponent {
+  protected readonly shieldIcon = ShieldCheck as IconNode;
   private readonly api = inject(ApiService);
   private readonly document = inject(DOCUMENT);
 

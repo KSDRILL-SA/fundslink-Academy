@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService, type Page, type Schema } from 'data-access';
-import { CalendarDays, GraduationCap, Info } from 'lucide';
+import { CalendarDays, GraduationCap, Info, Sparkles } from 'lucide';
 import {
   UiBadgeComponent,
   UiButtonComponent,
@@ -14,6 +14,8 @@ import {
   type IconNode,
 } from 'ui';
 import { asyncState } from '../../core/async-state';
+import { STUDY_LEVEL_LABELS } from '../applications/application-labels';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 type Match = Schema<'Match'>;
 
@@ -52,20 +54,21 @@ type Match = Schema<'Match'>;
     UiIconComponent,
     UiIconTileComponent,
     UiBadgeComponent,
+    PageHeaderComponent,
   ],
   template: `
-    <h1 class="text-2xl font-semibold tracking-tight">Bursaries that suit you</h1>
-    <p class="mt-2 max-w-prose text-muted-foreground">
-      Suggestions based on your profile. They are a starting point, not a decision — and you can
-      apply to anything on the full list whether it appears here or not.
-    </p>
-
-    <!-- Equal prominence, above the results rather than under them (BR-M02). -->
-    <div class="mt-6">
-      <a routerLink="/app/bursaries" class="inline-flex">
+    <fl-page-header
+      title="Bursaries that suit you"
+      lead="Suggestions based on your profile. They are a starting point, not a decision — and you can apply to anything on the full list whether it appears here or not."
+      [icon]="matchIcon"
+      tone="gold"
+    >
+      <!-- Equal prominence, beside the heading rather than under the results
+           where it reads as a consolation prize (BR-M02). -->
+      <a actions routerLink="/app/bursaries" class="inline-flex">
         <ui-button variant="secondary">Browse every bursary</ui-button>
       </a>
-    </div>
+    </fl-page-header>
 
     @if (isFallback()) {
       <!-- S8.51 — the degraded state, named. -->
@@ -158,6 +161,7 @@ type Match = Schema<'Match'>;
   `,
 })
 export class MatchesComponent {
+  protected readonly matchIcon = Sparkles as IconNode;
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   private readonly store = asyncState<readonly Match[]>((items) => items.length === 0);
@@ -170,14 +174,7 @@ export class MatchesComponent {
 
   /** Contract levels are codes; a student should never meet SCREAMING_SNAKE. */
   protected levelLabel(level: string): string {
-    const labels: Record<string, string> = {
-      UG: 'Undergraduate',
-      HONOURS: 'Honours',
-      MASTERS: "Master's",
-      PHD: 'PhD',
-      PGDIP: 'Postgraduate diploma',
-    };
-    return labels[level] ?? level;
+    return STUDY_LEVEL_LABELS[level] ?? level;
   }
 
   /** Any result produced in fallback means the whole list was (S8.51). */

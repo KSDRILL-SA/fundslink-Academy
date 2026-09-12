@@ -12,6 +12,7 @@ import {
   type IconNode,
 } from 'ui';
 import { asyncState } from '../../core/async-state';
+import { PageHeaderComponent } from '../../shared/page-header.component';
 
 type Bursary = Schema<'Bursary'>;
 
@@ -43,14 +44,16 @@ type Bursary = Schema<'Bursary'>;
     UiErrorStateComponent,
     UiIconTileComponent,
     UiBadgeComponent,
+    PageHeaderComponent,
   ],
   template: `
     <div class="mx-auto max-w-[1000px] px-4 py-10">
-      <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Every bursary we know of</h1>
-      <p class="mt-2 max-w-prose text-muted-foreground">
-        The full list, open to everyone — you do not need an account to look. Apply to anything here
-        that fits you.
-      </p>
+      <fl-page-header
+        title="Every bursary we know of"
+        lead="The full list, open to everyone — you do not need an account to look. Apply to anything here that fits you."
+        [icon]="bursaryIcon"
+        tone="gold"
+      />
 
       @switch (state().status) {
         @case ('loading') {

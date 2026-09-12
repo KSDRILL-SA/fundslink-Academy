@@ -98,7 +98,7 @@ import {
 
       <ui-form-field
         label="What would help?"
-        hint="For example: R18 000 for outstanding fees so I can register for my final year."
+        hint="For example: the fees still outstanding on my account, so that I can register for my final year."
         [error]="errorFor('support_needed')"
         required
       >

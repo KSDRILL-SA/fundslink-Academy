@@ -24,6 +24,7 @@ import {
 } from 'ui';
 import { ApplicationsStore } from './applications.store';
 import { ProfileStore } from '../profile/profile.store';
+import { STUDY_LEVEL_LABELS } from '../applications/application-labels';
 
 /** A quick action: one destination, one reason to go there. */
 interface QuickAction {
@@ -409,14 +410,7 @@ export class DashboardComponent {
   }
 
   protected levelLabel(level: string): string {
-    const labels: Record<string, string> = {
-      UG: 'Undergraduate',
-      HONOURS: 'Honours',
-      MASTERS: "Master's",
-      PHD: 'PhD',
-      PGDIP: 'Postgraduate diploma',
-    };
-    return labels[level] ?? level;
+    return STUDY_LEVEL_LABELS[level] ?? level;
   }
 
   protected startApplication(): void {
