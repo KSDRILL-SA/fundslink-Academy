@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, Header, Query, Request
 from app.common.request_id import get_request_id
 from app.db.engine import get_session
 from app.modules.auth.deps import CurrentUser, get_redis_client
-from app.modules.auth.permissions import Permission, authenticated_only, public_endpoint, require
+from app.modules.auth.permissions import Permission, public_endpoint, require
 from app.modules.matching.schemas import BursaryPage, MatchPage
 from app.modules.matching.service import MatchingService
 
@@ -54,7 +54,7 @@ async def get_my_matches(
     # 2026-09-12. §17.2 makes browse-all the equal-prominence path and
     # marketing-site.md §1 puts it in front of people who have not signed up —
     # someone deciding whether to trust us with an identity document has to be
-    # able to see what we fund first. It was behind `authenticated_only`, so the
+    # able to see what we fund first. It required authentication, so the
     # public page errored for every anonymous visitor; found on the first real
     # end-to-end run (PR #242).
     #
