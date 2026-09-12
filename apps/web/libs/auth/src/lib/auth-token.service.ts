@@ -5,6 +5,12 @@ import { Injectable, signal } from '@angular/core';
  * (AP-S3.14a/CF-01) — an XSS theft is then limited to the 15-minute access-token window, with
  * no refresh capability. The refresh token is an HttpOnly cookie the browser holds; this
  * service never sees it. The token is lost on tab close and re-minted via silent refresh.
+ *
+ * Nothing is written to storage here, not even a hint that a session once existed. A flag like
+ * that was tried while fixing the reload-signs-you-out defect, and the spec's own test refused
+ * it — correctly: on the shared and borrowed devices this product is built for, "somebody here
+ * uses FundsLink" is itself a disclosure. `authGuard` asks the server instead, and only when a
+ * protected route is actually requested.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthTokenService {

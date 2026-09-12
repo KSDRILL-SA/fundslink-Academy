@@ -11,7 +11,6 @@ import { API_BASE_URL } from 'data-access';
 import { environment } from '../environments/environment';
 import { routes } from './app.routes';
 import { sentryProviders } from './core/observability';
-import { sessionRestoreProviders } from './core/session-restore';
 // Empty in a production build — the fixtures live in a file that only the
 // development configuration swaps in (see app/dev/preview-api.ts).
 import { previewInterceptors, previewProviders } from './dev/preview-api';
@@ -36,8 +35,6 @@ export const appConfig: ApplicationConfig = {
     // library — libs/data-access must not reach into environment files.
     { provide: API_BASE_URL, useValue: environment.apiBase },
     ...sentryProviders(environment.sentryDsn, environment.name),
-    // Hand a returning visitor their session back before the guard decides.
-    sessionRestoreProviders(),
     // Empty in production, by file replacement rather than by flag.
     ...(environment.useMockApi ? previewProviders : []),
   ],
