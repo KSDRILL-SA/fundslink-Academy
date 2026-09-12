@@ -125,6 +125,14 @@ class Application(BaseModel):
     currency: str = "ZAR"
     motivation: Motivation | None = None
     pre_screen: PreScreen | None = None
+    # The decision, carried back to the person it is about (#220, L4 ruling).
+    # `decision_reason` is the reviewer's own note from adminReview — already
+    # recorded on the status event, and until now never readable by the student,
+    # which made the kind rejection (§5.8) impossible to render as specified.
+    decision_reason: str | None = None
+    decided_at: datetime | None = None
+    # Only meaningful on APPROVED_WAITLISTED (E4). No pool size: see the contract.
+    waitlist_position: int | None = None
     created_at: datetime
 
 

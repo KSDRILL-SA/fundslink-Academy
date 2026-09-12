@@ -655,6 +655,15 @@ export interface components {
                 annotations?: string[];
                 cycle_no?: number;
             };
+            /** @description The reviewer's own words, carried back to the student (MASTER-SPEC §5.8, L4 ruling 2026-09-12 closing #220). This is the `note` from adminReview — the same text A03 enforces at ≥40 words with a confirmed next step — and it is the SUBSTANCE of a decision, not a courtesy. Without it S16-REJ is a bare status change, which is the exact experience the design exists to prevent. Never auto-generated. Present once a decision has been recorded. */
+            decision_reason?: string;
+            /**
+             * Format: date-time
+             * @description When the decision was recorded, so the screen can say it plainly.
+             */
+            decided_at?: string;
+            /** @description Position on the waitlist, 1-based, only on APPROVED_WAITLISTED (E4). Derived from the order in which applications were waitlisted. There is deliberately NO pool-size field: how many students the pool can fund depends on money this system does not yet hold or track, and S16-WAIT tells the truth it has rather than inventing a denominator. */
+            waitlist_position?: number;
             /** Format: date-time */
             created_at: string;
         };

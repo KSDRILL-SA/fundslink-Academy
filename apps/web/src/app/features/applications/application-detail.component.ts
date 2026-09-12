@@ -10,6 +10,7 @@ import {
 } from 'ui';
 import { asyncState } from '../../core/async-state';
 import { AppealComponent } from './appeal.component';
+import { DecisionComponent } from './decision.component';
 import { FixListComponent } from './fix-list.component';
 
 type Application = Schema<'Application'>;
@@ -70,6 +71,7 @@ const STAGE_INDEX: Readonly<Record<string, number>> = {
     UiButtonComponent,
     FixListComponent,
     AppealComponent,
+    DecisionComponent,
   ],
   template: `
     @switch (state().status) {
@@ -90,6 +92,27 @@ const STAGE_INDEX: Readonly<Record<string, number>> = {
           @if (isReturned(app)) {
             <!-- A return is a task, not a status. The list is the screen. -->
             <fl-fix-list [application]="app" (resubmitted)="load()" />
+          } @else if (isDecided(app.status)) {
+            <!--
+              S16 — the decision IS the screen.
+
+              A decision does not belong under a progress timeline. Someone who
+              has just been told they are not funded should not have to read
+              past a set of dots to find out why, and someone who has been
+              approved should not have to hunt for the word. The timeline was
+              the right shape while the answer was "not yet"; it is the wrong
+              shape the moment the answer arrives.
+            -->
+            <fl-decision
+              [status]="app.status"
+              [reason]="app.decision_reason ?? null"
+              [decidedAt]="app.decided_at ?? null"
+              [position]="app.waitlist_position ?? null"
+            />
+
+            @if (isAppealable(app.status)) {
+              <fl-appeal [applicationId]="app.id" (appealed)="load()" />
+            }
           } @else {
             <h1 class="text-2xl font-semibold tracking-tight">Your application</h1>
 
@@ -195,13 +218,9 @@ const STAGE_INDEX: Readonly<Record<string, number>> = {
               </ui-card>
             }
 
-            <!-- An appeal is offered where a decision is read, and only once
-                 there is a decision to appeal (BR-E07). The Terms page has
-                 always promised this; until now only a mailbox delivered it. -->
-            @if (isDecided(app.status)) {
-              <fl-appeal [applicationId]="app.id" (appealed)="load()" />
-            }
-
+            <!-- The appeal lives on the decision branch above (S16), where the
+                 decision it answers is actually read. This branch is the
+                 in-progress timeline, and there is nothing here to appeal. -->
             <div class="mt-6 flex flex-wrap gap-3">
               <a [routerLink]="['/app/applications', app.id, 'documents']" class="inline-flex">
                 <ui-button variant="secondary">Add a document</ui-button>
@@ -251,14 +270,30 @@ export class ApplicationDetailComponent {
   }
 
   /**
-   * A decision has been made, one way or the other.
+   * A decision has been made, one way or the other — so S16 is the screen.
    *
-   * `REJECTED_FINAL` is deliberately absent: an appeal has already been used
-   * and refused there, and offering the button again would invite someone to
-   * spend hope on a door the server will close (BR-E07 — one per decision).
+   * `REJECTED_FINAL` belongs here: an appeal that was heard and refused is
+   * still a decision, and the student is still owed the reasons and the doors
+   * that remain open. What it does not get is another appeal button.
    */
   protected isDecided(status: string | undefined): boolean {
-    return status === 'APPROVED' || status === 'APPROVED_WAITLISTED' || status === 'REJECTED';
+    return (
+      status === 'APPROVED' ||
+      status === 'APPROVED_WAITLISTED' ||
+      status === 'REJECTED' ||
+      status === 'REJECTED_FINAL'
+    );
+  }
+
+  /**
+   * One appeal per decision (BR-E07).
+   *
+   * Offered only where it can succeed. `REJECTED_FINAL` is the state after an
+   * appeal has been heard and refused, and showing the form again would invite
+   * someone to spend hope on a door the server will close.
+   */
+  protected isAppealable(status: string | undefined): boolean {
+    return status === 'REJECTED';
   }
 
   /**

@@ -210,6 +210,45 @@ class StatusEventRepository(BaseRepository):
             note=note,
         )
 
+    async def decision(self, application_id: str):
+        """The decision event a student is owed: its note, its time, and the status.
+
+        The reviewer's words were always here — `admin_review` passes its `note`
+        straight to the transition — and nothing ever read them back out, so the
+        student saw a status and no reason (#220). This is that read.
+
+        Only terminal, decided statuses count. A move to UNDER_REVIEW carries a
+        note too, and it is an internal triage remark, not something written to
+        be read by the applicant.
+        """
+        return await sql.fetch_one(
+            self.session,
+            "SELECT to_status, note, created_at FROM application_status_event"
+            " WHERE application_id = :app"
+            "   AND to_status IN ('APPROVED', 'APPROVED_WAITLISTED', 'REJECTED', 'REJECTED_FINAL')"
+            " ORDER BY created_at DESC LIMIT 1",
+            app=application_id,
+        )
+
+    async def waitlist_position(self, application_id: str) -> int | None:
+        """Where this application sits on the waitlist, 1-based (E4).
+
+        Delegates to `fn_waitlist_position` (migration 0019). The count must see
+        other students' applications, which the caller's RLS context deliberately
+        cannot — so a query written here would return 1 for everybody, on the one
+        screen whose entire purpose is telling the truth. The function is
+        SECURITY DEFINER and returns only the integer.
+
+        Returns None when the application is not on the waitlist, which is what
+        the response model wants for every other status.
+        """
+        row = await sql.fetch_one(
+            self.session,
+            "SELECT fn_waitlist_position(:app)",
+            app=application_id,
+        )
+        return None if row is None or row[0] is None else int(row[0])
+
 
 class MotivationRepository(BaseRepository):
     async def insert(
