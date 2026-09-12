@@ -45,11 +45,19 @@ jobs:
           python-version: '3.12'
       - name: Install uv
         run: python -m pip install uv
-      # The venv is what actually runs, and it is synced --frozen from uv.lock,
-      # so auditing the installed tree audits the lockfile's resolution.
-      - name: pip-audit — apps/api
+      # Audit the LOCKFILE, exported, rather than an installed environment.
+      # The first version of this job ran pip-audit against the runner's system
+      # Python while a project venv was loaded, and pip-audit said so:
+      #   "will run pip against /opt/hostedtoolcache/... but you have a virtual
+      #    environment loaded ... your local environment will not be audited"
+      # It reported "No known vulnerabilities found" without ever looking at our
+      # dependencies — a green check that proved nothing, which is worse than no
+      # check at all. Exporting uv.lock removes the ambiguity: there is no
+      # interpreter to guess at, and uv.lock is what we actually ship (S1.98).
+      - name: pip-audit — apps/api (uv.lock)
         working-directory: apps/api
         run: |
-          python -m uv sync --frozen
-          python -m uv pip install pip-audit
-          python -m uv run pip-audit --progress-spinner off
+          python -m pip install pip-audit
+          python -m uv export --frozen --no-emit-project -o requirements.audit.txt
+          wc -l requirements.audit.txt
+          python -m pip_audit -r requirements.audit.txt --progress-spinner off
