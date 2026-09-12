@@ -26,7 +26,7 @@ graph LR
 | 3a | Dependency audit + gitleaks full history | **PARTIAL** | §2 — npm clean, Python not run |
 | 3b | External port scan, only 443 public (ST-2.8) | **BLOCKED** | nothing is publicly listening (§4) |
 | 4 | Restore drill #2 from PITR on staging, timed (ST-6.4) | **BLOCKED** | no staging, no PITR (§4) |
-| 5 | Chaos hour | **NOT STARTED** | §3 |
+| 5 | Chaos hour | **PARTIAL** | 1 of 3 cases proven (§3) |
 
 ## 1. Playwright E2E — partial
 
@@ -88,15 +88,53 @@ about reachability is how the dangerous ones get lost.
 `No module named pip`. Dependabot does cover `uv.lock` and showed nothing open for it, which
 is reasonable evidence but is not the same as an audit run against the installed tree.
 
-## 3. Chaos hour — not started
+## 3. Chaos hour — 1 of 3 cases proven
 
-Three cases: kill the matching worker mid-job (assert FALLBACK + job recovery); kill the DB
-connection mid-status-transaction (assert status, event and outbox are all-or-nothing); flood
+Three cases: kill the matching worker mid-job (assert FALLBACK + job recovery); **kill the DB
+connection mid-status-transaction (assert status, event and outbox are all-or-nothing)**; flood
 the outbox (assert the workers drain and DEAD surfaces).
 
-The **DB atomicity case is genuinely testable locally** against real PostgreSQL and is the
-highest-value one, since a partial write there means a student's status and the record of why
-disagree. The other two are partly limited by the local `fakeredis` stand-in.
+### Case 2 — DB connection killed mid-transaction: PROVEN (PR #262, issue #261)
+
+`tests/application/test_chaos_atomicity.py`. A status transition writes three things — the
+append-only `application_status_event` (the record of **why**), the `funding_application.status`
+cache, and the `notification_outbox` row (the message to the student). CLAUDE.md makes it a hard
+rule: *one transaction*. Nothing proved it until now.
+
+Submit is a **chain** — `DRAFT → SUBMITTED → PRE_SCREENING →` the pre-screen's verdict — which
+makes it the right thing to break: the invariant must hold across the whole chain, not one hop.
+
+```
+pytest tests/application/test_chaos_atomicity.py -q
+  ...                                            [100%]
+  3 passed
+
+pytest tests/application -q
+  33 passed
+```
+
+Three tests: a **control** that the happy path really does write all three (without it, "nothing
+was written" passes trivially); the **chaos** case, where the session terminates its own backend
+(`pg_terminate_backend(pg_backend_pid())`) between the status write and the outbox write — the
+real event, made deterministic rather than timing-dependent; and a **deterministic gate** where
+the third write simply raises, so the invariant stays guarded even if the driver changes how a
+killed backend surfaces. All three verify from a **separate connection** — reading back through
+the session that was just broken would prove nothing about what is committed.
+
+**The tests were verified to fail for the right reason.** Splitting the transaction deliberately
+(a `commit()` between the status write and the outbox write) fails all three:
+
+```
+AssertionError: the status moved without the reason or the notification
+assert 'SUBMITTED' == 'DRAFT'
+```
+
+That is exactly the production failure being defended against: a student's status advanced while
+the record of why, and the notification telling them, did not.
+
+### Cases 1 and 3 — not done
+Killing the matching worker mid-job and flooding the outbox are partly limited by the local
+`fakeredis` stand-in, which is not the Redis those workers coordinate through in production.
 
 ## 4. BLOCKED — the staging dependency (issue #252)
 
