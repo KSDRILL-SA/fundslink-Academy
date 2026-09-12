@@ -7,6 +7,7 @@
    Type:            styles/fonts.css    (IBM Plex Sans, self-hosted)
    Brand + tokens:  styles/tokens.css   (the single source of visual truth)
    Tailwind map:    styles/theme.css    (tokens -> utilities, @theme inline)
+   Depth + motif:   styles/surfaces.css (premium surfaces, glass, mesh, icon tiles)
    A11y + type:     styles/base.css     (the floor every screen inherits)
 
    Every @import must precede other rules. CSS requires it, and when they sat
@@ -19,4 +20,5 @@
 @import './styles/fonts.css';
 @import './styles/tokens.css';
 @import './styles/theme.css';
+@import './styles/surfaces.css';
 @import './styles/base.css';

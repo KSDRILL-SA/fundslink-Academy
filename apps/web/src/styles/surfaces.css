@@ -1,0 +1,260 @@
+/* =============================================================================
+   FundsLink Academy — premium surface layer
+
+   What separates a premium interface from a competent one is almost never the
+   colours; it is how light behaves. This file is that behaviour, in one place:
+
+     - raised surfaces carry a hairline highlight on their top edge, so they
+       read as physical objects lit from above rather than outlined boxes;
+     - depth comes from a consistent elevation scale plus glow reserved for the
+       two brand moments (gold = hope/action, navy = the institution);
+     - atmosphere comes from CSS gradients only — no images, no canvas, no JS —
+       so it costs nothing on a 3G connection (P6).
+
+   Global rather than in component styles on purpose: Angular 22 namespaces CSS
+   variables inside component style blocks, and these reference global tokens.
+
+   Every rule here is presentation. Nothing changes meaning or behaviour, and
+   every effect degrades to a plain, readable surface.
+   ========================================================================== */
+
+@layer components {
+  /* --- Surfaces --------------------------------------------------------- */
+
+  /* The card. A top-edge highlight plus a two-layer shadow: one tight for
+     contact, one soft for ambient depth. This is the single most important
+     rule in the file — it is what makes a card look made rather than drawn. */
+  .fl-surface {
+    background: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) + 6px);
+    box-shadow:
+      var(--surface-highlight),
+      0 1px 2px 0 hsl(222 47% 11% / 0.05),
+      0 8px 24px -12px hsl(222 47% 11% / 0.12);
+  }
+  .dark .fl-surface {
+    box-shadow:
+      var(--surface-highlight),
+      0 1px 2px 0 hsl(0 0% 0% / 0.4),
+      0 12px 32px -16px hsl(0 0% 0% / 0.6);
+  }
+
+  /* Interactive: lifts toward the viewer. Transform only — never layout. */
+  .fl-surface-interactive {
+    transition:
+      transform var(--motion-base) var(--ease-out),
+      box-shadow var(--motion-base) var(--ease-out),
+      border-color var(--motion-base) var(--ease-out);
+  }
+  .fl-surface-interactive:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--accent) / 0.45);
+    box-shadow:
+      var(--surface-highlight),
+      0 2px 4px 0 hsl(222 47% 11% / 0.06),
+      0 24px 48px -20px hsl(222 47% 11% / 0.28);
+  }
+  .fl-surface-interactive:focus-within {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 3px;
+  }
+
+  /* Glass — used sparingly, only where something sits over atmosphere (the
+     header, a floating mockup). Heavy glass everywhere is illegible and slow
+     on the phones this product serves. */
+  .fl-glass {
+    background: hsl(var(--background) / 0.72);
+    backdrop-filter: saturate(160%) blur(14px);
+    -webkit-backdrop-filter: saturate(160%) blur(14px);
+    border: 1px solid hsl(var(--border) / 0.7);
+  }
+
+  /* A gold-to-transparent gradient border for hope-moments. Painted with two
+     backgrounds clipped to padding and border boxes, so it needs no extra
+     element and no pseudo-element. */
+  .fl-gradient-border {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+      linear-gradient(
+          135deg,
+          hsl(var(--accent) / 0.85),
+          hsl(var(--accent) / 0.15) 40%,
+          hsl(var(--border)) 70%
+        )
+        border-box;
+  }
+
+  .fl-glow-gold {
+    box-shadow: var(--glow-gold);
+  }
+  .fl-glow-navy {
+    box-shadow: var(--glow-navy);
+  }
+
+  /* --- Atmosphere ------------------------------------------------------- */
+
+  /* The aurora: navy depth with a warm gold bloom — hope rising out of the
+     institution. Pure gradients, so it renders on the first paint. */
+  .fl-mesh {
+    background:
+      radial-gradient(60% 50% at 80% 10%, hsl(38 92% 50% / 0.18) 0%, transparent 60%),
+      radial-gradient(50% 60% at 10% 90%, hsl(213 70% 45% / 0.18) 0%, transparent 60%),
+      radial-gradient(80% 80% at 50% 50%, hsl(222 47% 16%) 0%, hsl(224 52% 7%) 100%);
+  }
+
+  /* A faint engineering grid, faded out toward the edges — structure and
+     precision without competing with content. */
+  .fl-grid-bg {
+    background-image:
+      linear-gradient(hsl(210 40% 98% / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(210 40% 98% / 0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 80%);
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 80%);
+  }
+
+  /* A soft warm wash for light-mode sections. */
+  .fl-wash {
+    background:
+      radial-gradient(70% 60% at 100% 0%, hsl(38 92% 50% / 0.08) 0%, transparent 60%),
+      radial-gradient(60% 60% at 0% 100%, hsl(222 47% 20% / 0.06) 0%, transparent 60%),
+      hsl(var(--background));
+  }
+  .dark .fl-wash {
+    background:
+      radial-gradient(70% 60% at 100% 0%, hsl(38 92% 50% / 0.1) 0%, transparent 60%),
+      radial-gradient(60% 60% at 0% 100%, hsl(213 70% 45% / 0.1) 0%, transparent 60%),
+      hsl(var(--background));
+  }
+
+  /* A patch of dark, anywhere — the hero banner, a navy section in light mode.
+     It re-points the semantic tokens for its subtree rather than hard-coding
+     colours at the use site, so every shared component inside it (a button, a
+     progress ring, a status chip) themes itself correctly with no "on dark"
+     variant to maintain. `@theme inline` is what makes this work: the utilities
+     keep their var() reference and resolve at the use site, not at build time. */
+  .fl-on-dark {
+    --foreground: 210 40% 98%;
+    --muted-foreground: 213 32% 80%;
+    --card: 222 45% 17%;
+    --card-foreground: 210 40% 98%;
+    --secondary: 222 40% 22%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 40% 20%;
+    --border: 213 25% 42%;
+    --input: 213 25% 42%;
+    --ring: 38 92% 60%;
+    color: hsl(var(--foreground));
+  }
+
+  /* --- Type ------------------------------------------------------------- */
+
+  /* Gold gradient text for the one phrase per view that carries the hope.
+     The solid colour underneath is the fallback where background-clip text is
+     unsupported, so it can never render as invisible text. */
+  .fl-text-gold {
+    color: hsl(38 92% 55%);
+    background: linear-gradient(100deg, hsl(43 96% 64%), hsl(38 92% 50%) 45%, hsl(30 90% 48%));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Display type: tight tracking at large sizes is what stops a headline
+     looking like body copy that was simply made bigger. */
+  .fl-display {
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+  }
+
+  /* The small pill above a headline. */
+  .fl-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border: 1px solid hsl(var(--accent) / 0.35);
+    background: hsl(var(--accent) / 0.1);
+  }
+
+  /* --- Icon tiles ------------------------------------------------------- */
+
+  /* An icon is never left floating. It sits in a tile with a tinted fill, an
+     inner ring and the same top highlight as a card — the difference between
+     "an icon" and "a designed icon". */
+  .fl-icon-tile {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: calc(var(--radius) + 2px);
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.35),
+      inset 0 0 0 1px hsl(0 0% 100% / 0.06);
+  }
+  .fl-icon-tile--gold {
+    color: hsl(30 90% 32%);
+    background: linear-gradient(145deg, hsl(43 96% 88%), hsl(38 92% 72%));
+  }
+  .dark .fl-icon-tile--gold {
+    color: hsl(43 96% 70%);
+    background: linear-gradient(145deg, hsl(38 70% 22%), hsl(30 60% 14%));
+  }
+  .fl-icon-tile--navy {
+    color: hsl(210 40% 98%);
+    background: linear-gradient(145deg, hsl(222 47% 30%), hsl(222 47% 16%));
+  }
+  .dark .fl-icon-tile--navy {
+    color: hsl(213 84% 80%);
+    background: linear-gradient(145deg, hsl(222 45% 24%), hsl(223 45% 14%));
+  }
+  .fl-icon-tile--success {
+    color: hsl(142 64% 26%);
+    background: linear-gradient(145deg, hsl(142 60% 90%), hsl(142 50% 78%));
+  }
+  .dark .fl-icon-tile--success {
+    color: hsl(142 60% 65%);
+    background: linear-gradient(145deg, hsl(142 40% 18%), hsl(142 40% 11%));
+  }
+  .fl-icon-tile--warning {
+    color: hsl(30 90% 32%);
+    background: linear-gradient(145deg, hsl(38 92% 90%), hsl(32 92% 78%));
+  }
+  .dark .fl-icon-tile--warning {
+    color: hsl(38 92% 65%);
+    background: linear-gradient(145deg, hsl(32 60% 20%), hsl(30 55% 12%));
+  }
+  .fl-icon-tile--neutral {
+    color: hsl(var(--foreground));
+    background: linear-gradient(145deg, hsl(var(--secondary)), hsl(var(--muted)));
+  }
+
+  /* --- Motif ------------------------------------------------------------ */
+
+  /* The Rising Door arch as a structural motif: a large, faint doorway behind
+     a section. The brand mark doing work beyond the logo slot. */
+  .fl-arch-motif {
+    position: absolute;
+    pointer-events: none;
+    border: 2px solid hsl(var(--accent) / 0.14);
+    border-bottom: 0;
+    border-radius: 9999px 9999px 0 0;
+  }
+}
+
+/* Every hover lift and transition collapses under reduced motion — the
+   surface still reads as raised, it simply does not move. */
+@media (prefers-reduced-motion: reduce) {
+  .fl-surface-interactive,
+  .fl-surface-interactive:hover {
+    transform: none;
+    transition: none;
+  }
+}

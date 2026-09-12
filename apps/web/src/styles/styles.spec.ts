@@ -29,10 +29,52 @@ const LOCAL_IMPORTS = [
   './styles/fonts.css',
   './styles/tokens.css',
   './styles/theme.css',
+  './styles/surfaces.css',
   './styles/base.css',
 ] as const;
 
 const themeCss = readFileSync(join(__dirname, 'theme.css'), 'utf8');
+const surfacesCss = readFileSync(join(__dirname, 'surfaces.css'), 'utf8').replace(
+  /\/\*[\s\S]*?\*\//g,
+  '',
+);
+
+describe('surfaces.css (the premium layer)', () => {
+  it('shows a focus ring when a control inside an interactive card takes focus', () => {
+    // The card is not focusable itself (component-library.md §3); without
+    // this rule a keyboard user tabbing into it sees the lift but no ring.
+    expect(surfacesCss).toMatch(/\.fl-surface-interactive:focus-within\s*\{[^}]*outline:/);
+  });
+
+  it('collapses every lift under reduced motion', () => {
+    const block = surfacesCss.slice(surfacesCss.indexOf('prefers-reduced-motion'));
+    expect(block).toContain('.fl-surface-interactive');
+    expect(block).toContain('transform: none');
+    expect(block).toContain('transition: none');
+  });
+
+  it('lifts by transform, never by layout', () => {
+    const hover = surfacesCss.match(/\.fl-surface-interactive:hover\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(hover).toContain('transform');
+    expect(hover).not.toMatch(/\b(margin|top|height|width|padding)\s*:/);
+  });
+
+  it('gives gradient text a solid fallback colour', () => {
+    // Where background-clip:text is unsupported, a transparent fill would
+    // render the hope-phrase invisible.
+    const gold = surfacesCss.match(/\.fl-text-gold\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(gold.indexOf('color:')).toBeGreaterThan(-1);
+    expect(gold.indexOf('color:')).toBeLessThan(gold.indexOf('text-fill-color'));
+  });
+
+  it('has a dark variant for every tinted icon tile', () => {
+    for (const tone of ['gold', 'navy', 'success', 'warning']) {
+      expect(surfacesCss, `${tone} tile has no dark variant`).toContain(
+        `.dark .fl-icon-tile--${tone}`,
+      );
+    }
+  });
+});
 
 describe('styles.css entry', () => {
   it('imports Tailwind first', () => {
