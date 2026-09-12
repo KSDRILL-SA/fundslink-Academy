@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { UrlTree, provideRouter } from '@angular/router';
+import { GuardResult, provideRouter } from '@angular/router';
 import { Observable, firstValueFrom, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -20,8 +20,14 @@ describe('authGuard — restore before refuse (S3.19 / S3.14)', () => {
   /** Guards run in an injection context; the two ActivatedRoute args are unused here. */
   const run = () => TestBed.runInInjectionContext(() => authGuard({} as never, {} as never));
 
-  const settled = (result: ReturnType<typeof run>) =>
-    firstValueFrom(result as Observable<boolean | UrlTree>);
+  /**
+   * The guard may answer synchronously (token in hand) or asynchronously (after a restore).
+   * These tests are about where a user lands, not about which shape the answer arrived in, so
+   * the outcome is unwrapped either way — otherwise a test meant to pin behaviour fails the
+   * moment the implementation changes its mind about being async.
+   */
+  const settled = (result: ReturnType<typeof run>): Promise<GuardResult> =>
+    result instanceof Observable ? firstValueFrom(result) : Promise.resolve(result);
 
   beforeEach(() => {
     restore = vi.fn();
