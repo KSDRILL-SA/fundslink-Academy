@@ -45,6 +45,7 @@ class ApplicationService:
         self.apps = ApplicationRepository(session)
         self.motivations = MotivationRepository(session)
         self.pre_screens = PreScreenReadRepository(session)
+        self.status_events = StatusEventRepository(session)
         self.appeals = AppealRepository(session)
         self.audit = AuditRepository(session)
         self.engine = ApplicationStateMachine(
@@ -79,6 +80,20 @@ class ApplicationService:
                 annotations=checks.get("annotations", []) if isinstance(checks, dict) else [],
                 cycle_no=checks.get("cycle_no") if isinstance(checks, dict) else None,
             )
+        # The decision, carried back to the person it is about (#220).
+        #
+        # Detail view only: this is one extra read, and the list projection is
+        # deliberately kept to one query per page (ST-3.7). A student reads the
+        # reason on the decision screen, which is the detail view by definition.
+        decision_reason = None
+        decided_at = None
+        waitlist_position = None
+        if detail and (decision := await self.status_events.decision(app_id)) is not None:
+            decision_reason = decision[1]
+            decided_at = decision[2]
+            if decision[0] == "APPROVED_WAITLISTED":
+                waitlist_position = await self.apps_waitlist_position(app_id)
+
         return Application(
             id=app_id,
             application_type=row[1],
@@ -91,7 +106,14 @@ class ApplicationService:
             needed_by=row[8],
             motivation=motivation,
             pre_screen=pre_screen,
+            decision_reason=decision_reason,
+            decided_at=decided_at,
+            waitlist_position=waitlist_position,
         )
+
+    async def apps_waitlist_position(self, app_id: str) -> int | None:
+        """Position on the waitlist, via the SECURITY DEFINER function (0019)."""
+        return await self.status_events.waitlist_position(app_id)
 
     async def _load_response(self, app_id: str, *, is_other: bool | None = None) -> Application:
         row = await self.apps.get_full(app_id)
