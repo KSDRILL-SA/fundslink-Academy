@@ -34,15 +34,18 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // The fills, highlights and shadows live in styles/surfaces.css: they
+        // reference design tokens, and Angular namespaces custom properties
+        // inside component style blocks. Colour still comes only from tokens.
         /** The one main action per screen. */
-        primary: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
+        primary: 'fl-fill-primary fl-raised bg-primary text-primary-foreground hover:bg-primary/90',
         /** Hope-moments only — never an error or a warning (design-system.md §2). */
-        accent: 'bg-accent text-accent-foreground shadow-xs hover:bg-accent/90',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        accent: 'fl-fill-accent fl-raised bg-accent text-accent-foreground hover:bg-accent/90',
+        secondary: 'fl-fill-secondary bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'bg-transparent text-foreground hover:bg-secondary',
         /** Irreversible actions only, and always paired with a confirmation. */
         destructive:
-          'bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90',
+          'fl-fill-destructive fl-raised bg-destructive text-destructive-foreground hover:bg-destructive/90',
       },
       size: {
         // 44px is the accessibility floor (§0). `sm` is 36px and is therefore

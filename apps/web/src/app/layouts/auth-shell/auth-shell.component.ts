@@ -38,7 +38,7 @@ import { UiLogoComponent } from 'ui';
         class="relative rounded-md outline-none focus-visible:outline-[3px]
                focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        <ui-logo size="lg" />
+        <ui-logo variant="plate" size="lg" tagline />
       </a>
 
       <main

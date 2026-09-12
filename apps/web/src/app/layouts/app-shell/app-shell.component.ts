@@ -51,7 +51,7 @@ import { ThemeToggleComponent } from '../../core/theme-toggle.component';
             class="shrink-0 rounded-md outline-none focus-visible:outline-[3px]
                    focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            <ui-logo size="sm" [showWordmark]="false" />
+            <ui-logo variant="plate" size="sm" [showWordmark]="false" />
             <span class="sr-only">FundsLink Academy — dashboard</span>
           </a>
 

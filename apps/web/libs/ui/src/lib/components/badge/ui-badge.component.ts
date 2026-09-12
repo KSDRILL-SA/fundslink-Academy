@@ -13,7 +13,10 @@ import { type IconNode, UiIconComponent } from '../icon/ui-icon.component';
  */
 export const badgeVariants = cva(
   cn(
-    'inline-flex items-center gap-1.5 rounded-full border font-medium',
+    // fl-plate (styles/surfaces.css) adds the hairline inner ring and lit top
+    // edge that the icon tiles have, so a badge reads as a small object rather
+    // than a rectangle of tint. It adds no colour of its own.
+    'fl-plate inline-flex items-center gap-1.5 rounded-full border font-medium',
     'px-2.5 py-1 text-sm whitespace-nowrap',
   ),
   {

@@ -4,6 +4,13 @@ import {
   type HttpInterceptorFn,
   type HttpRequest,
 } from '@angular/common/http';
+import {
+  inject,
+  provideAppInitializer,
+  type EnvironmentProviders,
+  type Provider,
+} from '@angular/core';
+import { AuthTokenService } from 'auth';
 import { of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 
@@ -62,31 +69,48 @@ const BURSARIES = [
     id: 'bur_1',
     name: 'Sasol Postgraduate Bursary',
     provider: 'Sasol Foundation',
-    field_of_study: 'Commerce',
-    level: 'HONOURS',
-    closing_date: '2026-11-30',
+    status: 'OPEN',
+    level_eligibility: ['HONOURS', 'MASTERS'],
+    field_tags: ['Commerce', 'Engineering'],
+    next_deadline: '2026-11-30',
   },
   {
     id: 'bur_2',
     name: 'Allan Gray Orbis Fellowship',
     provider: 'Allan Gray Orbis Foundation',
-    field_of_study: 'Commerce',
-    level: 'UG',
-    closing_date: '2026-10-15',
+    status: 'OPEN',
+    level_eligibility: ['UG'],
+    field_tags: ['Commerce'],
+    next_deadline: '2026-10-15',
   },
   {
     id: 'bur_3',
     name: 'NRF Honours Scholarship',
     provider: 'National Research Foundation',
-    field_of_study: 'Science',
-    level: 'HONOURS',
-    closing_date: '2026-09-30',
+    status: 'CLOSING_SOON',
+    level_eligibility: ['HONOURS'],
+    field_tags: ['Science'],
+    next_deadline: '2026-09-30',
   },
 ];
 
 const MATCHES = [
-  { id: 'mat_1', bursary_id: 'bur_1', score: '0.91', status: 'SUGGESTED' },
-  { id: 'mat_2', bursary_id: 'bur_3', score: '0.78', status: 'SUGGESTED' },
+  {
+    id: 'mat_1',
+    bursary: BURSARIES[0],
+    score: 0.91,
+    mode: 'LIVE',
+    reasoning_summary: 'Your field and level match, and the closing date is still open.',
+    created_at: '2026-02-19T06:00:00Z',
+  },
+  {
+    id: 'mat_2',
+    bursary: BURSARIES[2],
+    score: 0.78,
+    mode: 'LIVE',
+    reasoning_summary: 'Same level of study; the field is adjacent to yours.',
+    created_at: '2026-02-19T06:00:00Z',
+  },
 ];
 
 const NOTIFICATIONS = [
@@ -109,15 +133,18 @@ const NOTIFICATIONS = [
 const TRACKED = [
   {
     id: 'trk_1',
-    bursary_name: 'Allan Gray Orbis Fellowship',
-    stage: 'SUBMITTED',
-    created_at: '2026-02-12T10:00:00Z',
+    bursary: BURSARIES[1],
+    status: 'SUBMITTED',
+    status_source: 'SELF_REPORT',
+    // Long enough ago to exercise the "gone quiet" promise (§12.5).
+    last_activity_at: new Date(Date.now() - 28 * 86_400_000).toISOString(),
   },
   {
     id: 'trk_2',
-    bursary_name: 'NRF Honours Scholarship',
-    stage: 'INTERVIEW',
-    created_at: '2026-02-20T10:00:00Z',
+    bursary: BURSARIES[2],
+    status: 'SHORTLISTED',
+    status_source: 'EMAIL_CAPTURE',
+    last_activity_at: new Date(Date.now() - 3 * 86_400_000).toISOString(),
   },
 ];
 
@@ -219,3 +246,20 @@ export const previewApiInterceptor: HttpInterceptorFn = (request, next) => {
 };
 
 export const previewInterceptors: HttpInterceptorFn[] = [previewApiInterceptor];
+
+/**
+ * A signed-in preview session, seeded at bootstrap.
+ *
+ * The access token lives in memory only (S3.14), so a page reload signs you
+ * out — correct in production, and unusable in a preview, where the whole
+ * point is to open any screen from its URL and walk the product. Seeding the
+ * in-memory token at bootstrap makes every route reachable without turning the
+ * auth guard off, so the guard being wired correctly is still exercised.
+ *
+ * This grants a session and therefore lives only in the file that cannot ship.
+ */
+export const previewProviders: (Provider | EnvironmentProviders)[] = [
+  provideAppInitializer(() => {
+    inject(AuthTokenService).set(TOKENS.access_token);
+  }),
+];
