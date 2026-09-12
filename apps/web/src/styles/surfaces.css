@@ -150,7 +150,98 @@
     color: hsl(var(--foreground));
   }
 
+  /* --- The journey ------------------------------------------------------- */
+
+  /* Three steps on one line. The connector is drawn from each node to the next
+     rather than as a single bar behind everything, so it stops at the last
+     step instead of trailing off the end of the row — and it exists only where
+     the steps are actually side by side. */
+  .fl-journey-node {
+    display: inline-flex;
+    height: 2.25rem;
+    width: 2.25rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    font-weight: 600;
+    box-shadow: var(--surface-highlight);
+  }
+  @media (min-width: 768px) {
+    .fl-journey-step:not(:last-child) .fl-journey-node::after {
+      content: '';
+      position: absolute;
+      left: 3.25rem;
+      right: -2rem;
+      top: 1.125rem;
+      height: 1px;
+      background: linear-gradient(to right, hsl(var(--border)), hsl(var(--border) / 0.15));
+    }
+  }
+
+  /* --- Rhythm ------------------------------------------------------------ */
+
+  /* Vertical rhythm is the difference between a page that was composed and one
+     that was assembled. Two sizes only, and the choice between them is an
+     editorial one: a band that carries the argument gets more air than a band
+     that supports it. Uniform padding everywhere reads as "nothing here is
+     more important than anything else", which is exactly how the first pass
+     looked. */
+  .fl-band {
+    padding-block: 4.5rem;
+  }
+  .fl-band-lead {
+    padding-block: 6rem;
+  }
+  @media (min-width: 640px) {
+    .fl-band {
+      padding-block: 6rem;
+    }
+    .fl-band-lead {
+      padding-block: 8.5rem;
+    }
+  }
+
+  /* One container width for the whole product, so nothing is a few pixels off
+     from the thing above it. */
+  .fl-container {
+    margin-inline: auto;
+    max-width: 1200px;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) {
+    .fl-container {
+      padding-inline: 1.5rem;
+    }
+  }
+
   /* --- Type ------------------------------------------------------------- */
+
+  /* The lead paragraph — the one under a headline. Larger and lighter than
+     body copy, so the eye is carried into the section rather than dropped
+     into a wall of identical grey. */
+  .fl-lead {
+    font-size: 1.125rem;
+    line-height: 1.65;
+    color: hsl(var(--muted-foreground));
+  }
+  @media (min-width: 640px) {
+    .fl-lead {
+      font-size: 1.25rem;
+    }
+  }
+
+  /* The small label above a block: a section index, a field name, a caption.
+     Never used for anything a reader must be able to read at length. */
+  .fl-caption {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+  }
 
   /* Gold gradient text for the one phrase per view that carries the hope.
      The solid colour underneath is the fallback where background-clip text is

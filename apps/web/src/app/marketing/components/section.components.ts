@@ -22,7 +22,7 @@ import { cn, UiButtonComponent, UiIconTileComponent, type IconNode } from 'ui';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section [class]="classes()">
-      <div class="mx-auto max-w-[1200px] px-4">
+      <div class="fl-container">
         <ng-content />
       </div>
     </section>
@@ -36,11 +36,17 @@ import { cn, UiButtonComponent, UiIconTileComponent, type IconNode } from 'ui';
 export class SectionComponent {
   /** `muted` for alternating bands; `navy` for the closing call to action. */
   readonly tone = input<'default' | 'muted' | 'navy'>('default');
+  /** `lead` for a band that carries the argument, `support` for the rest. */
+  readonly density = input<'lead' | 'support'>('support');
   readonly class = input<string>('');
 
   protected readonly classes = computed(() =>
     cn(
-      'py-20 sm:py-24',
+      // One rhythm scale for the whole product (styles/surfaces.css). `lead`
+      // is for a band that carries the argument; everything else supports it.
+      // Uniform padding everywhere is what made the first pass read as a
+      // template — nothing was emphasised because nothing was subordinate.
+      this.density() === 'lead' ? 'fl-band-lead' : 'fl-band',
       // `muted` gets the warm wash rather than a flat grey: an alternating
       // band should read as a change of light, not a change of paint.
       this.tone() === 'muted' ? 'fl-wash' : '',

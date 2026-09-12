@@ -80,9 +80,9 @@ export interface DocSection {
                   <p class="mt-4 max-w-prose text-muted-foreground">{{ paragraph }}</p>
                 }
 
-                @if (section.bullets?.length) {
+                @if (section.bullets; as bullets) {
                   <ul class="mt-4 max-w-prose space-y-2">
-                    @for (bullet of section.bullets ?? []; track bullet) {
+                    @for (bullet of bullets; track bullet) {
                       <li class="flex gap-3 text-muted-foreground">
                         <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true"></span>
                         <span>{{ bullet }}</span>
