@@ -3,6 +3,7 @@ import { Observable, catchError, map, of, tap } from 'rxjs';
 
 import { AuthApiService } from './auth-api.service';
 import { AuthTokenService } from './auth-token.service';
+import { RefreshCoordinator } from './refresh-coordinator';
 import { AuthTokens, LoginRequest, RegisterRequest } from './auth.models';
 
 /** Facade for components: register/login store the access token in memory; logout clears it. */
@@ -10,6 +11,7 @@ import { AuthTokens, LoginRequest, RegisterRequest } from './auth.models';
 export class AuthService {
   private readonly api = inject(AuthApiService);
   private readonly tokens = inject(AuthTokenService);
+  private readonly coordinator = inject(RefreshCoordinator);
   readonly isAuthenticated = this.tokens.isAuthenticated;
 
   register(body: RegisterRequest): Observable<AuthTokens> {
@@ -42,10 +44,26 @@ export class AuthService {
     if (this.tokens.get()) {
       return of(true);
     }
-    return this.api.refresh().pipe(
-      tap((t) => this.tokens.set(t.access_token)),
-      map(() => true),
-      catchError(() => of(false)),
-    );
+    // Through the coordinator, NOT straight to the API. A refresh rotates the
+    // cookie, so two overlapping refreshes mean the second presents a token the
+    // first already rotated — reuse-detection trips and the student is signed
+    // out (AP-S3.15a). That is the exact failure RefreshCoordinator exists to
+    // prevent, and this path was bypassing it: a guard restore on a fresh page
+    // load can overlap an interceptor refresh triggered by a 401 from the first
+    // data request on the same page. Sharing one in-flight refresh makes the
+    // two cooperate instead of racing.
+    return this.coordinator
+      .refreshOnce(() =>
+        this.api.refresh().pipe(
+          map((t) => {
+            this.tokens.set(t.access_token);
+            return t.access_token;
+          }),
+        ),
+      )
+      .pipe(
+        map(() => true),
+        catchError(() => of(false)),
+      );
   }
 }
