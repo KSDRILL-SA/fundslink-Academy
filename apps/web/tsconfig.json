@@ -32,6 +32,9 @@
       "ui/testing": [
         "./libs/ui/src/testing/a11y.ts"
       ],
+      "auth/session": [
+        "./libs/auth/src/lib/auth.service.ts"
+      ],
       "auth/guards": [
         "./libs/auth/src/lib/auth.guard.ts"
       ],

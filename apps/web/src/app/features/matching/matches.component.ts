@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService, type Page, type Schema } from 'data-access';
 import { CalendarDays, GraduationCap, Info, Sparkles } from 'lucide';
@@ -68,6 +68,19 @@ type Match = Schema<'Match'>;
       <a actions routerLink="/app/bursaries" class="inline-flex">
         <ui-button variant="secondary">Browse every bursary</ui-button>
       </a>
+
+      <!-- Refreshing was implemented and unreachable: a student who had just
+           filled in their profile had no way to ask for suggestions based on
+           it, and had to wait for something to happen to them. The run is
+           idempotent (uq_match refresh), so pressing it twice is harmless. -->
+      <ui-button
+        actions
+        variant="ghost"
+        [loading]="refreshing()"
+        (clicked)="refresh()"
+      >
+        Refresh suggestions
+      </ui-button>
     </fl-page-header>
 
     @if (isFallback()) {
@@ -168,6 +181,7 @@ export class MatchesComponent {
 
   protected readonly state = this.store.state;
   protected readonly matches = computed(() => this.state().data ?? []);
+  protected readonly refreshing = signal(false);
   protected readonly infoIcon = Info as IconNode;
   protected readonly bursaryIcon = GraduationCap as IconNode;
   protected readonly calendarIcon = CalendarDays as IconNode;
@@ -191,6 +205,29 @@ export class MatchesComponent {
     this.api.get<Page<Match>>('/matches/me').subscribe({
       next: (page) => this.store.loaded(page.items),
       error: (error: unknown) => this.store.failed(error),
+    });
+  }
+
+  /**
+   * Ask for fresh suggestions.
+   *
+   * Synchronous in v1 (TAD §6.2) and idempotent — a re-run converges through
+   * `uq_match` rather than duplicating. It is spend-guarded and quota'd
+   * server-side, so a 429 is a real answer and is shown as one rather than
+   * swallowed: a student pressing a button that silently does nothing learns
+   * to distrust the whole screen.
+   */
+  protected refresh(): void {
+    this.refreshing.set(true);
+    this.api.post<Page<Match>>('/matches/run').subscribe({
+      next: (page) => {
+        this.refreshing.set(false);
+        this.store.loaded(page.items);
+      },
+      error: (error: unknown) => {
+        this.refreshing.set(false);
+        this.store.failed(error);
+      },
     });
   }
 

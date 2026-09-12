@@ -29,6 +29,9 @@ export * from './lib/premium/ui-progress-ring.component';
 export * from './lib/premium/ui-avatar.component';
 export * from './lib/premium/ui-tabs.component';
 
+// Overlay
+export * from './lib/overlay/ui-menu.component';
+
 // Flow
 export * from './lib/flow/ui-stepper.component';
 
