@@ -22,6 +22,7 @@ import {
 } from 'ui';
 import { asyncState } from '../../core/async-state';
 import { PageHeaderComponent } from '../../shared/page-header.component';
+import { UpdateStatusComponent } from './update-status.component';
 
 type Tracked = Schema<'Tracked'>;
 
@@ -62,6 +63,7 @@ const SILENCE_NUDGE_DAYS = 25;
     UiErrorStateComponent,
     UiTabsComponent,
     PageHeaderComponent,
+    UpdateStatusComponent,
   ],
   template: `
     <fl-page-header
@@ -127,6 +129,7 @@ const SILENCE_NUDGE_DAYS = 25;
                 <th scope="col">Status</th>
                 <th scope="col">Where this came from</th>
                 <th scope="col">Closes</th>
+                <th scope="col"><span class="sr-only">Update</span></th>
               </tr>
             </thead>
             <tbody>
@@ -149,6 +152,11 @@ const SILENCE_NUDGE_DAYS = 25;
                   <td><ui-status-chip [status]="item.status_source" kind="source" /></td>
                   <td class="text-sm text-muted-foreground">
                     {{ item.bursary.next_deadline || '—' }}
+                  </td>
+                  <td>
+                    <!-- A board about status that could not record one. The
+                         endpoint existed; nothing called it (BR-T03/T04). -->
+                    <fl-update-status [trackedId]="item.id" (updated)="load()" />
                   </td>
                 </tr>
               }
@@ -177,6 +185,10 @@ const SILENCE_NUDGE_DAYS = 25;
                   @if (item.bursary.next_deadline; as deadline) {
                     <p class="text-sm text-muted-foreground">Closes {{ deadline }}</p>
                   }
+                </div>
+
+                <div class="mt-4">
+                  <fl-update-status [trackedId]="item.id" (updated)="load()" />
                 </div>
 
                 @if (hasGoneQuiet(item)) {

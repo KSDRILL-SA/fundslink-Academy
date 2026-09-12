@@ -123,6 +123,11 @@ export const routes: Routes = [
           import('./features/profile/profile.component').then((m) => m.ProfileComponent),
       },
       {
+        path: 'account',
+        loadComponent: () =>
+          import('./features/account/account.component').then((m) => m.AccountComponent),
+      },
+      {
         // Literal before `:param`, always: `applications/new` would otherwise
         // match `applications/:id` with an id of "new".
         path: 'applications',

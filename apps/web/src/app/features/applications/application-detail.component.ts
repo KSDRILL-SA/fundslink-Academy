@@ -9,6 +9,7 @@ import {
   UiStatusChipComponent,
 } from 'ui';
 import { asyncState } from '../../core/async-state';
+import { AppealComponent } from './appeal.component';
 import { FixListComponent } from './fix-list.component';
 
 type Application = Schema<'Application'>;
@@ -68,6 +69,7 @@ const STAGE_INDEX: Readonly<Record<string, number>> = {
     UiErrorStateComponent,
     UiButtonComponent,
     FixListComponent,
+    AppealComponent,
   ],
   template: `
     @switch (state().status) {
@@ -193,6 +195,13 @@ const STAGE_INDEX: Readonly<Record<string, number>> = {
               </ui-card>
             }
 
+            <!-- An appeal is offered where a decision is read, and only once
+                 there is a decision to appeal (BR-E07). The Terms page has
+                 always promised this; until now only a mailbox delivered it. -->
+            @if (isDecided(app.status)) {
+              <fl-appeal [applicationId]="app.id" (appealed)="load()" />
+            }
+
             <div class="mt-6 flex flex-wrap gap-3">
               <a [routerLink]="['/app/applications', app.id, 'documents']" class="inline-flex">
                 <ui-button variant="secondary">Add a document</ui-button>
@@ -239,6 +248,17 @@ export class ApplicationDetailComponent {
 
   protected isDraft(status: string | undefined): boolean {
     return status === 'DRAFT';
+  }
+
+  /**
+   * A decision has been made, one way or the other.
+   *
+   * `REJECTED_FINAL` is deliberately absent: an appeal has already been used
+   * and refused there, and offering the button again would invite someone to
+   * spend hope on a door the server will close (BR-E07 — one per decision).
+   */
+  protected isDecided(status: string | undefined): boolean {
+    return status === 'APPROVED' || status === 'APPROVED_WAITLISTED' || status === 'REJECTED';
   }
 
   /**

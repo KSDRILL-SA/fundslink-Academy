@@ -1,12 +1,17 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
-import { Bell, FileText, House, Search, Send } from 'lucide';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
+// Narrow entry, not the 'auth' barrel: the barrel re-exports the five auth
+// screens, and this shell loads on every authenticated route (see #210).
+import { AuthService } from 'auth/session';
+import { Bell, FileText, House, LogOut, Search, Send, ShieldCheck, UserRound } from 'lucide';
 import {
   UiAvatarComponent,
   UiIconComponent,
   UiLogoComponent,
+  UiMenuComponent,
   UiScrollNavComponent,
   type IconNode,
+  type MenuItem,
   type ScrollNavItem,
 } from 'ui';
 import { ShellSignalsService } from '../../core/shell-signals.service';
@@ -34,6 +39,7 @@ import { ThemeToggleComponent } from '../../core/theme-toggle.component';
     UiAvatarComponent,
     UiIconComponent,
     UiLogoComponent,
+    UiMenuComponent,
     UiScrollNavComponent,
     ThemeToggleComponent,
   ],
@@ -85,16 +91,24 @@ import { ThemeToggleComponent } from '../../core/theme-toggle.component';
 
             <fl-theme-toggle />
 
-            <a
-              routerLink="/app/profile"
-              class="ml-1 inline-flex h-11 items-center gap-2 rounded-full pl-1 pr-1 outline-none
-                     transition-colors hover:bg-card focus-visible:outline-[3px]
-                     focus-visible:outline-offset-2 focus-visible:outline-ring
-                     motion-reduce:transition-none"
+            <!--
+              The account menu.
+
+              Until now the avatar linked to the profile page and there was no
+              way to sign out from anywhere in this product — the endpoint
+              existed and nothing called it. A session that cannot be ended is
+              a security problem on a shared or borrowed device, which is most
+              devices for the people this platform serves.
+            -->
+            <ui-menu
+              class="ml-1"
+              ariaLabel="Your account"
+              triggerClass="h-11 px-1 hover:bg-card transition-colors motion-reduce:transition-none"
+              [items]="accountMenu"
+              (selected)="onAccountAction($event)"
             >
               <ui-avatar [name]="displayName()" size="md" />
-              <span class="sr-only">Your profile</span>
-            </a>
+            </ui-menu>
           </div>
         </div>
       </header>
@@ -133,8 +147,53 @@ import { ThemeToggleComponent } from '../../core/theme-toggle.component';
 })
 export class AppShellComponent {
   private readonly shell = inject(ShellSignalsService);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   protected readonly bellIcon = Bell as IconNode;
+
+  protected readonly accountMenu: readonly MenuItem[] = [
+    { id: 'profile', label: 'Your profile', icon: UserRound as IconNode, route: '/app/profile' },
+    {
+      id: 'account',
+      label: 'Account & security',
+      hint: 'Password and two-factor',
+      icon: ShieldCheck as IconNode,
+      route: '/app/account',
+    },
+    {
+      id: 'privacy',
+      label: 'Data & privacy',
+      icon: FileText as IconNode,
+      route: '/app/privacy',
+    },
+    {
+      id: 'signout',
+      label: 'Sign out',
+      icon: LogOut as IconNode,
+      danger: true,
+      separated: true,
+    },
+  ];
+
+  /**
+   * End the session.
+   *
+   * The server call clears the refresh cookie; `AuthService.logout` clears the
+   * in-memory access token. The redirect happens either way — if the request
+   * fails, the token is still gone from this browser, and leaving someone
+   * signed in because a network call failed would be the wrong way round on a
+   * shared device.
+   */
+  protected onAccountAction(item: MenuItem): void {
+    if (item.id !== 'signout') {
+      return;
+    }
+    this.auth.logout().subscribe({
+      next: () => void this.router.navigateByUrl('/'),
+      error: () => void this.router.navigateByUrl('/'),
+    });
+  }
   protected readonly notices = this.shell.noticeCount;
   protected readonly displayName = this.shell.displayName;
 
