@@ -152,6 +152,30 @@ describe('ui-scroll-nav (rendered)', () => {
       expect(current[0].textContent).toContain('Applications');
     });
 
+    it('does not mark the site root current on every page', async () => {
+      // The marketing shell's shape: "/" beside "/how-it-works". Every path
+      // starts with "/", so prefix matching lit Home on every page — two pills
+      // current at once, which is what the Founder saw. The prefix rule above
+      // cannot catch this one: no route starts with "//".
+      const host = TestBed.createComponent(HostComponent);
+      host.componentInstance.items.set([
+        { label: 'Home', route: '/' },
+        { label: 'How it works', route: '/how-it-works' },
+        { label: 'About', route: '/about' },
+      ]);
+      host.detectChanges();
+
+      const router = TestBed.inject(await import('@angular/router').then((m) => m.Router));
+      await router.navigateByUrl('/how-it-works');
+      host.detectChanges();
+
+      const current = Array.from(
+        host.nativeElement.querySelectorAll('a[aria-current="page"]'),
+      ) as HTMLAnchorElement[];
+      expect(current).toHaveLength(1);
+      expect(current[0].textContent).toContain('How it works');
+    });
+
     it('marks exactly one link as current, never two', async () => {
       // The defect this rule exists for: /app is a prefix of every other
       // destination, so prefix matching made Dashboard current everywhere and

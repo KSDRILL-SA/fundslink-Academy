@@ -37,6 +37,47 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/bursaries/bursaries.component').then((m) => m.BursariesComponent),
       },
+      {
+        path: 'how-it-works',
+        loadComponent: () =>
+          import('./marketing/pages/how-it-works.component').then((m) => m.HowItWorksComponent),
+      },
+      {
+        path: 'for-students',
+        loadComponent: () =>
+          import('./marketing/pages/for-students.component').then((m) => m.ForStudentsComponent),
+      },
+      {
+        path: 'for-donors',
+        loadComponent: () =>
+          import('./marketing/pages/for-donors.component').then((m) => m.ForDonorsComponent),
+      },
+      {
+        path: 'about',
+        loadComponent: () => import('./marketing/pages/about.component').then((m) => m.AboutComponent),
+      },
+      {
+        path: 'contact',
+        loadComponent: () =>
+          import('./marketing/pages/contact.component').then((m) => m.ContactComponent),
+      },
+      {
+        path: 'help',
+        loadComponent: () => import('./marketing/pages/help.component').then((m) => m.HelpComponent),
+      },
+      // The public statement, distinct from S21 at /app/privacy, which is where
+      // a signed-in student exercises these rights rather than reads about them.
+      {
+        path: 'privacy',
+        loadComponent: () =>
+          import('./marketing/pages/privacy-statement.component').then(
+            (m) => m.PrivacyStatementComponent,
+          ),
+      },
+      {
+        path: 'terms',
+        loadComponent: () => import('./marketing/pages/terms.component').then((m) => m.TermsComponent),
+      },
     ],
   },
 
@@ -80,6 +121,15 @@ export const routes: Routes = [
         path: 'profile',
         loadComponent: () =>
           import('./features/profile/profile.component').then((m) => m.ProfileComponent),
+      },
+      {
+        // Literal before `:param`, always: `applications/new` would otherwise
+        // match `applications/:id` with an id of "new".
+        path: 'applications',
+        loadComponent: () =>
+          import('./features/applications/applications-list.component').then(
+            (m) => m.ApplicationsListComponent,
+          ),
       },
       {
         path: 'applications/new',
@@ -178,5 +228,27 @@ export const routes: Routes = [
     loadComponent: () => import('./core/debug-sentry.component').then((m) => m.DebugSentryComponent),
   },
 
-  { path: '**', redirectTo: '' },
+  /*
+   * A wrong address says so.
+   *
+   * This was `{ path: '**', redirectTo: '' }`, and that redirect hid ten dead
+   * links in this product: every one of them "worked", by quietly returning
+   * the visitor to the home page. A 404 inside the marketing shell keeps the
+   * navigation and the way back, and makes a broken link visible the first
+   * time anyone clicks it.
+   */
+  {
+    path: '**',
+    loadComponent: () =>
+      import('./layouts/marketing-shell/marketing-shell.component').then(
+        (m) => m.MarketingShellComponent,
+      ),
+    children: [
+      {
+        path: '**',
+        loadComponent: () =>
+          import('./marketing/not-found.component').then((m) => m.NotFoundComponent),
+      },
+    ],
+  },
 ];

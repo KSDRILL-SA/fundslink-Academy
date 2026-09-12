@@ -24,6 +24,7 @@ import {
   SectionComponent,
   SectionHeaderComponent,
 } from './components/section.components';
+import { ORGANISATION } from '../content/organisation';
 
 /**
  * The marketing home page (marketing-site.md §3).
@@ -92,8 +93,8 @@ import {
           </h1>
 
           <p class="mt-7 max-w-prose text-lg text-[hsl(210_40%_92%)] sm:text-xl">
-            Funding for South African students who fall through the NSFAS gap. Free to apply,
-            reviewed by a person, and built to treat you with dignity either way.
+            {{ positioning }} Free to apply, reviewed by a person, and built to treat you with
+            dignity either way.
           </p>
 
           <!-- The "I am a…" gateway. One primary action in gold; the others
@@ -341,6 +342,16 @@ export class MarketingHomeComponent {
   private readonly title = inject(Title);
   private readonly meta = inject(Meta);
 
+  /**
+   * The positioning line, from content/organisation.ts.
+   *
+   * It used to name the national scheme's "gap" here. That reads as a
+   * comparison — and a student, a university or a partner could fairly take it
+   * as this platform setting itself against NSFAS, which it never was. What is
+   * true is simpler and says more: we fund what other funding does not reach.
+   */
+  protected readonly positioning = ORGANISATION.positioning;
+
   protected readonly icons = {
     search: Search as IconNode,
     // An arrow, because the link says "see the full journey" — the handshake
@@ -402,7 +413,7 @@ export class MarketingHomeComponent {
     // One description, written for a person reading a search result rather
     // than for a keyword count.
     const description =
-      'A non-profit helping South African students who fall through the NSFAS gap find, apply for and track funding. Free to apply, reviewed by a person.';
+      'A South African non-profit helping students whose studies are not fully covered to find, apply for and track bursary funding. Free to apply, and every decision is made by a person.';
     this.meta.updateTag({ name: 'description', content: description });
     this.meta.updateTag({ property: 'og:title', content: 'FundsLink Academy' });
     this.meta.updateTag({ property: 'og:description', content: description });
