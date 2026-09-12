@@ -69,6 +69,11 @@
                   "with": "src/app/dev/preview-api.development.ts"
                 }
               ]
+            },
+            "live": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
             }
           },
           "defaultConfiguration": "production"
@@ -81,6 +86,10 @@
             },
             "development": {
               "buildTarget": "web:build:development"
+            },
+            "live": {
+              "buildTarget": "web:build:live",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

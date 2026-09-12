@@ -188,7 +188,15 @@ export class ProfileComponent {
     first_name: ['', { validators: [Validators.required], updateOn: 'blur' }],
     last_name: ['', { validators: [Validators.required], updateOn: 'blur' }],
     phone: [''],
-    level: ['', { validators: [Validators.required], updateOn: 'blur' }],
+    // A select commits on change, not on blur.
+    //
+    // `updateOn: 'blur'` is right for text — it stops the form nagging while
+    // someone is still typing. On a dropdown it is wrong and was caught on the
+    // first real run: choosing "Honours" and clicking Save immediately showed
+    // "Choose your level of study", because the choice had not reached the form
+    // model yet. Picking an option IS the deliberate act; there is nothing to
+    // wait for.
+    level: ['', { validators: [Validators.required] }],
     field_of_study: ['', { validators: [Validators.required], updateOn: 'blur' }],
     id_number: [''],
     hardship_narrative: [''],

@@ -110,7 +110,8 @@ export class UpdateStatusComponent {
   });
 
   readonly form = this.fb.nonNullable.group({
-    to_status: ['', { validators: [Validators.required], updateOn: 'blur' }],
+    // Commits on change: this control is a dropdown and the choice is the act.
+    to_status: ['', { validators: [Validators.required] }],
   });
 
   protected cancel(): void {

@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, map, of, tap } from 'rxjs';
 
 import { AuthApiService } from './auth-api.service';
 import { AuthTokenService } from './auth-token.service';
@@ -22,5 +22,30 @@ export class AuthService {
 
   logout(): Observable<void> {
     return this.api.logout().pipe(tap(() => this.tokens.clear()));
+  }
+
+  /**
+   * Restore a session that the browser still holds, once, at startup.
+   *
+   * The access token lives in memory (S3.14), so a reload or a bookmarked
+   * `/app/...` link arrives with nothing — and the guard redirected to sign-in
+   * even when the HttpOnly refresh cookie was still perfectly valid. Found on
+   * the first real end-to-end run: signing in, pressing F5, and being thrown
+   * out.
+   *
+   * The refresh endpoint is the only thing that can tell us whether a session
+   * exists, because the cookie is deliberately invisible to this code. A
+   * failure here is the normal case for a visitor who has never signed in, so
+   * it resolves quietly rather than erroring.
+   */
+  restore(): Observable<boolean> {
+    if (this.tokens.get()) {
+      return of(true);
+    }
+    return this.api.refresh().pipe(
+      tap((t) => this.tokens.set(t.access_token)),
+      map(() => true),
+      catchError(() => of(false)),
+    );
   }
 }
