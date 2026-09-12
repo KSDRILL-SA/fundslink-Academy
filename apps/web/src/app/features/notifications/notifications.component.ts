@@ -10,6 +10,7 @@ import {
   presentError,
 } from 'ui';
 import { asyncState } from '../../core/async-state';
+import { ShellSignalsService } from '../../core/shell-signals.service';
 
 type Notification = Schema<'Notification'>;
 
@@ -141,6 +142,7 @@ const TRIGGERS = [
 })
 export class NotificationsComponent {
   private readonly api = inject(ApiService);
+  private readonly shell = inject(ShellSignalsService);
   private readonly store = asyncState<readonly Notification[]>((items) => items.length === 0);
 
   protected readonly triggers = TRIGGERS;
@@ -163,7 +165,10 @@ export class NotificationsComponent {
   protected load(): void {
     this.store.loading();
     this.api.get<Page<Notification>>('/notifications/me').subscribe({
-      next: (page) => this.store.loaded(page.items),
+      next: (page) => {
+        this.store.loaded(page.items);
+        this.shell.setNoticeCount(page.items.length);
+      },
       error: (error: unknown) => this.store.failed(error),
     });
   }

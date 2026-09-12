@@ -22,13 +22,21 @@ import { UiLogoComponent } from 'ui';
     <a class="skip-link" href="#main-content">Skip to content</a>
 
     <div
-      class="flex min-h-dvh flex-col items-center justify-center bg-secondary/50 px-4 py-12
-             dark:bg-background"
+      class="fl-wash relative flex min-h-dvh flex-col items-center justify-center overflow-hidden
+             px-4 py-12"
     >
+      <!-- The Rising Door, at the size of a doorway, behind the card. The one
+           piece of atmosphere this screen gets: it says whose building this is
+           without adding anything to read. -->
+      <span
+        class="fl-arch-motif left-1/2 top-8 hidden h-[34rem] w-[34rem] -translate-x-1/2 sm:block"
+        aria-hidden="true"
+      ></span>
+
       <a
         routerLink="/"
-        class="rounded-md outline-none focus-visible:outline-[3px] focus-visible:outline-offset-2
-               focus-visible:outline-ring"
+        class="relative rounded-md outline-none focus-visible:outline-[3px]
+               focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         <ui-logo size="lg" />
       </a>
@@ -36,14 +44,14 @@ import { UiLogoComponent } from 'ui';
       <main
         id="main-content"
         tabindex="-1"
-        class="mt-8 w-full max-w-md outline-none"
+        class="relative mt-8 w-full max-w-md outline-none"
       >
-        <div class="rounded-lg border border-border bg-card p-6 shadow-sm sm:p-8">
+        <div class="fl-surface p-6 sm:p-8">
           <router-outlet />
         </div>
       </main>
 
-      <p class="mt-8 text-sm text-muted-foreground">
+      <p class="relative mt-8 text-sm text-muted-foreground">
         &copy; 2026 FundsLink Academy
       </p>
     </div>

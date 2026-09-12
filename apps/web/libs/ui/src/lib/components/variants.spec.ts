@@ -76,17 +76,22 @@ describe('button', () => {
 });
 
 describe('card', () => {
-  it('lifts without moving layout, and honours reduced motion', () => {
-    const interactive = cardVariants({ variant: 'interactive' });
-    expect(interactive).toContain('hover:shadow-md');
-    expect(interactive).toContain('motion-reduce:transition-none');
-    // The card is not focusable itself — it shows a ring when a real control
-    // inside it takes focus (§3).
-    expect(interactive).toContain('focus-within:outline');
+  it('is always the premium surface', () => {
+    // The lift, focus-within ring and reduced-motion collapse live in
+    // styles/surfaces.css (asserted in styles.spec.ts) — global, because
+    // Angular 22 namespaces tokens inside component style blocks.
+    for (const variant of ['static', 'interactive', 'stat', 'highlight', 'glass'] as const) {
+      expect(cardVariants({ variant })).toContain('fl-surface');
+    }
   });
 
-  it('marks a highlight with the gold accent', () => {
-    expect(cardVariants({ variant: 'highlight' })).toContain('border-l-accent');
+  it('lifts only when interactive', () => {
+    expect(cardVariants({ variant: 'interactive' })).toContain('fl-surface-interactive');
+    expect(cardVariants({ variant: 'static' })).not.toContain('fl-surface-interactive');
+  });
+
+  it('marks a highlight with the gold gradient border', () => {
+    expect(cardVariants({ variant: 'highlight' })).toContain('fl-gradient-border');
   });
 });
 

@@ -82,7 +82,7 @@ const AUTO_SCROLL_SPEED = 8;
         class="ui-nav-rail flex min-w-0 flex-1 items-center gap-2 overflow-x-auto scroll-smooth motion-reduce:scroll-auto"
         (scroll)="updateOverflow()"
       >
-        <ul class="flex items-center gap-2">
+        <ul class="ui-nav-track flex items-center gap-1 rounded-full p-1">
           @for (item of entries(); track item.route) {
             <li class="shrink-0 snap-start">
               <a
@@ -100,7 +100,7 @@ const AUTO_SCROLL_SPEED = 8;
                 <span>{{ item.label }}</span>
                 @if (item.badge !== undefined && item.badge !== null) {
                   <span
-                    class="ml-1 rounded-full bg-accent px-1.5 py-0.5 text-xs font-semibold text-accent-foreground"
+                    class="tabular ml-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-xs font-semibold text-accent-foreground"
                   >
                     {{ item.badge }}
                   </span>
@@ -207,8 +207,9 @@ export class UiScrollNavComponent {
 
   protected itemClasses(): string {
     return cn(
-      'inline-flex h-11 items-center gap-2 rounded-md px-3 text-sm font-medium',
-      'text-muted-foreground transition-colors duration-150 hover:text-foreground',
+      'ui-nav-item inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-medium',
+      'text-muted-foreground transition-[background-color,color,box-shadow] duration-150',
+      'hover:bg-card/60 hover:text-foreground motion-reduce:transition-none',
       'outline-none focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring',
       'whitespace-nowrap',
     );
@@ -216,8 +217,8 @@ export class UiScrollNavComponent {
 
   protected arrowClasses(side: 'left' | 'right'): string {
     return cn(
-      'z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-md',
-      'bg-background/90 text-muted-foreground hover:text-foreground',
+      'z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
+      'fl-surface text-muted-foreground hover:text-foreground',
       'outline-none focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring',
       side === 'left' ? 'mr-1' : 'ml-1',
     );

@@ -11,13 +11,24 @@ import { API_BASE_URL } from 'data-access';
 import { environment } from '../environments/environment';
 import { routes } from './app.routes';
 import { sentryProviders } from './core/observability';
+// Empty in a production build — the fixtures live in a file that only the
+// development configuration swaps in (see app/dev/preview-api.ts).
+import { previewInterceptors } from './dev/preview-api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     // The single auth interceptor (S3.15): attaches the token + dedups 401-refresh.
-    provideHttpClient(withXhr(), withInterceptors([authInterceptor])),
+    // Preview interceptors come first and are an empty array in production, so
+    // the order below is the real chain in every shipped build.
+    provideHttpClient(
+      withXhr(),
+      withInterceptors([
+        ...(environment.useMockApi ? previewInterceptors : []),
+        authInterceptor,
+      ]),
+    ),
     // Sentry loads lazily, after bootstrap and only when a DSN is set, so the
     // SDK never sits in the initial bundle (see core/observability.ts).
     // The generated client's base URL comes from the app, not from the

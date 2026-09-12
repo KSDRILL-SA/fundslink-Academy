@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { cn, UiButtonComponent, UiIconComponent, type IconNode } from 'ui';
+import { cn, UiButtonComponent, UiIconTileComponent, type IconNode } from 'ui';
 
 /**
  * The marketing section toolkit (marketing-site.md §5).
@@ -41,10 +41,13 @@ export class SectionComponent {
   protected readonly classes = computed(() =>
     cn(
       'py-20 sm:py-24',
-      this.tone() === 'muted' ? 'bg-secondary/40' : '',
+      // `muted` gets the warm wash rather than a flat grey: an alternating
+      // band should read as a change of light, not a change of paint.
+      this.tone() === 'muted' ? 'fl-wash' : '',
       // The navy band keeps its light-on-dark treatment in both themes: it is
-      // a deliberate inversion, not a surface that follows the theme.
-      this.tone() === 'navy' ? 'bg-[hsl(222_47%_11%)] text-[hsl(210_40%_98%)]' : '',
+      // a deliberate inversion, not a surface that follows the theme. fl-on-dark
+      // re-points the tokens so shared components inside it theme themselves.
+      this.tone() === 'navy' ? 'fl-mesh fl-on-dark relative overflow-hidden' : '',
       this.class(),
     ),
   );
@@ -65,13 +68,15 @@ export class SectionComponent {
   template: `
     <div [class]="classes()">
       @if (eyebrow()) {
-        <p class="text-sm font-semibold uppercase tracking-wider text-accent">{{ eyebrow() }}</p>
+        <p [class]="align() === 'center' ? 'flex justify-center' : ''">
+          <span class="fl-eyebrow font-semibold uppercase tracking-wider">{{ eyebrow() }}</span>
+        </p>
       }
 
       @if (level() === 1) {
-        <h1 class="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">{{ headline() }}</h1>
+        <h1 class="fl-display mt-4 text-4xl sm:text-5xl">{{ headline() }}</h1>
       } @else {
-        <h2 class="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{{ headline() }}</h2>
+        <h2 class="fl-display mt-4 text-3xl sm:text-4xl">{{ headline() }}</h2>
       }
 
       @if (lead()) {
@@ -103,23 +108,19 @@ export class SectionHeaderComponent {
   selector: 'fl-feature-card',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [UiIconComponent],
+  imports: [UiIconTileComponent],
   template: `
-    <div
-      class="flex h-full flex-col rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm"
-    >
+    <div class="fl-surface fl-surface-interactive flex h-full flex-col p-6">
       @if (icon(); as node) {
-        <div
-          class="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-accent/15 text-accent-foreground dark:text-accent"
-        >
-          <ui-icon [name]="node" size="md" />
-        </div>
+        <ui-icon-tile [icon]="node" tone="gold" size="lg" class="mb-5" />
       }
       @if (step()) {
-        <p class="mb-2 text-sm font-semibold text-accent">{{ step() }}</p>
+        <p class="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {{ step() }}
+        </p>
       }
-      <h3 class="text-lg font-semibold">{{ title() }}</h3>
-      <p class="mt-2 text-muted-foreground">{{ body() }}</p>
+      <h3 class="text-xl font-semibold tracking-tight">{{ title() }}</h3>
+      <p class="mt-3 text-muted-foreground">{{ body() }}</p>
       <ng-content />
     </div>
   `,
@@ -151,9 +152,9 @@ export class FeatureCardComponent {
   imports: [RouterLink, UiButtonComponent],
   template: `
     <div class="mx-auto max-w-prose text-center">
-      <h2 class="text-3xl font-semibold tracking-tight sm:text-4xl">{{ headline() }}</h2>
+      <h2 class="fl-display text-3xl sm:text-4xl">{{ headline() }}</h2>
       @if (lead()) {
-        <p class="mt-4 text-lg opacity-90">{{ lead() }}</p>
+        <p class="mt-4 text-lg text-muted-foreground">{{ lead() }}</p>
       }
       <div class="mt-8 flex justify-center">
         <a [routerLink]="route()" class="inline-flex">

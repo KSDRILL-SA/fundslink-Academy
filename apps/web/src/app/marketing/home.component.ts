@@ -2,16 +2,22 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import {
+  ArrowRight,
   BadgeCheck,
   FileText,
-  Handshake,
   HeartHandshake,
   Lock,
   Search,
   UserCheck,
   UserRound,
 } from 'lucide';
-import { UiButtonComponent, UiIconComponent, UiRevealDirective, type IconNode } from 'ui';
+import {
+  UiButtonComponent,
+  UiIconComponent,
+  UiIconTileComponent,
+  UiRevealDirective,
+  type IconNode,
+} from 'ui';
 import {
   CtaBandComponent,
   FeatureCardComponent,
@@ -48,6 +54,7 @@ import {
     RouterLink,
     UiButtonComponent,
     UiIconComponent,
+    UiIconTileComponent,
     UiRevealDirective,
     SectionComponent,
     SectionHeaderComponent,
@@ -61,20 +68,30 @@ import {
            with no image it simply reads as the brand's navy field. -->
       <div class="fl-hero-scrim absolute inset-0 -z-10" aria-hidden="true"></div>
 
-      <div class="mx-auto max-w-[1200px] px-4 py-24 sm:py-32">
-        <div class="max-w-2xl">
-          <p class="text-sm font-semibold uppercase tracking-wider text-[hsl(38_92%_60%)]">
-            Non-profit · South Africa
-          </p>
+      <!-- Atmosphere, in pure CSS: a faint engineering grid and the arch of the
+           Rising Door. No image, no canvas, nothing to download — this page is
+           opened on cheap phones over expensive data (P6). -->
+      <span class="fl-grid-bg absolute inset-0 -z-10" aria-hidden="true"></span>
+      <span
+        class="fl-arch-motif left-1/2 top-10 hidden h-[38rem] w-[38rem] -translate-x-1/2 lg:block"
+        aria-hidden="true"
+      ></span>
 
-          <!-- The one h1 on the page (§7). -->
-          <h1
-            class="mt-4 text-4xl font-semibold tracking-tight text-[hsl(210_40%_98%)] sm:text-6xl"
-          >
-            Past the cracks, into your future.
+      <div class="mx-auto grid max-w-[1200px] gap-16 px-4 py-24 sm:py-32 lg:grid-cols-[1.05fr_1fr]">
+        <div class="max-w-2xl">
+          <span class="fl-eyebrow border-[hsl(38_92%_50%/0.4)] text-[hsl(43_96%_78%)]">
+            <span class="h-1.5 w-1.5 rounded-full bg-[hsl(38_92%_60%)]" aria-hidden="true"></span>
+            Non-profit · South Africa
+          </span>
+
+          <!-- The one h1 on the page (§7). The gold sits on the half of the
+               sentence that carries the hope — the promise, not the problem. -->
+          <h1 class="fl-display mt-6 text-5xl text-[hsl(210_40%_98%)] sm:text-7xl">
+            Past the cracks,<br />
+            <span class="fl-text-gold">into your future.</span>
           </h1>
 
-          <p class="mt-6 max-w-prose text-lg text-[hsl(210_40%_92%)] sm:text-xl">
+          <p class="mt-7 max-w-prose text-lg text-[hsl(210_40%_92%)] sm:text-xl">
             Funding for South African students who fall through the NSFAS gap. Free to apply,
             reviewed by a person, and built to treat you with dignity either way.
           </p>
@@ -107,20 +124,72 @@ import {
             </a>
           </div>
         </div>
+
+        <!-- The product, shown rather than described: the real status card a
+             student sees, built from the same tokens as the real one so it can
+             never drift into marketing fiction.
+
+             Entirely decorative — every claim it makes is stated in text
+             elsewhere on the page — so it is hidden from assistive technology
+             rather than read out as a fake application. Drawn in HTML and CSS,
+             so it costs no bytes and stays sharp on any screen. -->
+        <div class="relative hidden self-center lg:block" aria-hidden="true">
+          <div class="fl-hero-mock fl-on-dark space-y-4 rounded-2xl p-6">
+            <div class="flex items-center justify-between">
+              <span class="fl-eyebrow border-[hsl(38_92%_50%/0.4)] text-[hsl(43_96%_78%)]">
+                Application · 2026
+              </span>
+              <span class="text-sm text-muted-foreground">FL-2026-0418</span>
+            </div>
+
+            <p class="text-xl font-semibold text-foreground">Your funding application</p>
+
+            <div class="space-y-3">
+              @for (row of mockSteps; track row.label) {
+                <div class="flex items-center gap-3">
+                  <span
+                    class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
+                    [class]="
+                      row.done
+                        ? 'bg-[hsl(38_92%_55%)] text-[hsl(222_47%_11%)]'
+                        : 'border border-border text-muted-foreground'
+                    "
+                    >{{ row.done ? '✓' : row.n }}</span
+                  >
+                  <span class="flex-1 text-sm text-foreground">{{ row.label }}</span>
+                  <span class="text-xs text-muted-foreground">{{ row.when }}</span>
+                </div>
+              }
+            </div>
+
+            <div class="rounded-xl border border-border bg-[hsl(222_45%_17%)] p-4">
+              <p class="text-sm text-muted-foreground">Reviewed by</p>
+              <p class="mt-1 text-sm font-medium text-foreground">
+                A person — never an algorithm
+              </p>
+            </div>
+          </div>
+
+          <!-- A second, smaller card: depth without a screenshot. It clips the
+               corner of the card above rather than sitting on its content. -->
+          <div class="fl-hero-mock absolute -bottom-20 -left-12 w-52 rounded-2xl p-4">
+            <p class="text-xs text-[hsl(213_32%_80%)]">Matches for you</p>
+            <p class="mt-1 text-2xl font-semibold text-[hsl(210_40%_98%)] tabular">7</p>
+            <p class="mt-1 text-xs text-[hsl(213_32%_80%)]">bursaries you fit</p>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- ================= TRUST BAND ================= -->
     <!-- Three things that are true today. No vanity metrics, and no numbers we
          cannot stand behind (§3.2). -->
-    <fl-section tone="muted" class="!py-12">
-      <ul class="grid gap-6 sm:grid-cols-3">
+    <fl-section tone="muted" class="!py-14">
+      <ul class="grid gap-4 sm:grid-cols-3">
         @for (point of trustPoints; track point.title; let i = $index) {
-          <li class="flex items-start gap-3" uiReveal [uiRevealDelay]="i * 40">
-            <span class="mt-0.5 text-accent-foreground dark:text-accent">
-              <ui-icon [name]="point.icon" size="md" />
-            </span>
-            <div>
+          <li class="fl-surface flex items-start gap-4 p-5" uiReveal [uiRevealDelay]="i * 40">
+            <ui-icon-tile [icon]="point.icon" [tone]="point.tone" />
+            <div class="min-w-0">
               <p class="font-semibold">{{ point.title }}</p>
               <p class="mt-1 text-sm text-muted-foreground">{{ point.body }}</p>
             </div>
@@ -238,6 +307,23 @@ import {
       background-position: center right;
     }
 
+    /* The floating product cards. Glass over the hero's navy, with a two-layer
+       shadow and a top highlight — the same physics as a real card, at a
+       larger elevation because these are floating above the page.
+
+       Literal colours on purpose: Angular namespaces CSS custom properties
+       inside a component styles block, so a design token referenced here
+       would be a different variable than the one the global sheet defines. */
+    .fl-hero-mock {
+      background: hsl(222 45% 14% / 0.88);
+      border: 1px solid hsl(213 25% 45% / 0.45);
+      backdrop-filter: saturate(160%) blur(14px);
+      -webkit-backdrop-filter: saturate(160%) blur(14px);
+      box-shadow:
+        inset 0 1px 0 0 hsl(0 0% 100% / 0.08),
+        0 40px 80px -32px hsl(0 0% 0% / 0.8);
+    }
+
     .fl-hero-scrim {
       background:
         radial-gradient(60% 80% at 85% 20%, hsl(38 92% 50% / 0.14) 0%, transparent 70%),
@@ -257,24 +343,37 @@ export class MarketingHomeComponent {
 
   protected readonly icons = {
     search: Search as IconNode,
-    arrow: Handshake as IconNode,
+    // An arrow, because the link says "see the full journey" — the handshake
+    // that used to sit here read as a different action entirely.
+    arrow: ArrowRight as IconNode,
     student: UserRound as IconNode,
     donor: HeartHandshake as IconNode,
   };
 
+  /** The rows inside the decorative product card. Illustration, not data. */
+  protected readonly mockSteps = [
+    { n: '1', label: 'Profile created', when: 'Mon', done: true },
+    { n: '2', label: 'Application submitted', when: 'Tue', done: true },
+    { n: '3', label: 'With a reviewer', when: 'now', done: false },
+    { n: '4', label: 'Decision, with reasons', when: '', done: false },
+  ];
+
   protected readonly trustPoints = [
     {
       icon: UserCheck as IconNode,
+      tone: 'navy' as const,
       title: 'A person reviews every application',
       body: 'Software helps us find you a match. It never decides your funding.',
     },
     {
       icon: Lock as IconNode,
+      tone: 'success' as const,
       title: 'Built for POPIA',
       body: 'Your ID number is encrypted, your data is yours, and you can ask for all of it.',
     },
     {
       icon: BadgeCheck as IconNode,
+      tone: 'gold' as const,
       title: 'Non-profit, free to students',
       body: 'No application fee, no agent, no cut of your funding. Ever.',
     },

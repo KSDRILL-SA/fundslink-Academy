@@ -75,28 +75,41 @@
     --motion-exit: 140ms;
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+    /* --- Depth (premium layer) --------------------------------------------
+       Premium comes from light behaving consistently: a hairline highlight on
+       the top edge of every raised surface, and glows reserved for the two
+       brand moments. Glows are not decoration — gold means hope/action, navy
+       means the institution holding you up. */
+    --surface-highlight: inset 0 1px 0 0 hsl(0 0% 100% / 0.7);
+    --glow-gold: 0 0 0 1px hsl(38 92% 50% / 0.22), 0 14px 40px -14px hsl(38 92% 50% / 0.55);
+    --glow-navy: 0 24px 64px -24px hsl(222 47% 20% / 0.45);
   }
 
   /* --- Dark: tonal, not inverted (§2) ------------------------------------ */
   .dark {
-    --background: 222 47% 9%;
+    /* A deeper ground and a clearer step up to the card, so surfaces read as
+       layered rather than as one flat navy wash. */
+    --background: 224 52% 6%;
     --foreground: 210 40% 96%;
-    --card: 222 44% 12%;
+    --card: 223 40% 10%;
     --card-foreground: 210 40% 96%;
-    --popover: 222 44% 12%;
+    --popover: 223 40% 11%;
     --popover-foreground: 210 40% 96%;
 
-    /* Navy cannot carry the primary action on a navy ground — it lightens to
-       a trust-blue so contrast survives the theme flip. */
-    --primary: 213 84% 65%;
+    /* Navy cannot carry the primary action on a navy ground. It used to
+       lighten to a saturated trust-blue, which read as a different brand. It
+       now inverts to ivory with navy text — the institutional primary, still
+       unmistakably ours, at ~15:1. */
+    --primary: 210 40% 96%;
     --primary-foreground: 222 47% 11%;
     --accent: 38 92% 52%;
     --accent-foreground: 222 47% 11%;
 
-    --secondary: 217 33% 18%;
+    --secondary: 223 30% 15%;
     --secondary-foreground: 210 40% 96%;
-    --muted: 217 33% 18%;
-    --muted-foreground: 215 20% 70%;
+    --muted: 223 30% 15%;
+    --muted-foreground: 215 20% 72%;
 
     --success: 142 60% 42%;
     --success-foreground: 222 47% 11%;
@@ -105,9 +118,10 @@
     --destructive: 0 72% 55%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 33% 22%;
-    --input: 217 33% 24%;
-    --ring: 213 84% 65%;
+    --border: 223 28% 18%;
+    --input: 223 28% 22%;
+    /* Gold focus on dark: on-brand, and far more visible than blue on navy. */
+    --ring: 38 92% 60%;
 
     /* Shadows read as depth on light grounds and as murk on dark ones; dark
        elevation comes from the surface step (background -> card), so the
@@ -117,5 +131,8 @@
     --shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.36);
     --shadow-lg: 0 12px 28px -6px hsl(0 0% 0% / 0.42);
     --shadow-xl: 0 24px 48px -12px hsl(0 0% 0% / 0.5);
+
+    --surface-highlight: inset 0 1px 0 0 hsl(0 0% 100% / 0.06);
+    --glow-navy: 0 24px 64px -24px hsl(0 0% 0% / 0.7);
   }
 }

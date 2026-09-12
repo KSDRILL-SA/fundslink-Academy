@@ -22,6 +22,13 @@ export * from './lib/components/badge/ui-badge.component';
 export * from './lib/components/badge/ui-status-chip.component';
 export * from './lib/components/badge/status-presentation';
 
+// Premium — the depth layer (styles/surfaces.css) as components.
+export * from './lib/premium/ui-icon-tile.component';
+export * from './lib/premium/ui-stat.component';
+export * from './lib/premium/ui-progress-ring.component';
+export * from './lib/premium/ui-avatar.component';
+export * from './lib/premium/ui-tabs.component';
+
 // Flow
 export * from './lib/flow/ui-stepper.component';
 

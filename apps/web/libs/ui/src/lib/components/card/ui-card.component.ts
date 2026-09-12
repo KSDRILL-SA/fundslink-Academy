@@ -3,37 +3,37 @@ import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '../../utils/cn';
 
 /**
- * Card variants (component-library.md §3). The premium here comes from
- * whitespace and a restrained shadow scale, not from decoration.
+ * Card variants (component-library.md §3), on the premium surface layer.
+ *
+ * Every variant starts from `.fl-surface` (styles/surfaces.css): a top-edge
+ * highlight and a two-layer shadow, which is what makes a card read as a
+ * physical object lit from above rather than an outlined box. The variants
+ * change emphasis, never the underlying construction — so every card in the
+ * product shares one lighting model.
  */
-export const cardVariants = cva(
-  cn('relative rounded-lg border border-border bg-card text-card-foreground', 'shadow-sm'),
-  {
-    variants: {
-      variant: {
-        static: '',
-        /** Lifts on hover; the caller must place a real focusable link inside. */
-        interactive: cn(
-          'transition-[box-shadow,transform] duration-200 ease-out',
-          'hover:shadow-md hover:-translate-y-0.5',
-          'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
-          'focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-ring',
-        ),
-        /** A single number and its label — tabular figures come from base.css. */
-        stat: '',
-        /** Gold left rule for hope-moments. Never for warnings or errors. */
-        highlight: 'border-l-4 border-l-accent',
-      },
-      padding: {
-        none: '',
-        sm: 'p-4',
-        md: 'p-6',
-        lg: 'p-8',
-      },
+export const cardVariants = cva('fl-surface relative', {
+  variants: {
+    variant: {
+      /** The default surface. */
+      static: '',
+      /** Lifts on hover; the caller must place a real focusable link inside. */
+      interactive: 'fl-surface-interactive',
+      /** A single number and its label — tabular figures come from base.css. */
+      stat: '',
+      /** Gold gradient border for hope-moments. Never for warnings or errors. */
+      highlight: 'fl-gradient-border',
+      /** Frosted, for surfaces that sit over atmosphere (a mesh, a hero). */
+      glass: 'fl-glass',
     },
-    defaultVariants: { variant: 'static', padding: 'md' },
+    padding: {
+      none: '',
+      sm: 'p-4',
+      md: 'p-6',
+      lg: 'p-8',
+    },
   },
-);
+  defaultVariants: { variant: 'static', padding: 'md' },
+});
 
 export type CardVariant = NonNullable<VariantProps<typeof cardVariants>['variant']>;
 export type CardPadding = NonNullable<VariantProps<typeof cardVariants>['padding']>;
@@ -43,9 +43,9 @@ export type CardPadding = NonNullable<VariantProps<typeof cardVariants>['padding
  *
  * `interactive` deliberately does not make the card itself clickable. A
  * clickable `<div>` is invisible to keyboards and unreadable to screen
- * readers; the card lifts on hover and shows a focus ring when something
- * inside it is focused, and the consumer supplies a real `<a>` or button as
- * the target (§3 — "whole-card link with a focusable target").
+ * readers; the card lifts on hover and rings when something inside it is
+ * focused, and the consumer supplies a real `<a>` or button as the target
+ * (§3 — "whole-card link with a focusable target").
  */
 @Component({
   selector: 'ui-card',

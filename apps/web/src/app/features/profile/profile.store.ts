@@ -1,6 +1,7 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { ApiService, type Schema } from 'data-access';
 import { asyncState } from '../../core/async-state';
+import { ShellSignalsService } from '../../core/shell-signals.service';
 
 export type StudentProfile = Schema<'StudentProfile'>;
 export type StudentProfileInput = Schema<'StudentProfileInput'>;
@@ -16,6 +17,7 @@ export type StudentProfileInput = Schema<'StudentProfileInput'>;
 @Injectable({ providedIn: 'root' })
 export class ProfileStore {
   private readonly api = inject(ApiService);
+  private readonly shell = inject(ShellSignalsService);
   // A profile that has never been created reads as empty, not as an error:
   // "you have not started yet" is a beginning, not a failure (P2).
   private readonly store = asyncState<StudentProfile | null>((value) => value === null);
@@ -26,7 +28,16 @@ export class ProfileStore {
   load(): void {
     this.store.loading();
     this.api.get<StudentProfile>('/students/me/profile').subscribe({
-      next: (profile) => this.store.loaded(profile),
+      next: (profile) => {
+        this.store.loaded(profile);
+        // The shell header greets the person by name once we know it — the
+        // profile request that already happened is the only source (§1).
+        // A 200 with an empty body is the "no profile yet" case and must not
+        // be dereferenced: the state is empty, and the header stays anonymous.
+        if (profile) {
+          this.shell.setDisplayName(`${profile.first_name} ${profile.last_name}`);
+        }
+      },
       error: (error: unknown) => {
         // 404 here means "no profile yet", which is a normal starting state
         // for every new student — not something to show an error screen for.
