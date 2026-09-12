@@ -58,14 +58,6 @@
     font-feature-settings: 'tnum';
   }
 
-  /* Focus is never removed (§7/§9). :focus-visible keeps it off mouse clicks
-     while guaranteeing it for keyboard and switch users. */
-  :focus-visible {
-    outline: 3px solid hsl(var(--ring));
-    outline-offset: 2px;
-    border-radius: calc(var(--radius) - 4px);
-  }
-
   /* Interactive targets: >= 44x44 (§7). Applied to the bare elements so a
      component that forgets still clears the bar; components may grow it. */
   button,
@@ -172,4 +164,30 @@
 }
 .dark .ui-nav-item.ui-nav-active ui-icon {
   color: hsl(43 96% 64%);
+}
+
+/* Focus is never removed (§7/§9). :focus-visible keeps the ring off mouse
+   clicks while guaranteeing it for keyboard and switch users.
+
+   Deliberately UNLAYERED, and this one was a real defect, not a precaution.
+   Inside @layer base it lost to `outline-none` — a Tailwind utility that many
+   components carry so they can draw their own ring. Those components then set
+   `focus-visible:outline-[3px]` and `focus-visible:outline-offset-2`, which set
+   the outline's WIDTH and OFFSET but never its STYLE. The result computed as
+   `outline-width: 3px; outline-style: none` — a ring that is configured and
+   never drawn.
+
+   So every ui-button, form control, nav item, menu and tab set had NO visible
+   focus indicator for keyboard users, which is WCAG 2.4.7 Focus Visible (AA),
+   and G4 requires 2.2 AA. axe cannot catch it: the styles are present and the
+   tree is correct; only pressing Tab and reading the computed style reveals it.
+   Found by the keyboard-walk E2E spec.
+
+   Unlayered styles outrank every layer, so this wins over `outline-none`
+   without !important and without touching each component. Same trap as
+   `.ui-nav-item.ui-nav-active` below. */
+:focus-visible {
+  outline: 3px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: calc(var(--radius) - 4px);
 }
