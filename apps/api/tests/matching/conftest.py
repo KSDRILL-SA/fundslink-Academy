@@ -37,6 +37,27 @@ def admin_conn(migrated_db):  # noqa: F811
         conn.close()
 
 
+@pytest.fixture(autouse=True)
+def only_this_tests_bursaries(admin_conn):
+    """Every matching test starts with no live bursary candidates.
+
+    Matching persists only the TOP_N (10) highest-scoring candidates, so any
+    test that seeds a bursary and asserts it was matched is really asserting
+    "and fewer than ten better ones exist". That held in CI, where the database
+    is a fresh container each run, and failed locally, where the test database
+    is not recreated between runs and had accumulated a hundred bursaries from
+    previous sessions — two tests passed or failed purely by how many times the
+    suite had been run before. An assertion like that cannot catch a
+    regression.
+
+    Soft-delete rather than DELETE: ``match_result`` references these rows, and
+    ``candidates()`` already filters on ``deleted_at IS NULL``, so this is the
+    same exclusion the query performs and touches no foreign key.
+    """
+    admin_conn.execute("UPDATE external_bursary SET deleted_at = now() WHERE deleted_at IS NULL")
+    return admin_conn
+
+
 def bearer(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
