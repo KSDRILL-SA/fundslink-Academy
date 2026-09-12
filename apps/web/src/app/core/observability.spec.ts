@@ -1,6 +1,7 @@
-import type { ErrorHandler } from '@angular/core';
+import { ApplicationInitStatus, type ErrorHandler } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DeferredErrorHandler } from './observability';
+import { DeferredErrorHandler, sentryProviders, startSentry } from './observability';
 
 /**
  * Deferring Sentry buys first-paint bytes at the cost of a window in which an
@@ -60,5 +61,73 @@ describe('DeferredErrorHandler', () => {
     handler.adopt(delegate);
     handler.handleError('after');
     expect(console.error).toHaveBeenCalledTimes(2);
+  });
+});
+
+/**
+ * When the SDK is fetched, not just whether.
+ *
+ * The bytes were always lazy; the *timing* is what the L4 ruling of 2026-09-12
+ * changed (handoff-s04-s05.md §3). An initializer that merely avoided `await`
+ * still opened the request while the first route was in flight, so on 3G the
+ * reporter raced the screen the student came for. These tests pin the fix: no
+ * DSN does nothing at all, and a DSN waits for idle.
+ */
+describe('sentryProviders — scheduling', () => {
+  let idle: ReturnType<typeof vi.fn>;
+  let timer: ReturnType<typeof vi.fn>;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  beforeEach(() => {
+    idle = vi.fn();
+    timer = vi.fn();
+    vi.stubGlobal('requestIdleCallback', idle);
+    vi.stubGlobal('setTimeout', timer);
+  });
+
+  /** Runs the app initializers the providers register, as bootstrap would. */
+  async function boot(dsn: string): Promise<void> {
+    TestBed.configureTestingModule({ providers: sentryProviders(dsn, 'test') });
+    await TestBed.inject(ApplicationInitStatus).donePromise;
+  }
+
+  it('schedules nothing when no DSN is configured', async () => {
+    // Local dev and CI. Not merely "does not download" — does not even queue.
+    await boot('');
+
+    expect(idle).not.toHaveBeenCalled();
+    expect(timer).not.toHaveBeenCalled();
+  });
+
+  it('waits for idle rather than starting the fetch at bootstrap', async () => {
+    await boot('https://key@example.ingest.sentry.io/1');
+
+    expect(idle).toHaveBeenCalledTimes(1);
+    // A deadline, so a page that never idles still gets a reporter.
+    expect(idle.mock.calls[0][1]).toEqual({ timeout: 3000 });
+  });
+
+  it('falls back to a timer where requestIdleCallback does not exist', async () => {
+    // Older Safari, and jsdom. A real path, not a formality.
+    vi.stubGlobal('requestIdleCallback', undefined);
+
+    await boot('https://key@example.ingest.sentry.io/1');
+
+    expect(timer).toHaveBeenCalledTimes(1);
+    expect(timer.mock.calls[0][1]).toBe(3000);
+  });
+});
+
+describe('startSentry', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('reports not-started for an empty DSN instead of importing the SDK', async () => {
+    expect(await startSentry('', 'test', new DeferredErrorHandler())).toBe(false);
   });
 });

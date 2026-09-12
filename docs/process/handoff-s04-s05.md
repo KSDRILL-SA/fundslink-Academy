@@ -16,34 +16,34 @@ graph LR
 
 Every screen in the journey is built, the full stack has run end to end against real
 PostgreSQL, and the repository is at zero open issues. **Two G4 criteria are not yet
-evidenced** (§2). This document does not claim the gate. The Founder reviews it.
+evidenced, and one approval is unrecorded** (§2). This document does not claim the gate. The Founder reviews it.
 
 ### G4 evidence — real output, clean tree on `main`, 2026-09-12
 
 | Gate criterion | Command | Result |
 |---|---|---|
-| Vitest green | `ng test --no-watch` | **35 files / 634 tests passed** |
+| Vitest green | `ng test --no-watch` | **35 files / 638 tests passed** |
 | Typecheck (app + 4 libs + specs) | `npm run typecheck` | **clean, exit 0** |
 | Production build | `ng build --configuration production` | **exit 0, no budget breach** |
-| First load — initial bundle | build table | **377.14 kB raw / 101.52 kB transfer** |
+| First load — initial bundle | build table | **377.18 kB raw / 101.56 kB transfer** |
 | axe WCAG 2.2 AA (jsdom) | in-suite, every screen | **zero serious/critical** |
 | Colour contrast (real browser) | Lighthouse accessibility | **100, zero failures** — home (anonymous), dashboard, S16 decision |
 | A03 refuses an inadequate rejection | `admin.spec.ts` | **PASS** — refuses <40 words, refuses no next-step confirmation, refuses no reason category; allows only when all three hold |
 | ≤200 kB first load, student routes | build table, no DSN | **~106–130 kB transfer** (see §1) |
-| ≤200 kB first load, student routes | build table, **with a production Sentry DSN** | **⚠ ~236–260 kB — see §3, Founder decision** |
+| ≤200 kB first load, student routes | build table, **with a production Sentry DSN** | **PASS — §3 resolved, Sentry now fetched on idle** |
 | Throttled-3G LCP / CLS / INP | — | **NOT MEASURED** (§2) |
 | Manual keyboard walk log | — | **NOT WRITTEN** (§2) |
 | S16-REJ Founder design sign-off | — | **NOT RECORDED** (§2) |
 
 ## 1. First load, worked out
 
-`Initial total` is **101.52 kB transfer**. A student route adds its own lazy chunks on top:
+`Initial total` is **101.56 kB transfer**. A student route adds its own lazy chunks on top:
 
 | Route | Initial | + app-shell | + route chunk | Total transfer |
 |---|---|---|---|---|
-| `/app` (dashboard) | 101.52 | 3.67 | 4.20 | **109.39 kB** |
-| `/app/applications/:id` (heaviest) | 101.52 | 3.67 | 6.84 | **112.03 kB** |
-| `/` (marketing home, anonymous) | 101.52 | — | 4.25 | **105.77 kB** |
+| `/app` (dashboard) | 101.56 | 3.67 | 4.20 | **109.43 kB** |
+| `/app/applications/:id` (heaviest) | 101.56 | 3.67 | 6.84 | **112.07 kB** |
+| `/` (marketing home, anonymous) | 101.56 | — | 4.25 | **105.81 kB** |
 
 Adding the two largest unnamed shared chunks (9.77 + 7.71 kB) as a worst case still lands at
 **~129.5 kB** — comfortably inside the 200 kB bar. This criterion passes on bytes.
@@ -65,33 +65,38 @@ unrecorded approval, and each is stated here rather than assumed.
    screen to have its own Founder design review *before merge*. The screen shipped in the
    #220 work; the sign-off was never recorded. **This needs the Founder, not more code.**
 
-## 3. Escalation — Sentry on the first-load path (Doctrine L11)
+## 3. Resolved — Sentry moved off the first-load path (L4 ruling, 2026-09-12)
 
-**The finding.** `src/app/core/observability.ts` loads the Sentry SDK through
-`provideAppInitializer` whenever a DSN is configured. The SDK is its own lazy chunk:
-**461.00 kB raw / 129.60 kB transfer**. Local dev and CI have no DSN and never fetch it,
-which is why every number in §1 is clean — but production will have one.
+**The finding.** `src/app/core/observability.ts` fetched the Sentry SDK through
+`provideAppInitializer` whenever a DSN was configured. The SDK is its own lazy chunk:
+**461.00 kB raw / ~130 kB transfer**. Local dev and CI have no DSN and never fetch it, which
+is why every other number in this document is clean — but production will have one.
 
-**What is already right.** The initializer does not `await` the import, by explicit design
-("the SDK must not stand between the user and first paint"), and `DeferredErrorHandler`
-buffers up to 20 errors so nothing thrown during the window is lost. So this does not block
-first paint, and it is not a regression — it is the *improvement* that moved Sentry out of
-the initial bundle in the first place.
+The import was already deliberately un-awaited, so it never blocked first paint, and
+`DeferredErrorHandler` buffered up to 20 errors so nothing thrown in the window was lost.
+The problem was narrower than "it blocks": not awaiting a request is not the same as not
+*making* it. The fetch still opened at bootstrap, while the first route was in flight, so on
+the mid-range SA phone + 3G profile G4 is measured against, ~130 kB of reporter competed for
+the same bandwidth as the screen the student came for. Counting all first-visit bytes, a
+student route reached roughly 236–260 kB against a 200 kB bar.
 
-**Why it still matters.** G4 measures a mid-range South African phone on 3G. On that
-profile 129.60 kB of non-blocking bytes still competes for the same scarce bandwidth as the
-route the student is waiting for, starting at bootstrap. Counting all first-visit bytes, a
-student route in production becomes roughly **236–260 kB** — over the 200 kB bar.
+**Ruling (Founder, L4, 2026-09-12):** fix it — keep Sentry, take it off the first-visit path.
 
-**Why it is escalated rather than fixed.** Whether the 200 kB bar counts render-blocking
-bytes or all first-visit bytes is a definition the Founder owns, and whether production
-carries a DSN at all is a Stage 06 deploy decision. Both sit above L3.
+**What changed.** The fetch now waits for the browser to go idle
+(`requestIdleCallback`, with a `setTimeout` fallback for older Safari and jsdom), bounded by
+a **3000 ms deadline** so a page that never idles still gets a reporter. With no DSN nothing
+is scheduled at all, so dev and CI do no work rather than merely no download. The existing
+error buffer is what makes the longer window safe — it is load-bearing here, not a nicety.
 
-**Recommendation.** Keep Sentry, move the fetch off the first-visit critical path: start it
-on first idle (`requestIdleCallback`, with a `setTimeout` fallback) or after the first route
-settles, instead of at bootstrap. The buffer already covers the longer window, so the change
-is small and costs no error fidelity. If the Founder reads the 200 kB bar as
-render-blocking bytes only, then no change is needed and this note simply records why.
+**Evidence.** Initial bundle **377.18 kB raw / 101.56 kB transfer** (+40 bytes for the
+scheduler), Sentry unchanged at 461.00 kB raw / 129.71 kB transfer and still its own chunk.
+Four tests pin the behaviour: no DSN schedules nothing; a DSN waits for idle with the
+deadline; the timer fallback is exercised where `requestIdleCallback` is absent; an empty DSN
+reports not-started without importing the SDK. **638 tests, typecheck clean.**
+
+**What the tests do not prove.** They assert *when* the fetch is scheduled, not that Sentry
+initialises once the callback fires — that would need the dynamic import itself mocked. The
+initialisation path is unchanged by this work and remains covered only by the real run.
 
 ## 4. What Stage 04 actually built
 
@@ -124,7 +129,6 @@ render-blocking bytes only, then no change is needed and this note simply record
 |---|---|
 | Real `hello@` / `privacy@` addresses | `src/app/content/organisation.ts` still says PLACEHOLDER |
 | S16-REJ design sign-off | G4 |
-| Ruling on §3 (Sentry / the 200 kB definition) | G4 |
 | NPC / PBO / §18A registration number | marketing copy; must never be invented |
 | Consented student stories | testimonials; tests currently enforce their absence |
 | `GOVERNANCE_SHA` pin, `main` branch protection | carried since Stage 03 |
