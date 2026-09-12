@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { UiButtonComponent, UiLogoComponent, UiScrollNavComponent, type ScrollNavItem } from 'ui';
+import { ORGANISATION } from '../../content/organisation';
 import { ThemeToggleComponent } from '../../core/theme-toggle.component';
 
 /**
@@ -70,7 +71,7 @@ import { ThemeToggleComponent } from '../../core/theme-toggle.component';
             <div>
               <ui-logo variant="plate" size="md" />
               <p class="mt-4 max-w-prose-narrow text-sm text-muted-foreground">
-                Funding South African students who fall through the NSFAS gap.
+                {{ positioning }}
               </p>
             </div>
 
@@ -112,6 +113,9 @@ import { ThemeToggleComponent } from '../../core/theme-toggle.component';
   `,
 })
 export class MarketingShellComponent {
+  /** One source for the positioning line (content/organisation.ts). */
+  protected readonly positioning = ORGANISATION.positioning;
+
   protected readonly navItems: readonly ScrollNavItem[] = [
     { label: 'Home', route: '/' },
     { label: 'How it works', route: '/how-it-works' },
@@ -140,7 +144,10 @@ export class MarketingShellComponent {
       title: 'Trust',
       links: [
         { label: 'Privacy & POPIA', route: '/privacy' },
-        { label: 'Information Officer', route: '/information-officer' },
+        // The officer is a section of the privacy statement, not a page of
+        // their own: POPIA asks that they be reachable, and splitting the
+        // contact away from the rights it exists to serve helps nobody.
+        { label: 'Information Officer', route: '/privacy' },
         { label: 'Terms', route: '/terms' },
         { label: 'Contact', route: '/contact' },
       ],

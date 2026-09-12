@@ -37,12 +37,17 @@ describe('marketing home (rendered)', () => {
       }
     });
 
+    // The description used to have to name NSFAS. It must not: describing this
+    // platform by another funder's "gap" reads as a comparison, and a student
+    // or a partner can fairly take it as competition with the national scheme.
+    // What is true says more — we fund what other funding does not reach.
     it('sets a title and a description written for a person', () => {
       expect(TestBed.inject(Title).getTitle()).toContain('FundsLink Academy');
       const description = TestBed.inject(Meta).getTag('name="description"')?.content ?? '';
-      expect(description).toContain('NSFAS');
+      expect(description).toContain('South African');
+      expect(description).toContain('bursary funding');
       expect(description.length).toBeGreaterThan(60);
-      expect(description.length).toBeLessThan(200);
+      expect(description.length).toBeLessThan(220);
     });
 
     it('carries Open Graph tags for a shared link', () => {

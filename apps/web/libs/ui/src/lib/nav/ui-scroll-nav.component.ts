@@ -165,9 +165,16 @@ export class UiScrollNavComponent {
     return all.map((item) => ({
       ...item,
       matchOptions: {
-        exact: all.some(
-          (other) => other.route !== item.route && other.route.startsWith(`${item.route}/`),
-        ),
+        // The site root is always exact. Every path begins with "/", so prefix
+        // matching makes a link to "/" current on every page in the product —
+        // which showed up as two pills lit at once the moment a second
+        // top-level page existed. The prefix rule below cannot catch it: no
+        // route starts with "//".
+        exact:
+          item.route === '/' ||
+          all.some(
+            (other) => other.route !== item.route && other.route.startsWith(`${item.route}/`),
+          ),
       },
     }));
   });
