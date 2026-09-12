@@ -143,6 +143,7 @@ graph LR
 | [handoff-s01-s02.md](process/handoff-s01-s02.md) | Relay handoff — Stage 01 (database) → Stage 02 (auth). |
 | [handoff-s02-s03.md](process/handoff-s02-s03.md) | Relay handoff — Stage 02 (auth) → Stage 03 (backend); contracts Stage 03 must honor. |
 | [handoff-s03-s04.md](process/handoff-s03-s04.md) | Relay handoff — Stage 03 (backend) → Stage 04 (frontend); contracts the frontend must honor. |
+| [handoff-s04-s05.md](process/handoff-s04-s05.md) | Relay handoff — Stage 04 (frontend) → Stage 05 (integration); G4 evidence, what is not yet measured, and the Sentry first-load escalation. |
 
 ### `audits/` — adversarial findings
 | Document | Description |
