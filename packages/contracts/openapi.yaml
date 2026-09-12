@@ -477,7 +477,21 @@ components:
             type: object
             required: [purpose, wording_version]
             properties:
-              purpose: { type: string }
+              # The authoritative set is seeded in
+              # alembic/versions/sql/0002_seeds.sql (lk_consent_purpose) and the
+              # API rejects anything else with invalid_consent_purpose. Typed as
+              # a bare string, the generated client could not catch a wrong
+              # value, and the register screen shipped one — no student could
+              # create an account (#254). The enum makes that a compile error.
+              purpose:
+                type: string
+                enum:
+                  - TERMS_OF_SERVICE
+                  - PRIVACY_POLICY
+                  - DATA_PROCESSING
+                  - AI_MATCHING
+                  - MARKETING_EMAIL
+                  - MARKETING_SMS
               wording_version: { type: string }
 
     LoginRequest:

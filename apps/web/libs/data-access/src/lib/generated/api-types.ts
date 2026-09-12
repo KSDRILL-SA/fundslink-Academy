@@ -525,7 +525,8 @@ export interface components {
             email: string;
             password: string;
             consents: {
-                purpose: string;
+                /** @enum {string} */
+                purpose: "TERMS_OF_SERVICE" | "PRIVACY_POLICY" | "DATA_PROCESSING" | "AI_MATCHING" | "MARKETING_EMAIL" | "MARKETING_SMS";
                 wording_version: string;
             }[];
         };

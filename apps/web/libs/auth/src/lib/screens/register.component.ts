@@ -168,7 +168,16 @@ export class RegisterComponent {
         password,
         // The consent purpose and wording version are what BR-A05 records; the
         // checkbox is the evidence, these are the terms it was given under.
-        consents: [{ purpose: 'TERMS_AND_PRIVACY', wording_version: 'v1' }],
+        //
+        // TWO purposes, because the checkbox names two documents. The screen
+        // previously sent a single invented 'TERMS_AND_PRIVACY', which the API
+        // has never accepted — registration failed for everyone (#254). The
+        // contract now enumerates the seeded set, so a wrong value here is a
+        // compile error rather than a 422 nobody sees until a real request.
+        consents: [
+          { purpose: 'TERMS_OF_SERVICE', wording_version: 'v1' },
+          { purpose: 'PRIVACY_POLICY', wording_version: 'v1' },
+        ],
       })
       .subscribe({
         next: () => void this.router.navigateByUrl('/auth/verify-email'),
