@@ -215,7 +215,7 @@ export class ForStudentsComponent {
   protected readonly dataPromises = [
     'Your ID number is encrypted before it is stored, and it is never shown back to you or anyone else in full.',
     'What you write about your circumstances is read by reviewers, and is never used for marketing or shared with anyone deciding something else about you.',
-    'Anything you tell a counsellor is kept apart from your application and never affects a funding decision.',
+    'What you write is read by a reviewer to decide your application, and is never used to sell you anything or shared with anyone deciding something else about you.',
     'You can ask for a copy of everything we hold about you, correct it, or ask us to delete it.',
   ];
 

@@ -25,7 +25,14 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 
 type Tracked = Schema<'Tracked'>;
 
-/** Days after which we tell the student we will chase the funder (§12.5). */
+/**
+ * Days of silence after which this screen says something (§12.5).
+ *
+ * The follow-up itself is BR-T06 and runs at 30, 45 and 60 days — and it
+ * notifies THE STUDENT. It does not contact the funder, and nothing in this
+ * system does. This screen used to say "we will nudge them for you", which was
+ * a promise about somebody else's behaviour that we had no way to keep.
+ */
 const SILENCE_NUDGE_DAYS = 25;
 
 /**
@@ -86,7 +93,7 @@ const SILENCE_NUDGE_DAYS = 25;
         <ui-empty-state
           class="mt-8"
           title="Nothing tracked yet"
-          message="Applied for a bursary somewhere else? Add it here and we will watch the deadlines and chase quiet funders for you."
+          message="Applied for a bursary somewhere else? Add it here and we will watch the deadlines with you, and check in if one goes quiet."
           actionLabel="Track an application"
           (action)="addTracked()"
         />
@@ -132,7 +139,7 @@ const SILENCE_NUDGE_DAYS = 25;
                     </span>
                     @if (hasGoneQuiet(item)) {
                       <span class="mt-2 block text-sm font-normal text-muted-foreground">
-                        No news for a while — we nudge them on day 30.
+                        Quiet for a while — we will check in with you on day 30.
                       </span>
                     }
                   </th>
@@ -174,8 +181,8 @@ const SILENCE_NUDGE_DAYS = 25;
 
                 @if (hasGoneQuiet(item)) {
                   <p class="mt-4 rounded-lg bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
-                    No news for a while. We will nudge them for you on day 30 — you do not need to
-                    do anything.
+                    Quiet for a while. We will check in with you on day 30 so it does not slip —
+                    following up with the funder is still yours to do, and it is usually worth it.
                   </p>
                 }
                 </ui-card>

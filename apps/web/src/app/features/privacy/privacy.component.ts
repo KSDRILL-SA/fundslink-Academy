@@ -78,9 +78,9 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
           hold one.
         </li>
         <li>
-          <span class="font-medium text-foreground">Anything you discussed with a counsellor.</span>
-          That is kept completely separately from your application and is never part of a funding
-          decision.
+          <span class="font-medium text-foreground">Internal review notes.</span>
+          A reviewer's working notes about a decision are part of our record rather than yours; the
+          decision itself, and the reasons given to you, are in the export.
         </li>
       </ul>
     </ui-card>

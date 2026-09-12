@@ -182,8 +182,11 @@ describe('S21 data and privacy', () => {
     // can actually read them.
     expect(text()).toContain('Your ID number in full');
     expect(text()).toContain('not even we can read it back');
-    expect(text()).toContain('Anything you discussed with a counsellor');
-    expect(text()).toContain('never part of a funding decision');
+    expect(text()).toContain('Internal review notes');
+
+    // No counselling claim: there is no counselling service in this platform,
+    // and describing how data from it would be protected implies one exists.
+    expect(text()).not.toContain('counsellor');
   });
 
   it('names the Information Officer route, because POPIA requires a real one', () => {

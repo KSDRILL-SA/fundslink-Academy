@@ -65,10 +65,22 @@ const TRIGGERS = [
 
       <ui-card class="mt-4">
         <p class="max-w-prose text-muted-foreground">
-          We will always email you about your own application — that is how you find out something
-          needs your attention, so it is not something we switch off.
+          Every update about your own application is recorded here — that is how you find out
+          something needs your attention, so it is not something we switch off.
           <strong class="font-medium text-foreground">Text messages are optional</strong>, and only
           go out if you have agreed to them.
+        </p>
+
+        <!--
+          Said out loud rather than left for a student to discover by waiting.
+          The outbox and the worker are real; the email and SMS providers are
+          not wired yet, so anyone relying on an email would be relying on
+          nothing. This paragraph comes out the day delivery is switched on.
+        -->
+        <p class="mt-3 max-w-prose rounded-lg bg-secondary/60 p-4 text-sm text-muted-foreground">
+          <span class="font-medium text-foreground">While we are setting up:</span>
+          email and text delivery are not switched on yet, so please check this page for updates.
+          We will tell you here as soon as they are.
         </p>
 
         <ul class="mt-6 flex flex-col gap-4">

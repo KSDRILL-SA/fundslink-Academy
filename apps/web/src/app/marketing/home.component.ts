@@ -294,7 +294,7 @@ import { ORGANISATION } from '../content/organisation';
         <div uiReveal [uiRevealDelay]="60">
           <fl-feature-card
             title="For donors and partners"
-            body="See exactly where the money goes. Non-profit governance, POPIA-compliant handling of student data, and decisions made by people who are accountable for them."
+            body="See exactly how every decision was made. Non-profit governance, POPIA-compliant handling of student data, and decisions made by people who are accountable for them on a record that cannot be quietly rewritten."
             [icon]="icons.donor"
           >
             <a
