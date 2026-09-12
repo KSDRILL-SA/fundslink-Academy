@@ -1,0 +1,148 @@
+name: e2e
+
+# The E2E suite is only a gate if something other than a person runs it.
+#
+# It has already earned that: on its first run it found that registration was
+# impossible through the UI (#254), and the keyboard walk found that no
+# interactive element drew a focus ring (#272). Both were invisible to 638 unit
+# tests and to axe, because a mock cannot refuse a request and a static tree
+# cannot be tabbed through.
+#
+# This runs the whole stack — real PostgreSQL, real FastAPI, the built Angular
+# app — because that is the only configuration in which those defects exist.
+
+on:
+  push:
+    paths:
+      - "apps/web/**"
+      - "apps/api/**"
+      - "packages/contracts/**"
+      - ".github/workflows/e2e.yml"
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - "apps/api/**"
+      - "packages/contracts/**"
+      - ".github/workflows/e2e.yml"
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fundslink
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d fundslink"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      ALEMBIC_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/fundslink
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/fundslink
+      # The launcher swaps Redis for an in-memory stand-in and REFUSES to start
+      # unless this says development. That refusal is deliberate — see
+      # apps/api/scripts/dev_server.py.
+      ENVIRONMENT: development
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------- API
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install API (frozen — exact deps from uv.lock)
+        working-directory: apps/api
+        run: uv sync --frozen --extra dev
+
+      - name: Migrate (schema + seeds)
+        working-directory: apps/api
+        run: uv run alembic upgrade head
+
+      # Ephemeral keys, generated per run and never written to the repo (S3.20).
+      # A committed key is a leaked key; a run-scoped one cannot leak.
+      - name: Generate run-scoped RS256 + PII keys
+        working-directory: apps/api
+        run: |
+          uv run python - <<'PY' >> "$GITHUB_ENV"
+          import base64, os
+          from cryptography.hazmat.primitives import serialization
+          from cryptography.hazmat.primitives.asymmetric import rsa
+
+          key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+          private = key.private_bytes(
+              serialization.Encoding.PEM,
+              serialization.PrivateFormat.PKCS8,
+              serialization.NoEncryption(),
+          ).decode()
+          public = key.public_key().public_bytes(
+              serialization.Encoding.PEM,
+              serialization.PublicFormat.SubjectPublicKeyInfo,
+          ).decode()
+
+          # Multi-line values need heredoc syntax in $GITHUB_ENV. The settings
+          # loader does no un-escaping, so these must be REAL newlines.
+          print("RS256_PRIVATE_KEY<<__PEM_PRIV__")
+          print(private.strip())
+          print("__PEM_PRIV__")
+          print("RS256_PUBLIC_KEY<<__PEM_PUB__")
+          print(public.strip())
+          print("__PEM_PUB__")
+          print(f"PII_ENCRYPTION_KEY={base64.b64encode(os.urandom(32)).decode()}")
+          PY
+
+      - name: Start the API
+        working-directory: apps/api
+        run: |
+          uv run python -m scripts.dev_server > /tmp/api.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://127.0.0.1:8000/healthz; then
+              echo "API up after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "API never became healthy:"; cat /tmp/api.log; exit 1
+
+      # ---------------------------------------------------------------- web
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install web (ci, not install — the lockfile is the contract, S1.98)
+        working-directory: apps/web
+        run: npm ci
+      - name: Install Chromium
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+
+      # The performance spec measures the PRODUCTION artefact, so it has to exist.
+      # Measuring `ng serve` would describe the dev server, not what a student
+      # downloads.
+      - name: Build (production — what the performance spec measures)
+        working-directory: apps/web
+        run: npm run build
+
+      # Playwright's webServer starts `npm run start:live` (preview fixtures OFF)
+      # and the performance spec serves dist/ itself on 4399.
+      - name: E2E
+        working-directory: apps/web
+        run: npx playwright test
+
+      - name: API log (on failure — the journeys are only readable next to it)
+        if: failure()
+        run: cat /tmp/api.log || true
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 7

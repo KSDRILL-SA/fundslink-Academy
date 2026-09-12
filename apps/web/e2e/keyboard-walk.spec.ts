@@ -82,10 +82,16 @@ test.describe('keyboard walk', () => {
 
     // The skip link must move focus into main, not merely scroll.
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
     await page.keyboard.press('Tab');
     await page.keyboard.press('Enter');
-    const landed = await page.evaluate(() => document.activeElement?.id ?? '');
-    expect(landed).toBe('main-content');
+
+    // POLL, do not snapshot. Moving focus to the target is asynchronous, and
+    // reading activeElement on the next line passed locally and failed in CI —
+    // the signature of racing the browser rather than waiting for it.
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.id ?? ''), { timeout: 10_000 })
+      .toBe('main-content');
   });
 
   test('the signed-in account area is walkable', async ({ page }) => {
