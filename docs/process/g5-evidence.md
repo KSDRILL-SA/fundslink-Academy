@@ -1,175 +1,155 @@
 # Gate G5 — Integration & hardening: evidence
 
-Date opened: 2026-09-12 · Engineer 02 (Claude Code, L3) · Approver: Founder (L4).
+Opened 2026-09-12 · Engineer 02 (Claude Code, L3) · Approver: Founder (L4).
 Brief: `claude-instructions/05-INTEGRATION.md`. Checklist: `../operations/launch-checklist.md`.
 
-**G5 is NOT passed.** Three of its five items measure a deployed environment, and nothing has
-ever been deployed. This document records what is proven with real output and what is not,
-and does not tick a box it has not earned.
+**G5 is NOT passed, and cannot be from this machine.** Three of its five items measure a
+deployed environment, and nothing has ever been deployed. Everything that does not require
+one is done and gated in CI. This document records what is proven, with the command that
+proves it, and refuses to tick what it has not earned.
 
 ```mermaid
 graph LR
-  A["G5a — local<br/>runnable now"] --> C{"Gate G5"}
-  B["G5b — staging<br/>BLOCKED · issue #252"] --> C
-  classDef part fill:#b45309,color:#fff,stroke:#92400e;
+  A["G5a — local<br/>DONE + gated in CI"] --> C{"Gate G5"}
+  B["G5b — staging<br/>BLOCKED · #252"] --> C
+  classDef done fill:#0e7490,color:#fff,stroke:#155e75;
   classDef blocked fill:#991b1b,color:#fff,stroke:#7f1d1d;
   classDef gate fill:#1d4ed8,color:#fff,stroke:#1e3a8a;
-  class A part; class B blocked; class C gate;
+  class A done; class B blocked; class C gate;
 ```
 
-## Status of the five items
+## The five items
 
-| # | Item | Status | Evidence |
+| # | Item | Status | Gated in CI |
 |---|---|---|---|
-| 1 | Playwright E2E — golden + painful journeys | **PARTIAL** | harness + 2 of 5 journeys (§1) |
-| 2 | k6 baseline vs staging, p95 < 2s @ 200 concurrent (ST-6.5) | **BLOCKED** | no staging (§4) |
-| 3a | Dependency audit + gitleaks full history | **PARTIAL** | §2 — npm clean, Python not run |
-| 3b | External port scan, only 443 public (ST-2.8) | **BLOCKED** | nothing is publicly listening (§4) |
-| 4 | Restore drill #2 from PITR on staging, timed (ST-6.4) | **BLOCKED** | no staging, no PITR (§4) |
-| 5 | Chaos hour | **PARTIAL** | 1 of 3 cases proven (§3) |
+| 1 | Playwright E2E — golden + painful journeys | **PARTIAL** — golden journey complete, 4 painful owed (#253) | yes — `e2e.yml` |
+| 2 | k6 baseline vs staging, p95 < 2s @ 200 (ST-6.5) | **BLOCKED** — no staging (#252) | — |
+| 3a | Dependency audit + gitleaks full history | **DONE** | yes — `security.yml` |
+| 3b | External port scan, only 443 public (ST-2.8) | **BLOCKED** — nothing publicly listening (#252) | — |
+| 4 | Restore drill #2 from PITR, timed (ST-6.4) | **BLOCKED** — no staging, no PITR (#252) | — |
+| 5 | Chaos hour — 3 cases | **DONE, 3 of 3** | yes — `api.yml` |
 
-## 1. Playwright E2E — partial
+## 1. E2E — the golden journey, gated
 
-Stood up in PR #256: `playwright.config.ts`, `e2e/global-setup.ts`, `e2e/support.ts`.
-Runs against `npm run start:live`, so the dev preview fixtures are **off** and every
-assertion travels to a real row in real PostgreSQL. One worker, **zero retries** — a flake
-that passes on retry is a defect that ships.
+`apps/web/e2e/`, run against the real stack by `e2e.yml`: PostgreSQL 16 → migrations →
+run-scoped RS256/PII keys → real FastAPI → the built Angular app. **`e2e` passes in CI in
+~2m21s.** Preview fixtures are off, so every assertion travels to a real row.
 
 ```
 npx playwright test
-  ✓ golden journey › a student can register and reach their account (4.8s)
-  ✓ golden journey › a reload keeps the student signed in (4.0s)
-  2 passed
+  ✓ golden journey › a student can register and reach their account
+  ✓ golden journey › a reload keeps the student signed in
+  ✓ golden journey › profile, applies, submits, and sees a real status
+  ✓ keyboard walk › the public home page is walkable, and the skip link works
+  ✓ keyboard walk › the signed-in account area is walkable
+  ✓ keyboard walk › a form can be completed and submitted without a mouse
+  ✓ marketing home: within the G4 budget on throttled 3G
+  ✓ browse bursaries: within the G4 budget on throttled 3G
+  8 passed
 ```
 
-**It found a P0 on its first run.** `register.component.ts` sent `purpose: 'TERMS_AND_PRIVACY'`,
-which is not a seeded consent purpose, so **no student had ever been able to create an
-account from the application** — every attempt got `422 invalid_consent_purpose`. Fixed at
-the root in PR #255: the contract now enumerates the seeded set, so a wrong purpose is a
-compile error rather than a runtime 422 nobody sees. Issue #254.
+One worker, **zero retries** — a flake that passes on retry is a defect that ships.
 
-That defect was invisible to 638 unit tests, because a mock cannot refuse a request, and
-invisible to the earlier "stack proven end to end" run, because that run called the API
-directly with a correct purpose rather than driving the form.
+**Still owed (#253):** return-cycle ×3 → outreach flag · rejection → appeal by a *different*
+reviewer · waitlist position display · engine-down `UNSCREENED` flow. Each needs
+admin/reviewer accounts with real role rows, or a lever to force matching down — fixture
+machinery that is itself a build. Their **rules are already covered at API level**
+(`test_review_appeal.py`, `test_decision_reason.py`, `test_state_machine.py`); the gap E2E
+would close is the **admin UI path**, not the logic.
 
-**Still owed (issue #253):** the rest of the golden journey (profile → application → submit
-→ status, which needs a Luhn-valid SA ID fixture for D-007), the return-cycle ×3 outreach
-flag, rejection → appeal by a *different* reviewer, waitlist position display, and the
-engine-down `UNSCREENED` flow. The last four each need admin/reviewer accounts with real
-role rows, or a lever to force the matching engine down — fixture machinery that is itself a
-build, not a line of test code.
-
-**Not wired into CI.** The suite passes locally only, so this gate is currently protected by
-someone remembering to run it.
-
-### Two host truths worth keeping
-- `ng serve` binds to **IPv6 loopback only**. A `127.0.0.1` health check never succeeds, so
-  Playwright reports a server that failed to start while it is serving on `localhost`.
-- Every fresh page load restores the session through `POST /auth/refresh`, and that call
-  **rotates the cookie**. Navigating again before it settles sends the superseded token,
-  which the API correctly rejects — indistinguishable from a session bug until traced.
-
-## 2. Dependency audit + secret scan — partial
+## 2. Dependency audit + secret scan — done and gated
 
 | Check | Result |
 |---|---|
-| `apps/web` — `npm audit` | **found 0 vulnerabilities** |
-| `packages/contracts` — `npm audit` | 2 high → **found 0 vulnerabilities** after PR #258 |
-| Dependabot open alerts | 1 high (`js-yaml` GHSA-2883-xcg3-v3hh) → patched, PR #258 |
-| gitleaks, full history | **passing on every push** — `security.yml` runs `gitleaks detect` with `fetch-depth: 0`, so the whole history is scanned, not just the diff |
-| `apps/api` — Python audit | **NOT RUN** |
+| `apps/web` npm audit | **0 vulnerabilities** |
+| `packages/contracts` npm audit | 2 high → **0** after #258 |
+| `apps/api` pip-audit (uv.lock, 876 requirement lines) | **No known vulnerabilities** |
+| gitleaks, **full history** (`fetch-depth: 0`) | passing on every push |
 
-The js-yaml advisory arrived transitively (`openapi-typescript` → `@redocly/openapi-core` →
-`js-yaml`). Real risk was low — a build-time devDependency whose only input is our own
-`openapi.yaml` — and it was patched anyway, because a known high advisory left open to argue
-about reachability is how the dangerous ones get lost.
+Both ecosystems now run on every push (`security.yml`). **The first version of that gate was a
+false pass** — pip-audit ran against the runner's system Python while a project venv was
+loaded, and reported "No known vulnerabilities" without ever looking at our dependencies. It
+now audits the exported lockfile, and was negative-controlled against `jinja2==2.11.2` (four
+PYSEC advisories, exit 1), because an audit that cannot find a known vulnerability is not an
+audit.
 
-**The Python audit is not done.** `pip-audit` would not install: the API venv reports
-`No module named pip`. Dependabot does cover `uv.lock` and showed nothing open for it, which
-is reasonable evidence but is not the same as an audit run against the installed tree.
+## 3. Chaos hour — 3 of 3
 
-## 3. Chaos hour — 1 of 3 cases proven
+**Case 2 — DB connection killed mid-status-transaction** (`test_chaos_atomicity.py`). A
+transition writes three things: the append-only `application_status_event` (the record of
+**why**), the status cache, and the `notification_outbox` row (the message to the student).
+CLAUDE.md makes "one transaction" a hard rule and nothing proved it. The session terminates
+its own backend (`pg_terminate_backend(pg_backend_pid())`) between the status write and the
+outbox write — the real event, made deterministic. Verified to fail for the right reason:
+splitting the transaction fails all three with
+`AssertionError: the status moved without the reason or the notification`.
 
-Three cases: kill the matching worker mid-job (assert FALLBACK + job recovery); **kill the DB
-connection mid-status-transaction (assert status, event and outbox are all-or-nothing)**; flood
-the outbox (assert the workers drain and DEAD surfaces).
+**Case 3 — flood the outbox** (`test_chaos_outbox_flood.py`). An earlier version of this
+document said this needed real Redis; that was wrong, and checking cost nothing — the worker
+is pure PostgreSQL with `FOR UPDATE SKIP LOCKED`. 60 rows drain in batches of 20, each
+delivered **exactly once**; two workers claiming while the other's transaction is still open
+get **disjoint** sets (the only arrangement in which a collision could happen); concurrent
+drain loses and duplicates nothing; an undeliverable flood ends **DEAD** and is **findable** by
+the query an alert would run — a dead letter nobody can see is a student nobody told.
 
-### Case 2 — DB connection killed mid-transaction: PROVEN (PR #262, issue #261)
+**Case 1 — the matching engine dies mid-job** (`test_chaos_matching_engine.py`). **There is no
+separate matching worker in v1** — the async queue is deferred to v1.x (TAD §6.2), so what can
+die mid-job is the request doing the work. It degrades rather than failing the student; a run
+that dies partway leaves **no partial match set**; and the student can re-run successfully.
 
-`tests/application/test_chaos_atomicity.py`. A status transition writes three things — the
-append-only `application_status_event` (the record of **why**), the `funding_application.status`
-cache, and the `notification_outbox` row (the message to the student). CLAUDE.md makes it a hard
-rule: *one transaction*. Nothing proved it until now.
+## 4. Stage 04 carry-overs — closed here
 
-Submit is a **chain** — `DRAFT → SUBMITTED → PRE_SCREENING →` the pre-screen's verdict — which
-makes it the right thing to break: the invariant must hold across the whole chain, not one hop.
+`handoff-s04-s05.md` §2 left three open. Two are now measured.
 
-```
-pytest tests/application/test_chaos_atomicity.py -q
-  ...                                            [100%]
-  3 passed
+**Performance, on the production build, Fast 3G + 4× CPU** (the mid-range SA mobile profile,
+P6):
 
-pytest tests/application -q
-  33 passed
-```
+| Route | Transfer | LCP | CLS |
+|---|---|---|---|
+| marketing home | **196.3 kB** | ~2.9–3.2 s | **0.0000** |
+| browse bursaries | **200.2 kB** | ~2.6–3.0 s | **0.0001** |
+| G4 target | ≤ 200 kB | < 2500 ms | < 0.1 |
 
-Three tests: a **control** that the happy path really does write all three (without it, "nothing
-was written" passes trivially); the **chaos** case, where the session terminates its own backend
-(`pg_terminate_backend(pg_backend_pid())`) between the status write and the outbox write — the
-real event, made deterministic rather than timing-dependent; and a **deterministic gate** where
-the third write simply raises, so the invariant stays guarded even if the driver changes how a
-killed backend surfaces. All three verify from a **separate connection** — reading back through
-the session that was just broken would prove nothing about what is committed.
+CLS passes with three orders of magnitude to spare; transfer is **on the line**; **LCP misses**
+by 400–700 ms, filed as **#271** with the byte breakdown (three font faces are 69.4 kB, 35% of
+the budget). Closing that is an optimisation project with design trade-offs, not a line to
+change.
 
-**The tests were verified to fail for the right reason.** Splitting the transaction deliberately
-(a `commit()` between the status write and the outbox write) fails all three:
+**Two harness artefacts were found and fixed before any number was trusted.** Serving
+uncompressed reported 461 kB against a 200 kB budget, because Angular's "estimated transfer
+size" assumes compression. And `cache-control: no-store` made preloads unusable, so every
+preloaded font was fetched **twice** — about 66 kB of phantom bytes that looked exactly like a
+duplicate-request bug in the product. The figures above are brotli with realistic cache
+headers, which is what Vercel serves (S8.3).
 
-```
-AssertionError: the status moved without the reason or the notification
-assert 'SUBMITTED' == 'DRAFT'
-```
+**Keyboard walk** — automated rather than manual, because a walk done by hand happens once, by
+the person least likely to notice what they built, and produces a log nobody re-runs. It
+prints the focus order every run and asserts a first stop, a working skip link, no traps, and
+a visible ring on every stop. **It cannot judge whether the order makes sense to someone who
+cannot see the layout — that still needs a person.**
 
-That is exactly the production failure being defended against: a student's status advanced while
-the record of why, and the notification telling them, did not.
+**Still owed: the S16-REJ design sign-off.** The design package §9 required it *before* that
+screen merged. It merged without one. That needs the Founder, not code.
 
-### Cases 1 and 3 — not done
-Killing the matching worker mid-job and flooding the outbox are partly limited by the local
-`fakeredis` stand-in, which is not the Redis those workers coordinate through in production.
+## 5. Defects found and fixed this stage
 
-## 4. BLOCKED — the staging dependency (issue #252)
+| # | Defect | How it hid |
+|---|---|---|
+| **#254** | **Registration was impossible through the UI.** The form sent consent purpose `TERMS_AND_PRIVACY`; the API has never accepted it. No student could create an account. | The contract typed `purpose` as a bare string, so the generated client inferred `string` and the wrong value typechecked. Unit tests mock the API, and a mock cannot refuse a request. Fixed at the root: the contract now enumerates the seeded set, so a wrong purpose is a **compile error**. |
+| **#272** | **No interactive element drew a focus ring.** 19 of 25 home-page tab stops had no visible focus indicator — WCAG 2.4.7 AA, which G4 requires. | `:focus-visible` sat in `@layer base` and lost to the `outline-none` utility; components then set the outline's *width* and *offset* but never its *style*, computing to `outline-width: 3px; outline-style: none`. axe cannot see it — the styles are present and the tree is correct. Only pressing Tab reveals it. |
+| **#265** | **Matching failed closed.** Only the spend breaker triggered fallback; if the embedding engine itself failed, the student got a 500 while a tag/level overlap score was available all along. S8.51 requires graceful AI degradation, and matching is advisory. | No test ever broke the engine, only the budget. |
+| **#263** | **The API suite could not run on Windows** (about nine tests), and two matching tests passed or failed by how many times the suite had been run before — 102 bursaries had accumulated locally, and matching persists only the top ten. | An assertion that depends on the suite's history cannot catch a regression. CI's fresh container hid it. |
+| **#257** | `js-yaml` high-severity advisory, transitive via `openapi-typescript`. | Dependabot reported it; nothing blocked on it. |
 
-`.github/workflows/deploy.yml` is stubbed and **disabled**: both jobs carry `if: ${{ false }}`
-pending `RAILWAY_TOKEN` and `VERCEL_TOKEN`. There is no Railway project, no Vercel project,
-and no managed PostgreSQL with point-in-time recovery.
+## 6. Open, not resolved
 
-Items 2, 3b and 4 cannot be executed, only pretended. A p95 measured on a developer laptop
-against a `fakeredis` stand-in is not evidence about production; publishing it would be worse
-than recording the gap.
-
-**This is above L3 and escalated rather than worked around.** Provisioning staging means
-creating accounts, issuing and storing deploy tokens, configuring managed PostgreSQL with
-PITR, and setting CORS origins and DNS — every one a secrets or security decision, which is
-**L4, human-only**. It is also Stage 06 work being pulled forward.
-
-**Recommendation:** split the gate. **G5a** is local and proceeds now. **G5b** (items 2, 3b,
-4) stays open and blocks G5 until staging exists. The alternative — pausing Stage 05 entirely
-— would have left the E2E suite unwritten, and that suite has already found a defect that
-stopped every student at the front door.
-
-## 5. Carried from Stage 04 (`handoff-s04-s05.md` §2)
-
-Still open, and Stage 05's browser pass is where they belong:
-
-- **Throttled-3G LCP / CLS / INP** — never measured.
-- **Manual keyboard walk log** — never written.
-- **S16-REJ design sign-off** — never recorded; needs the Founder, not code.
-
-## 6. Needs the Founder
-
-| Item | Blocks |
+| Item | Owner |
 |---|---|
-| Provision staging, or accept the G5a / G5b split | G5 |
-| Consent bundling: one checkbox currently records two POPIA purposes (PR #255) | launch |
-| S16-REJ design sign-off | G4 |
-| Real `hello@` / `privacy@` addresses | launch copy |
-| `GOVERNANCE_SHA` is still `<PINNED_SHA>`, and `GOVERNANCE_REPO` names a **renamed** repo — `MALULEKE-KS/system-design-template` is now `KSDRILL-SA/governova` | launch checklist "governance/ synced + pinned" |
+| **#252** — provision staging, or ratify the G5a/G5b split | **Founder (L4)** |
+| **S16-REJ design sign-off** | **Founder (L4)** |
+| Real `hello@` / `privacy@` addresses | **Founder** |
+| `GOVERNANCE_SHA` is still the literal `<PINNED_SHA>`, and `GOVERNANCE_REPO` names a **renamed** repo — `MALULEKE-KS/system-design-template` is now `KSDRILL-SA/governova` | **Founder (L4)** |
+| Consent bundling: one checkbox records two POPIA purposes (#255) | **Founder** — product call |
+| **#271** LCP gap · **#269** intermittent profile 500 · **#253** four painful journeys | Stage 05/06 |
+| The E2E gate runs with an in-memory Redis stand-in, so **token deny-listing and login rate-limiting are never exercised** | with #252 |
+| Full-suite local test order-dependence (exposed by #263, not caused by it) | follow-up |
