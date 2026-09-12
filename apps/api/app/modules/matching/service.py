@@ -12,6 +12,7 @@ student id as an explicit predicate; reads run under the caller's context (RLS s
 
 from __future__ import annotations
 
+import logging
 from decimal import Decimal
 
 from app.common.errors import AppError
@@ -35,6 +36,8 @@ from app.modules.matching.stores import (
 )
 
 TOP_N = 10
+logger = logging.getLogger(__name__)
+
 LIVE_MODEL = "embed-local-v1"
 FALLBACK_MODEL = "fallback-overlap-v1"
 PROMPT_VERSION = "v1"
@@ -96,7 +99,23 @@ class MatchingService:
         max_calls = int(budget / cost) if cost > 0 else 0
         live = await self.breaker.allow_live(max_calls=max_calls)
 
-        scored = await self._score(actor_id, level, field, candidates, live=live)
+        # S8.51 — AI degradation. The breaker covers "no budget"; it does not cover
+        # the engine simply failing (provider down, a network fault, a bad vector).
+        # Without this, an embedding error reached the student as a 500 and matching
+        # was unavailable, when a tag/level overlap score was available all along.
+        # Matching is ADVISORY: a degraded answer beats no answer, and a student
+        # does not lose access to funding because a model call failed.
+        try:
+            scored = await self._score(actor_id, level, field, candidates, live=live)
+        except AppError:
+            raise  # a deliberate, student-facing refusal — not an engine fault
+        except Exception:
+            if not live:
+                raise  # the fallback scorer itself failed; there is nothing left to degrade to
+            logger.exception("matching: live engine failed, degrading to FALLBACK (S8.51)")
+            live = False
+            scored = await self._score(actor_id, level, field, candidates, live=False)
+
         mode = "LIVE" if live else "FALLBACK"
         model = LIVE_MODEL if live else FALLBACK_MODEL
 
