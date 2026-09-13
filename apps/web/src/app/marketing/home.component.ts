@@ -8,6 +8,7 @@ import {
   HeartHandshake,
   Lock,
   Search,
+  ShieldCheck,
   UserCheck,
   UserRound,
 } from 'lucide';
@@ -126,9 +127,10 @@ import { ORGANISATION } from '../content/organisation';
         aria-hidden="true"
       ></span>
 
-      <!-- 12 columns, split 6/6 with the mock bleeding past the container on
-           the right. An even two-column grid centres everything and reads as a
-           template; an asymmetric one reads as a composition. -->
+      <!-- 12 columns: the copy takes the left half and the photograph has the
+           right half to itself. The application card used to float there and hid
+           the students walking up the steps (Founder, 2026-09-13); it now has a
+           section of its own below, where it can be read rather than glimpsed. -->
       <div
         class="fl-container fl-on-dark grid items-center gap-x-12 gap-y-16 py-20 sm:py-24
                lg:grid-cols-12 lg:py-28"
@@ -183,74 +185,6 @@ import { ORGANISATION } from '../content/organisation';
               <ui-icon [name]="icons.search" size="sm" />
               Just browsing? See the bursaries
             </a>
-          </div>
-        </div>
-
-        <!-- The product, shown rather than described: the real status card a
-             student sees, built from the same tokens as the real one so it can
-             never drift into marketing fiction.
-
-             Entirely decorative — every claim it makes is stated in text
-             elsewhere on the page — so it is hidden from assistive technology
-             rather than read out as a fake application. Drawn in HTML and CSS,
-             so it costs no bytes and stays sharp on any screen. -->
-        <div class="relative hidden lg:col-span-6 lg:block" aria-hidden="true">
-          <!-- A light source above-left, so the card is tilted INTO the page
-               rather than sitting flat on it. Transform only, and removed
-               entirely under reduced motion. -->
-          <div class="fl-hero-tilt">
-            <div class="fl-hero-mock space-y-4 rounded-2xl p-6">
-            <div class="flex items-center justify-between">
-              <span class="fl-eyebrow border-[hsl(38_92%_50%/0.4)] text-[hsl(43_96%_78%)]">
-                Application · 2026
-              </span>
-              <span class="text-sm text-muted-foreground">FL-2026-0418</span>
-            </div>
-
-            <p class="text-xl font-semibold text-foreground">Your funding application</p>
-
-            <div class="space-y-3">
-              @for (row of mockSteps; track row.label) {
-                <div class="flex items-center gap-3">
-                  <span
-                    class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
-                    [class]="
-                      row.done
-                        ? 'bg-[hsl(38_92%_55%)] text-[hsl(222_47%_11%)]'
-                        : 'border border-border text-muted-foreground'
-                    "
-                    >{{ row.done ? '✓' : row.n }}</span
-                  >
-                  <span class="flex-1 text-sm text-foreground">{{ row.label }}</span>
-                  <span class="text-xs text-muted-foreground">{{ row.when }}</span>
-                </div>
-              }
-            </div>
-
-              <!-- The card's own footer, in two columns.
-
-                   The matches figure used to be a card floating outside this
-                   one. It clashed: the tilt throws the outer corners across
-                   the gutter, so a position that looks clear in the markup
-                   crowds the headline on the page — and it did so differently
-                   at every width, which is the kind of fragility a hero should
-                   never carry. Inside the card it cannot collide with anything
-                   and it reads as part of the product, which is the point. -->
-              <div class="grid grid-cols-2 gap-3 border-t border-border pt-4">
-                <div>
-                  <p class="text-xs text-muted-foreground">Reviewed by</p>
-                  <p class="mt-1 text-sm font-medium text-foreground">
-                    A person — never an algorithm
-                  </p>
-                </div>
-                <div>
-                  <p class="text-xs text-muted-foreground">Matches for you</p>
-                  <p class="mt-1 text-sm font-medium text-foreground">
-                    <span class="tabular">7</span> bursaries you fit
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -313,6 +247,94 @@ import { ORGANISATION } from '../content/organisation';
           </li>
         }
       </ol>
+    </fl-section>
+
+    <!-- ================= WHERE YOU STAND ================= -->
+    <!-- The product, shown rather than described: the status card a student
+         sees, built from the same tokens as the real dashboard so it cannot
+         drift into marketing fiction. It moved here from the hero, where it
+         covered the photograph.
+
+         The card is decorative and hidden from assistive technology: every
+         claim it makes is stated in the copy beside it, so nothing is lost and
+         a screen reader is not read a sample application as if it were real.
+         Unlike in the hero, it is shown on phones too — most students will
+         only ever see this page on one. -->
+    <fl-section tone="navy">
+      <div class="grid items-center gap-12 lg:grid-cols-12">
+        <div class="lg:col-span-6" uiReveal>
+          <p><span class="fl-eyebrow font-semibold uppercase tracking-wider">Your application</span></p>
+          <h2 id="where-you-stand" class="fl-display mt-4 text-3xl sm:text-4xl">
+            Always know where you stand
+          </h2>
+          <p class="mt-4 max-w-prose text-lg text-muted-foreground">
+            Every step shows on your dashboard as it happens: when we receive your application,
+            when a reviewer has it, and the decision — with the reasons.
+          </p>
+          <ul class="mt-8 space-y-4">
+            @for (point of standPoints; track point.title) {
+              <li class="flex items-start gap-3">
+                <ui-icon-tile [icon]="point.icon" tone="gold" size="sm" />
+                <div class="min-w-0">
+                  <p class="font-semibold">{{ point.title }}</p>
+                  <p class="mt-0.5 text-sm text-muted-foreground">{{ point.body }}</p>
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div class="lg:col-span-6" aria-hidden="true" uiReveal [uiRevealDelay]="80">
+          <!-- A light source above-left, so the card is tilted INTO the page
+               rather than sitting flat on it. Wide screens only, transform only,
+               and removed entirely under reduced motion. -->
+          <div class="fl-card-tilt mx-auto max-w-md lg:max-w-none">
+            <div class="fl-status-card space-y-4 rounded-2xl p-6">
+              <div class="flex items-center justify-between gap-3">
+                <span class="fl-eyebrow border-[hsl(38_92%_50%/0.4)] text-[hsl(43_96%_78%)]">
+                  Application · 2026
+                </span>
+                <span class="text-sm text-muted-foreground">FL-2026-0418</span>
+              </div>
+
+              <p class="text-xl font-semibold text-foreground">Your funding application</p>
+
+              <div class="space-y-3">
+                @for (row of mockSteps; track row.label) {
+                  <div class="flex items-center gap-3">
+                    <span
+                      class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
+                      [class]="
+                        row.done
+                          ? 'bg-[hsl(38_92%_55%)] text-[hsl(222_47%_11%)]'
+                          : 'border border-border text-muted-foreground'
+                      "
+                      >{{ row.done ? '✓' : row.n }}</span
+                    >
+                    <span class="flex-1 text-sm text-foreground">{{ row.label }}</span>
+                    <span class="text-xs text-muted-foreground">{{ row.when }}</span>
+                  </div>
+                }
+              </div>
+
+              <div class="grid grid-cols-2 gap-3 border-t border-border pt-4">
+                <div>
+                  <p class="text-xs text-muted-foreground">Reviewed by</p>
+                  <p class="mt-1 text-sm font-medium text-foreground">
+                    A person — never an algorithm
+                  </p>
+                </div>
+                <div>
+                  <p class="text-xs text-muted-foreground">Matches for you</p>
+                  <p class="mt-1 text-sm font-medium text-foreground">
+                    <span class="tabular">7</span> bursaries you fit
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </fl-section>
 
     <!-- ================= TWO DOORS ================= -->
@@ -388,11 +410,8 @@ import { ORGANISATION } from '../content/organisation';
 
     /* Keep the people in view.
 
-       Wide screens anchor right. The floating application card sits over the
-       middle-right of the hero, and at a hero this height no crop clears it:
-       anchoring to the bottom was tried and left two heads peeking over the
-       card's edge. So the card became glass instead (.fl-hero-mock) — the
-       students walk up the steps BEHIND the application, visible through it.
+       Wide screens anchor right: the copy holds the left half, and the
+       photograph has the right half to itself.
 
        Phones anchor LEFT and top: the portrait crop is wider than a phone, and
        taking the spare width from the left moves the students out from under
@@ -406,41 +425,37 @@ import { ORGANISATION } from '../content/organisation';
       }
     }
 
-    /* The floating product cards. Glass over the hero's navy, with a two-layer
-       shadow and a top highlight — the same physics as a real card, at a
-       larger elevation because these are floating above the page.
+    /* The status card, on the navy band. An opaque raised surface with a
+       two-layer shadow and a top highlight — the same physics as a real card.
 
        Literal colours on purpose: Angular namespaces CSS custom properties
        inside a component styles block, so a design token referenced here
        would be a different variable than the one the global sheet defines. */
-    .fl-hero-mock {
-      /* Glass over the photograph, so the students behind the card show through
-         it rather than disappearing behind an opaque panel. The card's own text
-         is measured over whatever the blur produces, by the same contrast spec
-         as the rest of the hero — the alpha is only as low as that allows. */
-      background: hsl(222 45% 14% / 0.66);
+    .fl-status-card {
+      background: hsl(222 45% 16%);
       border: 1px solid hsl(213 25% 45% / 0.45);
-      backdrop-filter: saturate(150%) blur(20px);
-      -webkit-backdrop-filter: saturate(150%) blur(20px);
       box-shadow:
         inset 0 1px 0 0 hsl(0 0% 100% / 0.08),
         0 40px 80px -32px hsl(0 0% 0% / 0.8);
     }
 
-    /* The tilt. A card lying perfectly flat on a page reads as a diagram; a
-       few degrees of rotation with a lifted right edge reads as an object on a
-       desk. Perspective is on the wrapper so the child keeps crisp text. */
-    .fl-hero-tilt {
-      transform: perspective(1600px) rotateY(-7deg) rotateX(2deg) rotate(-1.2deg);
-      transform-style: preserve-3d;
-      position: relative;
+    /* The tilt. A card lying perfectly flat reads as a diagram; a few degrees
+       of rotation with a lifted right edge reads as an object on a desk.
+       Wide screens only: on a phone the card fills the width, and a rotated
+       full-width card just looks crooked. Perspective is on the wrapper so the
+       child keeps crisp text. */
+    @media (min-width: 1024px) {
+      .fl-card-tilt {
+        transform: perspective(1600px) rotateY(-7deg) rotateX(2deg) rotate(-1.2deg);
+        transform-style: preserve-3d;
+        position: relative;
+      }
     }
 
     /* Nobody should be shown a rotated interface if they have asked for less
-       motion — the tilt is static, but it is still a spatial effect, and it
-       makes the mock harder to read for some people. */
+       motion — the tilt is static, but it is still a spatial effect. */
     @media (prefers-reduced-motion: reduce) {
-      .fl-hero-tilt {
+      .fl-card-tilt {
         transform: none;
       }
     }
@@ -452,7 +467,8 @@ import { ORGANISATION } from '../content/organisation';
 
        Wide screens: the copy never goes past ~46% of the width, so the stops
        that protect it (0–45%) are unchanged, and the right-hand side — image
-       only — opens up so the photograph actually reads. */
+       only, now that the card has moved out of the hero — opens up so the
+       photograph actually reads. */
     .fl-hero-scrim {
       background:
         radial-gradient(60% 80% at 85% 20%, hsl(38 92% 50% / 0.14) 0%, transparent 70%),
@@ -516,6 +532,25 @@ export class MarketingHomeComponent {
     student: UserRound as IconNode,
     donor: HeartHandshake as IconNode,
   };
+
+  /** What the card beside them shows, said in words (the card is hidden from assistive tech). */
+  protected readonly standPoints = [
+    {
+      icon: UserCheck as IconNode,
+      title: 'A person makes the decision',
+      body: 'Software helps find your matches. It never approves or declines you.',
+    },
+    {
+      icon: Search as IconNode,
+      title: 'Bursaries you actually fit',
+      body: 'Matched to your profile, so you know where else to apply while you wait.',
+    },
+    {
+      icon: ShieldCheck as IconNode,
+      title: 'Your account, in plain sight',
+      body: 'Every sign-in and change is listed, so you would notice one that was not yours.',
+    },
+  ];
 
   /** The rows inside the decorative product card. Illustration, not data. */
   protected readonly mockSteps = [

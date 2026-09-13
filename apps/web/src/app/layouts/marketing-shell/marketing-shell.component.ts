@@ -94,7 +94,7 @@ import { ThemeToggleComponent } from '../../core/theme-toggle.component';
               <nav [attr.aria-label]="column.title">
                 <h2 class="fl-caption">{{ column.title }}</h2>
                 <ul class="mt-5 space-y-3">
-                  @for (link of column.links; track link.route) {
+                  @for (link of column.links; track link.label) {
                     <li>
                       <a
                         [routerLink]="link.route"
