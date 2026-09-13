@@ -350,6 +350,23 @@ paths:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ApplicationPage' } } } }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /admin/applications/{id}:
+    get:
+      operationId: adminGetApplication
+      summary: One application, for review (ADMIN_REVIEWER — S3.21 deny-by-default)
+      description: >-
+        The reviewer's read of a single application (A02). The student endpoint
+        `getApplication` is ownership-scoped (ST-2.3) and requires APPLICATION_READ_OWN, which a
+        reviewer does not hold — so A02 had been calling an endpoint that returns 403 to exactly
+        the people who use it, and had only ever rendered against dev preview fixtures. This is
+        the reviewer's own door: APPLICATION_REVIEW, reviewer-scoped RLS, and the student's
+        motivation always included, because a reviewer reads the applicant's own words first.
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /admin/applications/{id}/review:
     post:
       operationId: adminReview

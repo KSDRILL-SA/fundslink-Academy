@@ -203,6 +203,17 @@ class ApplicationService:
             raise AppError("application_not_found", "Application not found", status_code=404)
         return await self._to_application(row, with_motivation=row[1] == "OTHER")
 
+    async def admin_get_application(self, *, application_id: str) -> Application:
+        """One application for a reviewer (A02).
+
+        Runs under the reviewer's RLS context, which admits any application, and always includes
+        the motivation: a reviewer reads the applicant's own words first, whatever the category.
+        """
+        row = await self.apps.get_full(application_id)
+        if row is None:
+            raise AppError("application_not_found", "Application not found", status_code=404)
+        return await self._to_application(row, with_motivation=True)
+
     async def list_my_applications(
         self, *, actor_id: str, cursor: str | None, limit: int | None
     ) -> ApplicationPage:

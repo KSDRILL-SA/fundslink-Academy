@@ -104,6 +104,16 @@ async def admin_list_applications(
     return await ApplicationService(session).admin_list(status=status, cursor=cursor, limit=limit)
 
 
+@router.get("/admin/applications/{id}", operation_id="adminGetApplication")
+async def admin_get_application(
+    id: str,  # noqa: A002 — matches the contract's path parameter name
+    current: CurrentUser = Depends(require(Permission.APPLICATION_REVIEW)),
+    session=Depends(get_session),
+) -> Application:
+    """A02's read. The student endpoint is ownership-scoped and 403s a reviewer (#288)."""
+    return await ApplicationService(session).admin_get_application(application_id=id)
+
+
 @router.post("/admin/applications/{id}/review", operation_id="adminReview")
 async def admin_review(
     id: str,

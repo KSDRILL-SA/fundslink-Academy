@@ -424,6 +424,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/applications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One application, for review (ADMIN_REVIEWER — S3.21 deny-by-default)
+         * @description The reviewer's read of a single application (A02). The student endpoint `getApplication` is ownership-scoped (ST-2.3) and requires APPLICATION_READ_OWN, which a reviewer does not hold — so A02 had been calling an endpoint that returns 403 to exactly the people who use it, and had only ever rendered against dev preview fixtures. This is the reviewer's own door: APPLICATION_REVIEW, reviewer-scoped RLS, and the student's motivation always included, because a reviewer reads the applicant's own words first.
+         */
+        get: operations["adminGetApplication"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/applications/{id}/review": {
         parameters: {
             query?: never;
@@ -1480,6 +1500,30 @@ export interface operations {
                 };
             };
             403: components["responses"]["Forbidden"];
+        };
+    };
+    adminGetApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Application"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     adminReview: {

@@ -1,4 +1,4 @@
-"""The review queue is ordered for triage, and SLAs come from config — D-002 · D-013 (#286).
+"""The review queue is ordered for triage, and SLAs come from config — D-002 · D-013 (#288).
 
 Completeness audit gap G2. The queue was ``ORDER BY created_at DESC``: newest first, priority
 ignored. A CRITICAL application — Lerato, defunded at year-end, the persona D-002 exists for —
