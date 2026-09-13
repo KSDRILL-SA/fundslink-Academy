@@ -41,7 +41,11 @@ const G4 = { transferKb: 200, lcpMs: 2500, cls: 0.1 };
 
 const ROUTES = [
   // budgetKb is a ratchet just above the current measurement, not the G4 target.
-  { name: 'marketing home (anonymous)', path: '/', budgetKb: 205 },
+  // Home carries the Founder-approved hero photograph (L4, 2026-09-13): +52 kB, the 1536w desktop
+  // AVIF. Raised deliberately and recorded here, not quietly. G4's <= 200 kB applies to student
+  // routes; this is the anonymous marketing page. The image is preloaded, so it costs bytes and
+  // not time — LCP measured 2.86-2.91 s with it against 2.9-3.2 s before it existed.
+  { name: 'marketing home (anonymous)', path: '/', budgetKb: 255 },
   { name: 'browse bursaries (public)', path: '/bursaries', budgetKb: 208 },
 ];
 

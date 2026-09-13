@@ -78,14 +78,94 @@ describe('marketing home (rendered)', () => {
       expect(text()).toContain('Just browsing?');
     });
 
-    it('renders a finished hero with no photograph', () => {
-      // §3.1 asks for a real, dignified photo of a South African student and
-      // rejects stock. We have none, so the scrim must stand alone — and take
-      // an image later without the layout changing.
-      const scrim = el().querySelector('.fl-hero-scrim');
-      expect(scrim).toBeTruthy();
-      expect(scrim?.getAttribute('aria-hidden')).toBe('true');
-      expect(el().querySelector('.fl-hero img')).toBeNull();
+    describe('the hero image', () => {
+      const img = () => el().querySelector<HTMLImageElement>('.fl-hero img');
+      const sources = () =>
+        Array.from(el().querySelectorAll<HTMLSourceElement>('.fl-hero picture source'));
+
+      it('keeps the scrim over it, so the text holds AA contrast', () => {
+        const scrim = el().querySelector('.fl-hero-scrim');
+        expect(scrim).toBeTruthy();
+        expect(scrim?.getAttribute('aria-hidden')).toBe('true');
+      });
+
+      it('describes the scene and never claims the people are our students', () => {
+        // Founder-supplied, art-directed image of the setting (L4, 2026-09-13).
+        // Presenting it as a FundsLink beneficiary would be fabricating a person.
+        const alt = img()?.getAttribute('alt') ?? '';
+        expect(alt.length).toBeGreaterThan(20);
+        expect(alt).not.toMatch(/fundslink|our students?|beneficiar|funded|recipient/i);
+      });
+
+      it('reserves its box so the page does not shift when it arrives', () => {
+        expect(img()?.getAttribute('width')).toBe('1536');
+        expect(img()?.getAttribute('height')).toBe('1024');
+      });
+
+      it('is fetched early, as the LCP candidate', () => {
+        expect(img()?.getAttribute('fetchpriority')).toBe('high');
+        expect(img()?.getAttribute('loading')).toBe('eager');
+      });
+
+      it('offers the phone crop first, and AVIF before WebP within each crop', () => {
+        // A browser takes the FIRST <source> it can use, so order is behaviour.
+        const described = sources().map((s) => `${s.media ? 'mobile' : 'desktop'}:${s.type}`);
+        expect(described).toEqual([
+          'mobile:image/avif',
+          'mobile:image/webp',
+          'desktop:image/avif',
+          'desktop:image/webp',
+        ]);
+      });
+
+      it('is preloaded with exactly the srcsets the <picture> uses, or it would download twice', () => {
+        const { readFileSync } = require('node:fs') as typeof import('node:fs');
+        const { join } = require('node:path') as typeof import('node:path');
+        const html = readFileSync(join(__dirname, '..', '..', 'index.html'), 'utf8');
+        const avif = sources().filter((s) => s.type === 'image/avif');
+
+        for (const source of avif) {
+          const media = source.getAttribute('media') ?? '(min-width: 768px)';
+          const srcset = source.getAttribute('srcset') ?? '';
+          expect(html, `index.html preload is missing ${media} / ${srcset}`).toContain(
+            `['${media}', '${srcset}']`,
+          );
+        }
+        // Scoped to the home route, so /app never pays for marketing imagery (P6).
+        expect(html).toContain("location.pathname !== '/'");
+      });
+
+      it('references only files that exist, so it can never fail as a silent blank', () => {
+        const { existsSync } = require('node:fs') as typeof import('node:fs');
+        const { join } = require('node:path') as typeof import('node:path');
+        const publicDir = join(__dirname, '..', '..', '..', 'public');
+        const urls = [
+          img()?.getAttribute('src') ?? '',
+          ...sources().flatMap((s) =>
+            (s.getAttribute('srcset') ?? '').split(',').map((c) => c.trim().split(/\s+/)[0]),
+          ),
+        ].filter(Boolean);
+
+        expect(urls.length).toBe(9);
+        for (const url of urls) {
+          expect(existsSync(join(publicDir, url)), `${url} is missing from public/`).toBe(true);
+        }
+      });
+    });
+  });
+
+  describe('the static meta description', () => {
+    it('equals the approved positioning line, for crawlers and link previews', () => {
+      // Static, because a WhatsApp preview or a search crawler reads index.html without running
+      // the app. It carried the withdrawn "fall through the NSFAS gap" wording long after the page
+      // itself had changed — nothing compared the two.
+      const { readFileSync } = require('node:fs') as typeof import('node:fs');
+      const { join } = require('node:path') as typeof import('node:path');
+      const html = readFileSync(join(__dirname, '..', '..', 'index.html'), 'utf8');
+      const { ORGANISATION } = require('../content/organisation') as typeof import('../content/organisation');
+
+      expect(html).toContain(`<meta name="description" content="${ORGANISATION.positioning}">`);
+      expect(html).not.toMatch(/NSFAS gap|fall(s)? through the/i);
     });
   });
 

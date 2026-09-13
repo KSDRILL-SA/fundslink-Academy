@@ -58,3 +58,7 @@ apps/web/blob-report/
 
 # pip-audit lockfile export (CI artefact, never committed)
 apps/api/requirements.audit.txt
+
+# Design masters (full-resolution sources for committed, optimised assets). Kept locally, never
+# committed: public/images/ holds the AVIF/WebP that ship.
+.design-sources/
