@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FundsLink Academy">
+  <title>FundsLink Academy</title>
+  <desc>Canonical mark — a navy doorway of access framing a gold rising figure (Concept A, Founder-chosen).</desc>
+  <!-- Navy portal: trust, the door of access -->
+  <path d="M14 57 V31 a18 18 0 0 1 36 0 V57" fill="none" stroke="#1b2c4d" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Gold rising figure: head + ascending path -->
+  <circle cx="32" cy="26" r="5.5" fill="#f59e0b"/>
+  <path d="M22 48 L32 35 L42 48" fill="none" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

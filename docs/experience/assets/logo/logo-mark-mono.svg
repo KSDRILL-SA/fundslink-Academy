@@ -1,7 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="FundsLink Academy">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" role="img" aria-label="FundsLink Academy">
   <title>FundsLink Academy — monochrome</title>
-  <desc>Single-colour mark using currentColor — inherits text colour so it themes (navy on light, white on dark).</desc>
-  <path d="M14 57 V31 a18 18 0 0 1 36 0 V57" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="32" cy="26" r="5.5" fill="currentColor"/>
-  <path d="M22 48 L32 35 L42 48" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <desc>The Rising Door in one colour (currentColor), so it themes with its surroundings and prints in one ink.</desc>
+  <path class="door" d="M4.5 21V10a7.5 7.5 0 0 1 15 0v11" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M7.2 21v-2.5h3v-2.5h3v-2.5h3.4v7.5z" fill="currentColor" stroke="currentColor" stroke-width="0.9" stroke-linejoin="round"/>
+  <g transform="translate(8.94 5.08) scale(0.38)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z" fill="currentColor" stroke="currentColor" stroke-width="1.3"/>
+    <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" fill="currentColor" stroke="currentColor" stroke-width="1.3" fill-opacity="0.75" stroke-opacity="0.75"/>
+    <path d="M22 10v6" stroke="currentColor" stroke-width="2.2"/>
+  </g>
 </svg>
