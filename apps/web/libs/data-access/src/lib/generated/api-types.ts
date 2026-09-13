@@ -503,7 +503,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** My saved channel preferences, per trigger (BR-N02) */
+        get: operations["getPreferences"];
         /** Update channel preferences (SMS upgrades per trigger — MASTER-SPEC §18.1) */
         put: operations["putPreferences"];
         post?: never;
@@ -1814,6 +1815,26 @@ export interface operations {
             };
         };
     };
+    getPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
+            };
+        };
+    };
     putPreferences: {
         parameters: {
             query?: never;
@@ -1836,6 +1857,7 @@ export interface operations {
                     "application/json": components["schemas"]["Preferences"];
                 };
             };
+            422: components["responses"]["Validation"];
         };
     };
     dataExport: {

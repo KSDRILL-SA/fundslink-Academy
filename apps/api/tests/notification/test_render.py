@@ -7,13 +7,14 @@ and the rejection always keeps a door open (P2) and never frames the person as a
 
 from __future__ import annotations
 
+from app.modules.application.jobs import TRIGGER as RETURN_REMINDER
 from app.modules.application.state_machine import STATUS_TRIGGER
 from app.modules.notification.worker import _DEFAULT_MESSAGE, _TEMPLATES, _render
 
-# Triggers enqueued outside the application state machine (the tracking jobs).
-_TRACKING_TRIGGERS = ("TRACKED_DEADLINE_REMINDER", "TRACKED_FOLLOW_UP")
+# Triggers enqueued outside the application state machine (the scheduled jobs).
+_JOB_TRIGGERS = ("TRACKED_DEADLINE_REMINDER", "TRACKED_FOLLOW_UP", RETURN_REMINDER)
 
-_ALL_TRIGGERS = sorted({t for t in STATUS_TRIGGER.values() if t} | set(_TRACKING_TRIGGERS))
+_ALL_TRIGGERS = sorted({t for t in STATUS_TRIGGER.values() if t} | set(_JOB_TRIGGERS))
 
 
 def test_every_real_trigger_has_a_template():

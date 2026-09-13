@@ -415,6 +415,46 @@ class OutboxRepository(BaseRepository):
         )
 
 
+class ReturnReminderScanRepository(BaseRepository):
+    """Open returns owed a reminder (D-006) — scanned by ``app.modules.application.jobs``."""
+
+    # Both kinds share one shape; each is sent at most once per return (the NOT EXISTS below), so a
+    # job that runs twice in a day, or catches up after a missed day, never nags twice.
+    _SCAN = (
+        "SELECT ar.id, fa.id, fa.student_profile_id, ar.respond_by"
+        "  FROM application_return ar"
+        "  JOIN funding_application fa ON fa.id = ar.application_id"
+        " WHERE ar.resolved_at IS NULL AND ar.respond_by IS NOT NULL"
+        "   AND fa.deleted_at IS NULL AND fa.status = 'RETURNED_FOR_INFO'"
+        "   AND {window}"
+        "   AND NOT EXISTS ("
+        "     SELECT 1 FROM notification_outbox o"
+        "      WHERE o.user_id = fa.student_profile_id"
+        "        AND o.trigger = 'APPLICATION_RETURN_REMINDER'"
+        "        AND o.payload->>'return_id' = ar.id AND o.payload->>'kind' = :kind)"
+        " ORDER BY ar.respond_by, ar.id"
+    )
+
+    async def due_soon(self) -> list:
+        """Not yet past ``respond_by``, and within ``return_reminder_lead_days`` of it (config)."""
+        return await sql.fetch_all(
+            self.session,
+            self._SCAN.format(
+                window="ar.respond_by >= current_date AND ar.respond_by <= current_date"
+                " + (SELECT value::int FROM config WHERE key = 'return_reminder_lead_days')"
+            ),
+            kind="BEFORE_DUE",
+        )
+
+    async def past_due(self) -> list:
+        """``respond_by`` has passed and the student has not sent anything yet."""
+        return await sql.fetch_all(
+            self.session,
+            self._SCAN.format(window="ar.respond_by < current_date"),
+            kind="AFTER_DUE",
+        )
+
+
 class AppealRepository(BaseRepository):
     async def exists_for(self, application_id: str) -> bool:
         row = await sql.fetch_one(

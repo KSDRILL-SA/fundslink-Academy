@@ -98,6 +98,11 @@ export const ERROR_PRESENTATION: Readonly<Record<string, ErrorPresentation>> = {
       'An account already exists with this ID number. Sign in to it, or contact support if this is not you.',
     retryable: false,
   },
+  invalid_notification_trigger: {
+    title: "We couldn't save those preferences",
+    message: 'Reload the page and choose them again.',
+    retryable: true,
+  },
   invalid_consent_purpose: {
     title: "We couldn't save that preference",
     message: 'Reload the page and set it again.',

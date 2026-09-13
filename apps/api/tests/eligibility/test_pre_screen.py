@@ -37,6 +37,20 @@ def test_submit_missing_document_is_returned_with_fix_list(elig_client):
     assert body["pre_screen"]["cycle_no"] == 1
 
 
+
+def test_a_return_is_due_back_after_the_configured_window_d006(elig_client, admin_conn):
+    """D-006: respond_by comes from config (return_respond_days). It was a literal 14 in code."""
+    token, _ = student_with_profile(elig_client)
+    app = create_app(elig_client, token)
+    assert submit(elig_client, token, app["id"]).json()["status"] == "RETURNED_FOR_INFO"
+    due_in_days, configured = admin_conn.execute(
+        "SELECT ar.respond_by - current_date,"
+        " (SELECT value::int FROM config WHERE key = 'return_respond_days')"
+        " FROM application_return ar WHERE ar.application_id = %s",
+        (app["id"],),
+    ).fetchone()
+    assert due_in_days == configured
+
 def test_expired_required_document_is_returned_not_rejected_d005(elig_client, admin_conn):
     """D-005 / BR-E10: a document that lapsed while waiting → RETURN with a kind 'expired' fix."""
     token, uid = student_with_profile(elig_client)

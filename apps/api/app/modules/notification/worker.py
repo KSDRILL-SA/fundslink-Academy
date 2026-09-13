@@ -78,6 +78,14 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
         "Heads up — a bursary you're tracking has a deadline in a few days. Sign in to check the"
         " date and make sure your application is in on time. You've got this.",
     ),
+    # D-006: remind, never punish. One message serves both reminders (before and after respond-by),
+    # so it names no date and threatens nothing — the application stays open either way.
+    "APPLICATION_RETURN_REMINDER": (
+        "A reminder about your FundsLink application",
+        "Just a reminder: your application is waiting for a few things from you before a reviewer"
+        " can look at it. Sign in to see exactly what's needed. If you need more time, that's"
+        " okay — your application stays open, and nothing is held against you.",
+    ),
     "TRACKED_FOLLOW_UP": (
         "Still waiting to hear back?",
         "It's been a while since there was movement on a bursary you're tracking. A gentle"

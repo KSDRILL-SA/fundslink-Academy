@@ -24,6 +24,8 @@
 ## Background workers & schedulers (deploy wiring — TAD §7)
 - [ ] Notification outbox worker runs **continuously**: `python -m app.modules.notification.worker --loop` under a process supervisor / Railway worker — drains `notification_outbox` with `FOR UPDATE SKIP LOCKED`, retry/backoff/DEAD. *Without a running worker, no email/SMS/in-app message is delivered.*
 - [ ] Tracking reminders scheduled **daily**: the T-3 deadline + 30/45/60-day silence jobs (`app.modules.tracking.jobs`) run on a daily cron; they enqueue into the same outbox the worker drains.
-- [ ] Both run under the least-privileged `fundslink_app` role (SYSTEM RLS context) — never the owner/superuser.
+- [ ] Return reminders scheduled **daily**: `python -m app.modules.application.jobs` reminds a student once before a returned application's `respond_by` (`return_reminder_lead_days`) and once after it passes (D-006, #298). It never changes the application; it only enqueues into the outbox, and it is safe to run twice.
+- [ ] Partition maintenance scheduled **daily**: `python -m app.db.partitions` keeps month N+12 ahead **and re-seals every partition** from the app roles (#293); `python -m app.db.integrity` fails if one is reachable.
+- [ ] All of these run under the least-privileged `fundslink_app` role (SYSTEM RLS context) — never the owner/superuser. (Partition maintenance is the exception: DDL needs the owner.)
 ## Done-when (MASTER-SPEC §3)
 - [ ] One real student: register → profile → apply → matched → tracked, end-to-end in production

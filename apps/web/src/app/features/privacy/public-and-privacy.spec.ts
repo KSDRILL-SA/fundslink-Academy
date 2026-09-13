@@ -6,7 +6,11 @@ import { provideRouter } from '@angular/router';
 import { describeViolations, findA11yViolations } from 'ui/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { BursariesComponent } from '../bursaries/bursaries.component';
-import { NotificationsComponent } from '../notifications/notifications.component';
+import {
+  NotificationsComponent,
+  PREFERENCE_ROWS,
+  TRIGGER_WORDS,
+} from '../notifications/notifications.component';
 import { PrivacyComponent } from './privacy.component';
 import { routes } from '../../app.routes';
 
@@ -102,6 +106,9 @@ describe('S20 notifications', () => {
   beforeEach(() => {
     ({ fixture, http } = setup(NotificationsComponent));
     http.expectOne((r) => r.url === '/api/v1/notifications/me').flush({ items: [], meta: {} });
+    http
+      .expectOne((r) => r.url === '/api/v1/notifications/preferences' && r.method === 'GET')
+      .flush({ per_trigger: {} });
     fixture.detectChanges();
   });
 
@@ -162,9 +169,106 @@ describe('S20 notifications', () => {
     expect(text()).not.toContain('APPLICATION_SUBMITTED');
   });
 
+  it('names only triggers that exist, and every one a student can receive (#298)', () => {
+    // Two rows used to save under invented codes the worker never looks up. Read the migrations
+    // that seed lk_notify_trigger and hold the screen to them.
+    const { readFileSync, readdirSync } = require('node:fs') as typeof import('node:fs');
+    const { join } = require('node:path') as typeof import('node:path');
+    const dir = join(__dirname, '..', '..', '..', '..', '..', 'api', 'alembic', 'versions', 'sql');
+    const seeded = new Set<string>();
+    for (const file of readdirSync(dir).filter((f) => !f.includes('down'))) {
+      const sql = readFileSync(join(dir, file), 'utf8');
+      for (const block of sql.matchAll(/INSERT INTO lk_notify_trigger[^;]*;/g)) {
+        for (const code of block[0].matchAll(/\('([A-Z_]+)'/g)) {
+          seeded.add(code[1]);
+        }
+      }
+    }
+    expect(seeded.size).toBeGreaterThan(8);
+
+    const offered = PREFERENCE_ROWS.flatMap((row) => row.triggers);
+    expect(offered.filter((code) => !seeded.has(code))).toEqual([]);
+    // Account verification is not a preference: it is how an account is confirmed at all.
+    expect([...seeded].filter((code) => code !== 'ACCOUNT_VERIFICATION' && !offered.includes(code)))
+      .toEqual([]);
+    expect(Object.keys(TRIGGER_WORDS).sort()).toEqual([...seeded].sort());
+  });
+
   it('has no serious or critical accessibility violations', async () => {
     const failures = await findA11yViolations(el());
     expect(failures, describeViolations(failures)).toEqual([]);
+  });
+});
+
+describe('S20 notifications — saved choices and history', () => {
+  let fixture: ReturnType<typeof setup<NotificationsComponent>>['fixture'];
+  let http: HttpTestingController;
+  const el = () => fixture.nativeElement as HTMLElement;
+  const text = () => el().textContent?.replace(/\s+/g, ' ') ?? '';
+  const saveButton = () =>
+    Array.from(el().querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Save preferences'),
+    ) as HTMLButtonElement;
+
+  beforeEach(() => {
+    ({ fixture, http } = setup(NotificationsComponent));
+  });
+
+  it('opens with the choices the student saved, and keeps them when saving again', () => {
+    http.expectOne((r) => r.url === '/api/v1/notifications/me').flush({ items: [], meta: {} });
+    http
+      .expectOne((r) => r.url === '/api/v1/notifications/preferences' && r.method === 'GET')
+      .flush({ per_trigger: { DECISION_REJECTED: ['EMAIL', 'IN_APP', 'SMS'] } });
+    fixture.detectChanges();
+
+    const decision = el().querySelector<HTMLInputElement>('#sms-DECISION_APPROVED');
+    expect(decision?.checked).toBe(true);
+
+    saveButton().click();
+    const body = http.expectOne(
+      (r) => r.url === '/api/v1/notifications/preferences' && r.method === 'PUT',
+    ).request.body as { per_trigger: Record<string, string[]> };
+    // Both decision codes carry the SMS the student chose; nothing else gained or lost one.
+    expect(body.per_trigger['DECISION_APPROVED']).toContain('SMS');
+    expect(body.per_trigger['DECISION_REJECTED']).toContain('SMS');
+    expect(Object.entries(body.per_trigger).filter(([, c]) => c.includes('SMS'))).toHaveLength(2);
+  });
+
+  it('will not save until the saved choices have loaded, so it cannot wipe them', () => {
+    http.expectOne((r) => r.url === '/api/v1/notifications/me').flush({ items: [], meta: {} });
+    const prefs = http.expectOne(
+      (r) => r.url === '/api/v1/notifications/preferences' && r.method === 'GET',
+    );
+    fixture.detectChanges();
+    expect(saveButton().disabled).toBe(true);
+
+    prefs.flush({ error: { code: 'internal_error', message: 'x', request_id: 'r' } },
+      { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(saveButton().disabled).toBe(true);
+    expect(text()).toContain('We could not load your saved choices');
+  });
+
+  it('says what each message was about and whether it was actually sent', () => {
+    http.expectOne((r) => r.url === '/api/v1/notifications/me').flush({
+      items: [
+        { id: 'n1', trigger: 'APPLICATION_RETURN_REMINDER', channels: ['EMAIL'], state: 'PENDING',
+          created_at: '2026-09-13T08:44:00Z' },
+        { id: 'n2', trigger: 'DECISION_APPROVED', channels: ['EMAIL'], state: 'DEAD',
+          created_at: '2026-09-12T08:44:00Z' },
+      ],
+      meta: {},
+    });
+    http
+      .expectOne((r) => r.url === '/api/v1/notifications/preferences' && r.method === 'GET')
+      .flush({ per_trigger: {} });
+    fixture.detectChanges();
+
+    expect(text()).toContain('A reminder that we need something from you');
+    expect(text()).toContain('Waiting to send');
+    expect(text()).toContain('We could not deliver this one');
+    expect(text()).not.toContain('sent by');
+    expect(text()).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
   });
 });
 
