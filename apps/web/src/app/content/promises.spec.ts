@@ -74,6 +74,16 @@ const WITHDRAWN: readonly { text: RegExp; because: string }[] = [
     text: /(what|anything) you (tell|discussed with|share with) a counsellor/i,
     because: 'There is no counselling service — only a role in the permission model.',
   },
+  {
+    text: /counted by when each application was waitlisted/i,
+    because:
+      'The waitlist is postgraduate first, then greatest need, then time (E4 / D-017, migration 0020) — not arrival order.',
+  },
+  {
+    text: /tell you (the moment|when) your (position|place) changes|you do not need to check/i,
+    because:
+      'Nothing detects a change in waitlist position or notifies about one, and under need ordering a place can get worse when a higher-need student joins.',
+  },
 ];
 
 describe('withdrawn claims stay withdrawn', () => {

@@ -12,6 +12,9 @@ import {
 /** The decision statuses this screen renders, and nothing else. */
 const APPROVED = 'APPROVED';
 const WAITLISTED = 'APPROVED_WAITLISTED';
+const REJECTED = 'REJECTED';
+/** Declined, and the appeal has already been heard (BR-E07). */
+const REJECTED_FINAL = 'REJECTED_FINAL';
 
 /**
  * S16 — the decision screens.
@@ -78,7 +81,7 @@ const WAITLISTED = 'APPROVED_WAITLISTED';
             <!-- The live number the whole screen exists for (E4). -->
             <p class="fl-lead mt-3 max-w-prose">
               You are number <span class="tabular font-semibold text-foreground">{{ place }}</span>
-              on the waitlist, counted by when each application was waitlisted.
+              on the waitlist.
             </p>
           } @else {
             <p class="fl-lead mt-3 max-w-prose">You are on the waitlist.</p>
@@ -86,9 +89,29 @@ const WAITLISTED = 'APPROVED_WAITLISTED';
 
           <p class="mt-4 max-w-prose text-muted-foreground">
             That means a reviewer decided your application deserves funding and there was not
-            enough available when they reached it. As donations arrive we fund down the list. We
-            will tell you the moment your position changes — you do not need to check.
+            enough available when they reached it. When more funding becomes available, places
+            are offered in waitlist order.
           </p>
+
+          <!--
+            E4 promises a TRANSPARENT position, so the order is explained rather than hidden.
+            It is also why the number can move in both directions: under need ordering a
+            student with greater need who joins later stands ahead. Saying so is kinder than
+            a number that silently gets worse. Nothing here promises a notification — no
+            position-change notice exists (promises.spec.ts withdrew that claim).
+          -->
+          <section class="mt-6" aria-labelledby="wait-order-heading">
+            <h2 id="wait-order-heading" class="fl-caption">How the waitlist is ordered</h2>
+            <ol class="mt-2 max-w-prose list-decimal space-y-1 pl-5 text-muted-foreground">
+              <li>Postgraduate students first, because no public funding reaches that level.</li>
+              <li>Then the greatest financial need first.</li>
+              <li>Then whoever has waited longest.</li>
+            </ol>
+            <p class="mt-3 max-w-prose text-muted-foreground">
+              Your number can change as other students join or leave the list, including when
+              someone in greater need joins after you. Check back here to see where you stand.
+            </p>
+          </section>
 
           @if (reason(); as words) {
             <section class="mt-6" aria-labelledby="wait-reason-heading">
@@ -158,15 +181,33 @@ const WAITLISTED = 'APPROVED_WAITLISTED';
                 </a>
               </li>
 
-              <li class="fl-surface flex h-full flex-col p-5">
-                <ui-icon-tile [icon]="icons.appeal" tone="navy" />
-                <p class="mt-4 font-semibold">Ask us to look again</p>
-                <p class="mt-1 flex-1 text-sm text-muted-foreground">
-                  If something was missing, wrong, or has changed, a different reviewer will read
-                  it again. You have one appeal.
-                </p>
-                <p class="mt-4 text-sm text-muted-foreground">The form is below.</p>
-              </li>
+              <!--
+                The appeal door only where an appeal can be made (BR-E07). It used to render for
+                REJECTED_FINAL too — an appeal already heard and refused — telling that student
+                "You have one appeal. The form is below." while the page, correctly, showed no
+                form. A promise of a door that does not exist, on the one screen where hope is
+                most fragile.
+              -->
+              @if (canAppeal()) {
+                <li class="fl-surface flex h-full flex-col p-5">
+                  <ui-icon-tile [icon]="icons.appeal" tone="navy" />
+                  <p class="mt-4 font-semibold">Ask us to look again</p>
+                  <p class="mt-1 flex-1 text-sm text-muted-foreground">
+                    If something was missing, wrong, or has changed, a different reviewer will
+                    read it again. You have one appeal.
+                  </p>
+                  <p class="mt-4 text-sm text-muted-foreground">The form is below.</p>
+                </li>
+              } @else {
+                <li class="fl-surface flex h-full flex-col p-5">
+                  <ui-icon-tile [icon]="icons.appeal" tone="navy" />
+                  <p class="mt-4 font-semibold">Your appeal was heard</p>
+                  <p class="mt-1 flex-1 text-sm text-muted-foreground">
+                    A different reviewer read your application again, and this is the final
+                    decision on it. It does not affect a new application at the next intake.
+                  </p>
+                </li>
+              }
             </ul>
 
             <p class="mt-6 max-w-prose text-muted-foreground">
@@ -201,16 +242,31 @@ export class DecisionComponent {
     arrow: ArrowRight as IconNode,
   };
 
-  protected readonly variant = computed(() => {
-    const status = this.status();
-    if (status === APPROVED) {
-      return 'approved';
+  /**
+   * Which decision screen, or none.
+   *
+   * Every status is named explicitly. This used to return 'declined' for ANYTHING that was not
+   * approved or waitlisted, so the component would show the not-funded screen for SUSPENDED
+   * (reversible, D-012), UNDER_REVIEW, or a status added next year — safe only because the one
+   * caller happened to filter first. A decision screen must never guess a decision the
+   * application has not received; an unknown status renders nothing.
+   */
+  protected readonly variant = computed((): 'approved' | 'waitlisted' | 'declined' | null => {
+    switch (this.status()) {
+      case APPROVED:
+        return 'approved';
+      case WAITLISTED:
+        return 'waitlisted';
+      case REJECTED:
+      case REJECTED_FINAL:
+        return 'declined';
+      default:
+        return null;
     }
-    if (status === WAITLISTED) {
-      return 'waitlisted';
-    }
-    return 'declined';
   });
+
+  /** One appeal per decision (BR-E07) — not after it has been heard. */
+  protected readonly canAppeal = computed(() => this.status() === REJECTED);
 
   /** " on 3 March 2026", or nothing at all rather than a broken date. */
   protected readonly decidedOn = computed(() => {
