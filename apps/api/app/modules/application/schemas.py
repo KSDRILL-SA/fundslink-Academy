@@ -137,6 +137,9 @@ class Application(BaseModel):
     # application is waiting on FundsLink — see the contract for when the clock starts.
     review_due_at: datetime | None = None
     sla_breached: bool | None = None
+    # Reviewer reads only (A02): has the caller stepped aside from this one (BR-E09)? None on
+    # student reads — a student is never told who recused, or that anyone did.
+    recused_by_me: bool | None = None
     created_at: datetime
 
 
@@ -158,6 +161,17 @@ class PriorityRequest(BaseModel):
 
     priority: Priority
     note: str | None = Field(default=None, max_length=4000)
+
+
+class RecusalRequest(BaseModel):
+    """BR-E09 / E8: why the reviewer is stepping aside. Kept on the append-only recusal record."""
+
+    reason: str = Field(min_length=10, max_length=2000)
+
+
+class Recusal(BaseModel):
+    application_id: str
+    created_at: datetime
 
 
 class ReviewRequest(BaseModel):

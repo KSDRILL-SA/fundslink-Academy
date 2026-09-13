@@ -18,6 +18,8 @@ from app.modules.application.schemas import (
     ApplicationInput,
     ApplicationPage,
     PriorityRequest,
+    Recusal,
+    RecusalRequest,
     ReviewRequest,
 )
 from app.modules.application.service import ApplicationService
@@ -101,7 +103,9 @@ async def admin_list_applications(
     current: CurrentUser = Depends(require(Permission.APPLICATION_REVIEW)),
     session=Depends(get_session),
 ) -> ApplicationPage:
-    return await ApplicationService(session).admin_list(status=status, cursor=cursor, limit=limit)
+    return await ApplicationService(session).admin_list(
+        status=status, cursor=cursor, limit=limit, reviewer_id=current.id
+    )
 
 
 @router.get("/admin/applications/{id}", operation_id="adminGetApplication")
@@ -111,7 +115,26 @@ async def admin_get_application(
     session=Depends(get_session),
 ) -> Application:
     """A02's read. The student endpoint is ownership-scoped and 403s a reviewer (#288)."""
-    return await ApplicationService(session).admin_get_application(application_id=id)
+    return await ApplicationService(session).admin_get_application(
+        application_id=id, reviewer_id=current.id
+    )
+
+
+@router.post("/admin/applications/{id}/recusal", status_code=201, operation_id="adminRecuse")
+async def admin_recuse(
+    id: str,  # noqa: A002 — matches the contract's path parameter name
+    body: RecusalRequest,
+    request: Request,
+    current: CurrentUser = Depends(require(Permission.APPLICATION_REVIEW)),
+    session=Depends(get_session),
+) -> Recusal:
+    """BR-E09 / E8 — step aside from an application the reviewer has a conflict with."""
+    return await ApplicationService(session).recuse(
+        reviewer_id=current.id,
+        application_id=id,
+        reason=body.reason,
+        request_id=get_request_id(request),
+    )
 
 
 @router.post("/admin/applications/{id}/review", operation_id="adminReview")

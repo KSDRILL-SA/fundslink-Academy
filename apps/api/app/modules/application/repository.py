@@ -200,7 +200,9 @@ class ApplicationRepository(BaseRepository):
             **SLA_PARAMS,
         )
 
-    async def list_for_review(self, *, status: str | None, limit: int, after=None):
+    async def list_for_review(
+        self, *, status: str | None, limit: int, after=None, reviewer_id: str | None = None
+    ):
         """The review queue, ordered for TRIAGE (D-002 / D-013) — not by arrival.
 
         It used to be ``ORDER BY created_at DESC``: newest first, priority ignored. A CRITICAL
@@ -231,6 +233,14 @@ class ApplicationRepository(BaseRepository):
             # every application ever made, drafts and decisions included.
             where += " AND fa.status = ANY(:awaiting_human)"
             params["awaiting_human"] = list(AWAITING_HUMAN_STATUSES)
+        if reviewer_id:
+            # BR-E09 / E8: an application the reviewer stepped aside from leaves THEIR queue and
+            # stays in everyone else's — that is what "the case is reassigned" means here.
+            where += (
+                " AND NOT EXISTS (SELECT 1 FROM recusal rc"
+                "  WHERE rc.application_id = fa.id AND rc.reviewer_id = :reviewer_id)"
+            )
+            params["reviewer_id"] = reviewer_id
         cursor_clause = ""
         if after is not None:
             cursor_clause = (
@@ -453,6 +463,37 @@ class ReturnReminderScanRepository(BaseRepository):
             self._SCAN.format(window="ar.respond_by < current_date"),
             kind="AFTER_DUE",
         )
+
+
+class RecusalRepository(BaseRepository):
+    """BR-E09: append-only recusals (fn_block_mutation) — a recusal cannot be quietly withdrawn."""
+
+    async def exists(self, application_id: str, reviewer_id: str) -> bool:
+        row = await sql.fetch_one(
+            self.session,
+            "SELECT 1 FROM recusal WHERE application_id = :app AND reviewer_id = :rev",
+            app=application_id,
+            rev=reviewer_id,
+        )
+        return row is not None
+
+    async def create(self, *, application_id: str, reviewer_id: str, reason: str):
+        try:
+            return await sql.fetch_one(
+                self.session,
+                "INSERT INTO recusal (id, application_id, reviewer_id, reason)"
+                " VALUES (:id, :app, :rev, :reason) RETURNING application_id, created_at",
+                id=cuid(),
+                app=application_id,
+                rev=reviewer_id,
+                reason=reason,
+            )
+        except IntegrityError as exc:  # uq_recusal (application_id, reviewer_id)
+            raise AppError(
+                "already_recused",
+                "You have already stepped aside from this application",
+                status_code=409,
+            ) from exc
 
 
 class AppealRepository(BaseRepository):

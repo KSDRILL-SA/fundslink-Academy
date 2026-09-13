@@ -31,6 +31,7 @@ from app.modules.application.repository import (
     MotivationRepository,
     OutboxRepository,
     PreScreenReadRepository,
+    RecusalRepository,
     StatusEventRepository,
     TransitionRepository,
 )
@@ -41,6 +42,7 @@ from app.modules.application.schemas import (
     Motivation,
     PageMeta,
     PreScreen,
+    Recusal,
     ReviewDecision,
 )
 from app.modules.application.state_machine import ApplicationStateMachine
@@ -73,6 +75,7 @@ class ApplicationService:
         self.pre_screens = PreScreenReadRepository(session)
         self.status_events = StatusEventRepository(session)
         self.appeals = AppealRepository(session)
+        self.recusals = RecusalRepository(session)
         self.audit = AuditRepository(session)
         self.engine = ApplicationStateMachine(
             transitions=TransitionRepository(session),
@@ -203,7 +206,9 @@ class ApplicationService:
             raise AppError("application_not_found", "Application not found", status_code=404)
         return await self._to_application(row, with_motivation=row[1] == "OTHER")
 
-    async def admin_get_application(self, *, application_id: str) -> Application:
+    async def admin_get_application(
+        self, *, application_id: str, reviewer_id: str | None = None
+    ) -> Application:
         """One application for a reviewer (A02).
 
         Runs under the reviewer's RLS context, which admits any application, and always includes
@@ -212,7 +217,41 @@ class ApplicationService:
         row = await self.apps.get_full(application_id)
         if row is None:
             raise AppError("application_not_found", "Application not found", status_code=404)
-        return await self._to_application(row, with_motivation=True)
+        application = await self._to_application(row, with_motivation=True)
+        if reviewer_id:
+            application.recused_by_me = await self.recusals.exists(application_id, reviewer_id)
+        return application
+
+    async def recuse(
+        self, *, reviewer_id: str, application_id: str, reason: str, request_id: str
+    ) -> Recusal:
+        """BR-E09 / E8 — a reviewer steps aside from an application they have a conflict with.
+
+        Recorded on the append-only recusal table and audited. The reason stays on the recusal
+        record (staff-only RLS) and is not copied into the audit detail.
+        """
+        if await self.apps.owner_of(application_id) is None:
+            raise AppError("application_not_found", "Application not found", status_code=404)
+        row = await self.recusals.create(
+            application_id=application_id, reviewer_id=reviewer_id, reason=reason
+        )
+        await self.audit.write(
+            actor_user_id=reviewer_id,
+            action="APPLICATION_RECUSED",
+            resource_type="funding_application",
+            resource_id=application_id,
+            request_id=request_id,
+        )
+        return Recusal(application_id=row[0], created_at=row[1])
+
+    async def _refuse_if_recused(self, application_id: str, reviewer_id: str) -> None:
+        """BR-E09: a recused reviewer cannot act on that application."""
+        if await self.recusals.exists(application_id, reviewer_id):
+            raise AppError(
+                "reviewer_recused",
+                "You stepped aside from this application, so another reviewer must act on it",
+                status_code=403,
+            )
 
     async def list_my_applications(
         self, *, actor_id: str, cursor: str | None, limit: int | None
@@ -296,11 +335,16 @@ class ApplicationService:
 
     # --------------------------------- admin ---------------------------------
     async def admin_list(
-        self, *, status: str | None, cursor: str | None, limit: int | None
+        self,
+        *,
+        status: str | None,
+        cursor: str | None,
+        limit: int | None,
+        reviewer_id: str | None = None,
     ) -> ApplicationPage:
         n = clamp_limit(limit)
         rows = await self.apps.list_for_review(
-            status=status, limit=n, after=decode_keyset(cursor, 5)
+            status=status, limit=n, after=decode_keyset(cursor, 5), reviewer_id=reviewer_id
         )
         has_more = len(rows) > n
         page = rows[:n]
@@ -320,6 +364,7 @@ class ApplicationService:
         """D-002/D-013: only ADMIN_REVIEWER+ raises priority (anti-gaming), under reviewer ctx."""
         if await self.apps.owner_of(application_id) is None:
             raise AppError("application_not_found", "Application not found", status_code=404)
+        await self._refuse_if_recused(application_id, reviewer_id)
         await self.apps.set_priority(application_id, priority)
         await self.audit.write(
             actor_user_id=reviewer_id,
@@ -343,6 +388,7 @@ class ApplicationService:
         owner = await self.apps.owner_of(application_id)
         if owner is None:
             raise AppError("application_not_found", "Application not found", status_code=404)
+        await self._refuse_if_recused(application_id, reviewer_id)
         # The reviewer (staff) is the actor — Human-Final (BR-E03) is satisfied by a human actor.
         await self.engine.transition(
             application_id=application_id,

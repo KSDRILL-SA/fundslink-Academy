@@ -167,6 +167,16 @@ export const ERROR_PRESENTATION: Readonly<Record<string, ErrorPresentation>> = {
     message: 'Try one under 5 MB — a photo taken on a phone usually needs to be reduced first.',
     retryable: true,
   },
+  already_recused: {
+    title: 'You have already stepped aside',
+    message: 'Another reviewer will take this application. There is nothing more to do here.',
+    retryable: false,
+  },
+  reviewer_recused: {
+    title: 'You stepped aside from this application',
+    message: 'Because you declared a conflict of interest, another reviewer must decide it.',
+    retryable: false,
+  },
   appeal_exists: {
     title: 'You have already appealed this',
     message: 'One appeal per decision. Open your application to see how it is going.',

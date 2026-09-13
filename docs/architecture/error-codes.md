@@ -48,6 +48,8 @@ Every business error is an `AppError(code, message, status_code)` rendered as a 
 | `unsupported_media_type` | 415 | Upload not an allowed type (ST-2.4 magic-byte allowlist) |
 | `payload_too_large` | 413 | Upload over the size cap (ST-2.4) |
 | `appeal_exists` | 409 | One appeal per decided application (BR-E07) |
+| `already_recused` | 409 | The reviewer has already stepped aside from this application (BR-E09) |
+| `reviewer_recused` | 403 | A reviewer who stepped aside tried to review or re-prioritise that application (BR-E09) |
 | `human_final_required` | 409 | A final decision was attempted by a non-human actor (BR-E03 / D-010) |
 | `bursary_not_found` | 404 | Matching/tracking: bursary id absent |
 | `already_tracked` | 409 | External bursary already on the student's tracker |
