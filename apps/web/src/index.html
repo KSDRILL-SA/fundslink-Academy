@@ -5,7 +5,10 @@
   <title>FundsLink Academy</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="FundsLink Academy helps South African students who fall through the NSFAS gap find, apply for and track funding.">
+  <!-- Must equal ORGANISATION.positioning (content/organisation.ts) — crawlers and link previews
+       read this static tag without running the app, so a runtime Meta update alone is not enough.
+       A test pins the two together. -->
+  <meta name="description" content="Bursary funding for South African students whose studies are not fully covered.">
 
   <!-- Brand mark. SVG scales to every icon slot from one 684-byte file; the .ico
        remains for legacy Windows/Explorer contexts that ignore SVG favicons. -->
@@ -52,6 +55,38 @@
         document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
       } catch (e) {
         /* Blocked storage: fall through to the light default. Never block paint. */
+      }
+    })();
+  </script>
+
+  <!-- Hero image preload — HOME ONLY.
+       The hero photograph is rendered by a lazy route, so without this its request cannot start
+       until Angular has booted and rendered the page: it downloads last, and LCP (the photo) waited
+       on it — measured at ~3.7-4.0 s against ~2.9-3.2 s before the image existed. Preloading lets it
+       download in parallel with the JavaScript.
+       But this document serves EVERY route, and a plain <link rel="preload"> would make a student
+       opening /app pay for marketing imagery on their data (P6). So the preload is injected only
+       for "/". `type="image/avif"` makes a browser without AVIF skip it (the <picture> then falls
+       back to WebP normally), and the media/srcset/sizes must equal the <picture> sources exactly
+       or the browser downloads twice — a test pins that agreement.
+       NOTE (ST-2.4): like the theme script above, this needs its sha256 in `script-src`. -->
+  <script>
+    (function () {
+      if (location.pathname !== '/') return;
+      var hero = [
+        ['(max-width: 767px)', 'images/hero/hero-mobile-640.avif 640w, images/hero/hero-mobile-1024.avif 1024w'],
+        ['(min-width: 768px)', 'images/hero/hero-desktop-960.avif 960w, images/hero/hero-desktop-1536.avif 1536w']
+      ];
+      for (var i = 0; i < hero.length; i++) {
+        var link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.type = 'image/avif';
+        link.media = hero[i][0];
+        link.setAttribute('imagesrcset', hero[i][1]);
+        link.setAttribute('imagesizes', '100vw');
+        link.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(link);
       }
     })();
   </script>

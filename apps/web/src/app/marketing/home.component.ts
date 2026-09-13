@@ -34,12 +34,22 @@ import { ORGANISATION } from '../content/organisation';
  * one side while the image breathes on the other, so the picture reads AND the
  * text keeps AA contrast.
  *
- * **There is no photograph yet, and this build does not invent one.** §3.1
- * asks for a real, dignified photograph of a South African student, and
- * explicitly rejects stock imagery. So the hero is composed to look finished
- * without a photo — the scrim over a navy field — and takes one the moment the
- * Founder supplies it, through `--hero-image`. Nothing about the layout
- * changes when it arrives; the scrim was always the thing carrying contrast.
+ * **The image is art-directed, and it is not a photograph of our students.**
+ * §3.1 asked for a real, dignified photograph of a South African student. The
+ * Founder (L4, 2026-09-13) supplied a generated image of the SETTING instead —
+ * two students seen from behind, walking up the steps of a university building
+ * into an open, lit doorway at sunset — with no identifiable face. It may never
+ * be captioned, quoted, or described as a FundsLink beneficiary: that would be
+ * fabricating people, which this page refuses everywhere else (§3.5 below).
+ * The alt text describes the scene and claims nothing about who they are.
+ *
+ * It is two crops, not one image cropped by CSS: a landscape for wide screens
+ * (subject on the right, where the scrim is lightest) and a portrait for phones
+ * (subject in the top third, quiet steps below for the copy). Each ships as
+ * AVIF with a WebP fallback at two widths — 17.5 kB on a phone, 51 kB at the
+ * largest desktop size — because this page is opened on cheap phones over
+ * expensive data (P6). The navy field stays underneath, so the hero is never
+ * blank while the image loads, and the scrim still carries the text contrast.
  *
  * Two further sections of §3 are deliberately absent, for the same reason:
  * §3.5 (impact / voices) needs REAL, CONSENTED student stories — inventing
@@ -65,13 +75,51 @@ import { ORGANISATION } from '../content/organisation';
   template: `
     <!-- ================= HERO ================= -->
     <section class="fl-hero relative isolate overflow-hidden">
-      <!-- The scrim. Anchors the copy side and lets the image side breathe;
-           with no image it simply reads as the brand's navy field. -->
+      <!-- The hero image: art direction by viewport, format by browser support,
+           width by screen density. One element, so it is the LCP candidate and
+           the browser can fetch it early; width/height reserve its box (no CLS).
+           See the component doc for what this image is — and is not. -->
+      <picture class="absolute inset-0 -z-20">
+        <source
+          media="(max-width: 767px)"
+          type="image/avif"
+          srcset="images/hero/hero-mobile-640.avif 640w, images/hero/hero-mobile-1024.avif 1024w"
+          sizes="100vw"
+        />
+        <source
+          media="(max-width: 767px)"
+          type="image/webp"
+          srcset="images/hero/hero-mobile-640.webp 640w, images/hero/hero-mobile-1024.webp 1024w"
+          sizes="100vw"
+        />
+        <source
+          type="image/avif"
+          srcset="images/hero/hero-desktop-960.avif 960w, images/hero/hero-desktop-1536.avif 1536w"
+          sizes="100vw"
+        />
+        <source
+          type="image/webp"
+          srcset="images/hero/hero-desktop-960.webp 960w, images/hero/hero-desktop-1536.webp 1536w"
+          sizes="100vw"
+        />
+        <img
+          class="fl-hero-image h-full w-full object-cover"
+          src="images/hero/hero-desktop-960.webp"
+          width="1536"
+          height="1024"
+          alt="Two students walk up the steps of a university building toward an open, lit doorway at sunset."
+          fetchpriority="high"
+          loading="eager"
+          decoding="async"
+        />
+      </picture>
+
+      <!-- The scrim. Anchors the copy side so text keeps AA contrast over the
+           image, and lets the image side breathe. -->
       <div class="fl-hero-scrim absolute inset-0 -z-10" aria-hidden="true"></div>
 
       <!-- Atmosphere, in pure CSS: a faint engineering grid and the arch of the
-           Rising Door. No image, no canvas, nothing to download — this page is
-           opened on cheap phones over expensive data (P6). -->
+           Rising Door. -->
       <span class="fl-grid-bg absolute inset-0 -z-10" aria-hidden="true"></span>
       <span
         class="fl-arch-motif left-1/2 top-10 hidden h-[38rem] w-[38rem] -translate-x-1/2 lg:block"
@@ -330,17 +378,32 @@ import { ORGANISATION } from '../content/organisation';
 
        The scrim is a gradient over the image side rather than a flat overlay,
        so the copy sits in a high-contrast zone while the far side stays clear
-       — the picture reads and the text stays AA. With no image supplied it
-       resolves to the brand navy, which is why the hero looks finished today
-       and simply gains depth when a photograph arrives.
+       — the picture reads and the text stays AA.
 
-       --hero-image is the seam: set it to an image-set() or url() and the
-       layout does not change. */
+       The navy background stays: it is what shows while the image loads, so
+       the hero is never white. */
     .fl-hero {
       background-color: hsl(222 47% 11%);
-      background-image: var(--hero-image, none);
-      background-size: cover;
-      background-position: center right;
+    }
+
+    /* Keep the people in view.
+
+       Wide screens anchor right. The floating application card sits over the
+       middle-right of the hero, and at a hero this height no crop clears it:
+       anchoring to the bottom was tried and left two heads peeking over the
+       card's edge. So the card became glass instead (.fl-hero-mock) — the
+       students walk up the steps BEHIND the application, visible through it.
+
+       Phones anchor LEFT and top: the portrait crop is wider than a phone, and
+       taking the spare width from the left moves the students out from under
+       the headline, which on a phone runs the full width of the screen. */
+    .fl-hero-image {
+      object-position: right center;
+    }
+    @media (max-width: 767px) {
+      .fl-hero-image {
+        object-position: left top;
+      }
     }
 
     /* The floating product cards. Glass over the hero's navy, with a two-layer
@@ -351,10 +414,14 @@ import { ORGANISATION } from '../content/organisation';
        inside a component styles block, so a design token referenced here
        would be a different variable than the one the global sheet defines. */
     .fl-hero-mock {
-      background: hsl(222 45% 14% / 0.88);
+      /* Glass over the photograph, so the students behind the card show through
+         it rather than disappearing behind an opaque panel. The card's own text
+         is measured over whatever the blur produces, by the same contrast spec
+         as the rest of the hero — the alpha is only as low as that allows. */
+      background: hsl(222 45% 14% / 0.66);
       border: 1px solid hsl(213 25% 45% / 0.45);
-      backdrop-filter: saturate(160%) blur(14px);
-      -webkit-backdrop-filter: saturate(160%) blur(14px);
+      backdrop-filter: saturate(150%) blur(20px);
+      -webkit-backdrop-filter: saturate(150%) blur(20px);
       box-shadow:
         inset 0 1px 0 0 hsl(0 0% 100% / 0.08),
         0 40px 80px -32px hsl(0 0% 0% / 0.8);
@@ -378,6 +445,14 @@ import { ORGANISATION } from '../content/organisation';
       }
     }
 
+    /* The scrim is tuned against MEASURED contrast, not by eye:
+       e2e/hero-contrast.spec.ts samples the real pixels behind every line of
+       hero text at four screen sizes and requires WCAG AA. Change a stop here
+       and that spec is what tells you whether you are still allowed to.
+
+       Wide screens: the copy never goes past ~46% of the width, so the stops
+       that protect it (0–45%) are unchanged, and the right-hand side — image
+       only — opens up so the photograph actually reads. */
     .fl-hero-scrim {
       background:
         radial-gradient(60% 80% at 85% 20%, hsl(38 92% 50% / 0.14) 0%, transparent 70%),
@@ -385,9 +460,27 @@ import { ORGANISATION } from '../content/organisation';
           105deg,
           hsl(222 47% 11% / 0.96) 0%,
           hsl(222 47% 11% / 0.9) 45%,
-          hsl(222 47% 11% / 0.55) 75%,
-          hsl(222 47% 11% / 0.35) 100%
+          hsl(222 47% 11% / 0.5) 70%,
+          hsl(222 47% 11% / 0.15) 100%
         );
+    }
+
+    /* Phones: the copy runs the full width of the screen, including over the
+       lit doorway, so a left-to-right fade would leave the right-hand end of
+       every line unprotected. Here the scrim is top-to-bottom instead: lighter
+       over the image at the top, deepening through the text. */
+    @media (max-width: 767px) {
+      .fl-hero-scrim {
+        background:
+          radial-gradient(90% 40% at 80% 8%, hsl(38 92% 50% / 0.12) 0%, transparent 70%),
+          linear-gradient(
+            180deg,
+            hsl(222 47% 11% / 0.35) 0%,
+            hsl(222 47% 11% / 0.72) 22%,
+            hsl(222 47% 11% / 0.88) 42%,
+            hsl(222 47% 11% / 0.94) 100%
+          );
+      }
     }
   `,
 })
