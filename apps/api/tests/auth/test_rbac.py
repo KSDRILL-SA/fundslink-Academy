@@ -120,11 +120,91 @@ def test_declares_posture_detects_declared_and_undeclared():
     assert declares_posture(routes["/undeclared"].dependant) is False
 
 
-def test_permission_lint_passes_on_the_real_app():
+def _load_lint():
+    """Import scripts/permission_lint.py as a module, so tests can hand check() a synthetic app."""
+    import importlib.util
+
     repo = Path(__file__).resolve().parents[4]  # auth/tests/api/apps/<repo>
+    spec = importlib.util.spec_from_file_location(
+        "permission_lint", repo / "scripts" / "permission_lint.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_permission_lint_passes_on_the_real_app_and_actually_checks_every_route():
+    """Exit code 0 is not enough — that is exactly what a lint that checks nothing returns.
+
+    For as long as FastAPI 0.137 was installed this lint printed "0 business route(s) all declare
+    an access posture" and exited 0, and this test, which only checked the exit code, passed. It
+    now requires the lint to have checked at least as many routes as the contract declares.
+    """
+    repo = Path(__file__).resolve().parents[4]
+    lint = _load_lint()
     result = subprocess.run(
         [sys.executable, str(repo / "scripts" / "permission_lint.py")],
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+    import re
+
+    checked = int(re.search(r"OK \(S3\.21\): (\d+) business route", result.stdout).group(1))
+    assert checked >= lint.contract_operation_count() > 0, result.stdout
+
+
+def test_permission_lint_walks_included_routers_and_catches_an_undeclared_route():
+    """The shape that fooled the old lint: routes that only exist behind include_router()."""
+    lint = _load_lint()
+    router = APIRouter()
+
+    @router.get("/declared", dependencies=[Depends(require(Permission.PROFILE_READ_OWN))])
+    async def _declared():
+        return {}
+
+    @router.get("/forgotten")
+    async def _forgotten():
+        return {}
+
+    probe = FastAPI()
+    probe.include_router(router, prefix="/api/v1")
+
+    checked, offenders, problems = lint.check(probe, minimum=2)
+
+    assert checked == 2, "the lint could not see routes mounted with include_router()"
+    assert len(offenders) == 1 and "/api/v1/forgotten" in offenders[0]
+    assert problems == []
+
+
+def test_permission_lint_honours_posture_declared_at_include_time():
+    """A posture on include_router(dependencies=...) protects every route under it."""
+    lint = _load_lint()
+    router = APIRouter()
+
+    @router.get("/covered-by-include")
+    async def _covered():
+        return {}
+
+    probe = FastAPI()
+    probe.include_router(
+        router, prefix="/api/v1", dependencies=[Depends(require(Permission.PROFILE_READ_OWN))]
+    )
+
+    checked, offenders, _problems = lint.check(probe, minimum=1)
+
+    assert checked == 1
+    assert offenders == [], "a posture declared at include time was not recognised"
+
+
+def test_permission_lint_refuses_to_pass_when_it_sees_fewer_routes_than_the_contract():
+    """The vacuity guard: a lint that cannot see routes must go red, not quietly green."""
+    lint = _load_lint()
+    probe = FastAPI()  # an app whose business routes the lint cannot see: none at all
+
+    checked, offenders, problems = lint.check(probe, minimum=lint.contract_operation_count())
+
+    assert checked == 0
+    assert offenders == []
+    assert problems and "refusing to" in problems[0]
