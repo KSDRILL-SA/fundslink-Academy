@@ -106,11 +106,18 @@ def test_another_students_activity_never_appears(client, admin_conn):
 def test_notes_detail_and_token_refreshes_are_never_shown(client, admin_conn):
     token, uid = student_with_profile(client)
     app_id = create_application(client, token)["id"]
-    admin_conn.execute(
-        "INSERT INTO application_status_event (id, application_id, to_status, actor_user_id, note)"
-        " VALUES (%s, %s, 'RETURNED_FOR_INFO', 'SYSTEM', 'INTERNAL: reviewer suspects fraud')",
-        (f"ev_{uuid.uuid4().hex}", app_id),
-    )
+    # Event and status cache together, in one transaction: an event alone leaves the application's
+    # cached status disagreeing with its history, which the DB-D39 integrity job rightly reports.
+    with admin_conn.transaction():
+        admin_conn.execute(
+            "INSERT INTO application_status_event"
+            " (id, application_id, to_status, actor_user_id, note)"
+            " VALUES (%s, %s, 'RETURNED_FOR_INFO', 'SYSTEM', 'INTERNAL: reviewer suspects fraud')",
+            (f"ev_{uuid.uuid4().hex}", app_id),
+        )
+        admin_conn.execute(
+            "UPDATE funding_application SET status = 'RETURNED_FOR_INFO' WHERE id = %s", (app_id,)
+        )
     audit(admin_conn, actor=uid, action="AUTH_TOKEN_REFRESH")
     audit(admin_conn, actor=uid, action="DATA_EXPORTED", detail='{"email": "leak@example.com"}')
 
