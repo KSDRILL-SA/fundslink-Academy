@@ -78,6 +78,26 @@ describe('marketing home (rendered)', () => {
       expect(text()).toContain('Just browsing?');
     });
 
+    it('puts nothing over the photograph — the application card has its own section', () => {
+      // Founder, 2026-09-13: the floating card hid the students on the steps.
+      const hero = el().querySelector('.fl-hero');
+      expect(hero?.querySelector('.fl-status-card')).toBeNull();
+      expect(hero?.textContent).not.toContain('Your funding application');
+
+      const card = el().querySelector('.fl-status-card');
+      expect(card).toBeTruthy();
+      expect(card?.closest('.fl-hero')).toBeNull();
+    });
+
+    it('says in words everything the decorative card shows', () => {
+      // The card is aria-hidden, so its claims must be readable beside it.
+      expect(el().querySelector('.fl-status-card')?.closest('[aria-hidden="true"]')).toBeTruthy();
+      expect(text()).toContain('Always know where you stand');
+      expect(text()).toContain('A person makes the decision');
+      expect(text()).toContain('Bursaries you actually fit');
+      expect(text()).toContain('Every sign-in and change is listed');
+    });
+
     describe('the hero image', () => {
       const img = () => el().querySelector<HTMLImageElement>('.fl-hero img');
       const sources = () =>
