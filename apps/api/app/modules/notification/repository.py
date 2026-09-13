@@ -87,6 +87,11 @@ class NotificationRepository(BaseRepository):
 
 
 class PreferenceRepository(BaseRepository):
+    async def trigger_codes(self) -> set[str]:
+        """Every notification trigger the platform can send (lk_notify_trigger)."""
+        rows = await sql.fetch_all(self.session, "SELECT code FROM lk_notify_trigger")
+        return {r[0] for r in rows}
+
     async def get(self, user_id: str) -> dict:
         row = await sql.fetch_one(
             self.session,

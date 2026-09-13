@@ -17,14 +17,49 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 
 type Notification = Schema<'Notification'>;
 
-/** The moments we would write to a student about, in the order they happen. */
-const TRIGGERS = [
-  { key: 'APPLICATION_SUBMITTED', label: 'When your application is received' },
-  { key: 'APPLICATION_RETURNED_FOR_INFO', label: 'When we need something more from you' },
-  { key: 'APPLICATION_STATUS_CHANGED', label: 'When your application moves along' },
-  { key: 'APPLICATION_REVIEWED', label: 'When there is a decision' },
-  { key: 'DEADLINE_REMINDER', label: 'Before a bursary deadline closes' },
-] as const;
+/**
+ * The moments we would write to a student about, in the order they happen.
+ *
+ * `triggers` are the codes the server actually sends (`lk_notify_trigger`); a row can cover more
+ * than one, because a student thinks "when there is a decision", not "approved" and "declined"
+ * separately. Two rows used to name codes that do not exist — `APPLICATION_REVIEWED` and
+ * `DEADLINE_REMINDER` — so those choices were saved and never applied (#298). A test now reads the
+ * migrations and fails if any code here is not a real trigger.
+ */
+export const PREFERENCE_ROWS: readonly { readonly triggers: readonly string[]; readonly label: string }[] = [
+  { triggers: ['APPLICATION_SUBMITTED'], label: 'When your application is received' },
+  {
+    triggers: ['APPLICATION_RETURNED_FOR_INFO', 'APPLICATION_RETURN_REMINDER'],
+    label: 'When we need something more from you, and a reminder before the date',
+  },
+  { triggers: ['APPLICATION_STATUS_CHANGED'], label: 'When your application moves along' },
+  { triggers: ['INTERVIEW_SCHEDULED'], label: 'When an interview is scheduled' },
+  { triggers: ['DECISION_APPROVED', 'DECISION_REJECTED'], label: 'When there is a decision' },
+  { triggers: ['TRACKED_DEADLINE_REMINDER'], label: 'Before a deadline on a bursary you track' },
+  { triggers: ['TRACKED_FOLLOW_UP'], label: 'When a bursary you track has gone quiet' },
+];
+
+/** What each message in the history was about, in a student's words. */
+export const TRIGGER_WORDS: Readonly<Record<string, string>> = {
+  APPLICATION_SUBMITTED: 'We received your application',
+  APPLICATION_RETURNED_FOR_INFO: 'We need something more from you',
+  APPLICATION_RETURN_REMINDER: 'A reminder that we need something from you',
+  APPLICATION_STATUS_CHANGED: 'Your application moved along',
+  INTERVIEW_SCHEDULED: 'An interview was scheduled',
+  DECISION_APPROVED: 'A decision on your application',
+  DECISION_REJECTED: 'A decision on your application',
+  TRACKED_DEADLINE_REMINDER: 'A deadline is coming up on a bursary you track',
+  TRACKED_FOLLOW_UP: 'A bursary you track has gone quiet',
+  ACCOUNT_VERIFICATION: 'Confirm your email address',
+};
+
+/** Delivery state (`notification_outbox.state`), said plainly. Nothing claims "sent" that was not. */
+const STATE_WORDS: Readonly<Record<string, string>> = {
+  PENDING: 'Waiting to send',
+  SENDING: 'Sending',
+  SENT: 'Sent',
+  DEAD: 'We could not deliver this one',
+};
 
 /**
  * S20 — Notifications and preferences.
@@ -84,18 +119,19 @@ const TRIGGERS = [
         </p>
 
         <ul class="mt-6 flex flex-col gap-4">
-          @for (trigger of triggers; track trigger.key) {
+          @for (row of rows; track row.label) {
             <li class="flex items-start gap-3">
               <input
                 uiCheckbox
                 type="checkbox"
-                [id]="'sms-' + trigger.key"
+                [id]="'sms-' + row.triggers[0]"
                 class="mt-1"
-                [checked]="smsEnabled().has(trigger.key)"
-                (change)="toggleSms(trigger.key)"
+                [checked]="smsEnabled().has(row.triggers[0])"
+                [disabled]="!prefsLoaded()"
+                (change)="toggleSms(row.triggers[0])"
               />
-              <label [for]="'sms-' + trigger.key">
-                <span class="font-medium">{{ trigger.label }}</span>
+              <label [for]="'sms-' + row.triggers[0]">
+                <span class="font-medium">{{ row.label }}</span>
                 <span class="mt-1 block text-sm text-muted-foreground">
                   Email always. Tick to get a text as well.
                 </span>
@@ -105,11 +141,23 @@ const TRIGGERS = [
         </ul>
 
         <div class="mt-6 flex flex-wrap items-center gap-3">
-          <ui-button [loading]="saving()" (clicked)="save()">Save preferences</ui-button>
+          <!-- Not before the saved choices have loaded: saving an empty form would wipe them. -->
+          <ui-button [loading]="saving()" [disabled]="!prefsLoaded()" (clicked)="save()">
+            Save preferences
+          </ui-button>
           @if (saved()) {
             <p role="status" class="text-sm font-medium text-success">Saved.</p>
           }
         </div>
+
+        @if (prefsFailed()) {
+          <div role="alert" class="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4">
+            <p class="font-medium text-foreground">We could not load your saved choices</p>
+            <p class="mt-1 text-sm text-muted-foreground">
+              Nothing has changed. Reload the page to try again before changing them.
+            </p>
+          </div>
+        }
 
         @if (failure(); as problem) {
           <div role="alert" class="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4">
@@ -166,7 +214,9 @@ export class NotificationsComponent {
   private readonly shell = inject(ShellSignalsService);
   private readonly store = asyncState<readonly Notification[]>((items) => items.length === 0);
 
-  protected readonly triggers = TRIGGERS;
+  protected readonly rows = PREFERENCE_ROWS;
+  protected readonly prefsLoaded = signal(false);
+  protected readonly prefsFailed = signal(false);
   protected readonly state = this.store.state;
   protected readonly notifications = computed(() => this.state().data ?? []);
   protected readonly smsEnabled = signal(new Set<string>());
@@ -181,6 +231,25 @@ export class NotificationsComponent {
 
   constructor() {
     this.load();
+    this.loadPreferences();
+  }
+
+  /** The student's saved choices. A row is ticked when SMS is on for it. */
+  private loadPreferences(): void {
+    this.api.get<Schema<'Preferences'>>('/notifications/preferences').subscribe({
+      next: (prefs) => {
+        const saved = prefs.per_trigger ?? {};
+        this.smsEnabled.set(
+          new Set(
+            PREFERENCE_ROWS.filter((row) =>
+              row.triggers.some((trigger) => saved[trigger]?.includes('SMS')),
+            ).map((row) => row.triggers[0]),
+          ),
+        );
+        this.prefsLoaded.set(true);
+      },
+      error: () => this.prefsFailed.set(true),
+    });
   }
 
   protected load(): void {
@@ -214,10 +283,13 @@ export class NotificationsComponent {
     // EMAIL and IN_APP are always present: they are transactional and not the
     // student's to switch off (D-019). SMS is added only where asked for.
     const per_trigger: Record<string, ('EMAIL' | 'SMS' | 'IN_APP')[]> = {};
-    for (const trigger of TRIGGERS) {
-      per_trigger[trigger.key] = this.smsEnabled().has(trigger.key)
+    for (const row of PREFERENCE_ROWS) {
+      const channels: ('EMAIL' | 'SMS' | 'IN_APP')[] = this.smsEnabled().has(row.triggers[0])
         ? ['EMAIL', 'IN_APP', 'SMS']
         : ['EMAIL', 'IN_APP'];
+      for (const trigger of row.triggers) {
+        per_trigger[trigger] = channels;
+      }
     }
 
     this.api.put<Schema<'Preferences'>>('/notifications/preferences', { per_trigger }).subscribe({
@@ -234,16 +306,28 @@ export class NotificationsComponent {
 
   /** Trigger keys are internal. A student should never meet SCREAMING_SNAKE. */
   protected readable(trigger: string): string {
-    const known = TRIGGERS.find((t) => t.key === trigger);
+    const known = TRIGGER_WORDS[trigger];
     if (known) {
-      return known.label;
+      return known;
     }
     const words = trigger.toLowerCase().replace(/_/g, ' ').trim();
     return words.charAt(0).toUpperCase() + words.slice(1);
   }
 
+  /** "13 September 2026, 10:44 · Waiting to send". It printed the raw timestamp, and said
+   *  "sent by email" for messages that had not been sent. */
   protected sentVia(item: Notification): string {
-    const channels = item.channels.map((channel) => channel.toLowerCase()).join(', ');
-    return `${item.created_at} · sent by ${channels}`;
+    const when = new Date(item.created_at);
+    const date = Number.isNaN(when.getTime())
+      ? ''
+      : when.toLocaleString('en-ZA', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+    const state = STATE_WORDS[item.state] ?? 'Status unknown';
+    return date ? `${date} · ${state}` : state;
   }
 }

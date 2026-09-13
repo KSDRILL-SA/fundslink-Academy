@@ -426,6 +426,11 @@ paths:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/NotificationPage' } } } }
 
   /notifications/preferences:
+    get:
+      operationId: getPreferences
+      summary: My saved channel preferences, per trigger (BR-N02)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Preferences' } } } }
     put:
       operationId: putPreferences
       summary: Update channel preferences (SMS upgrades per trigger — MASTER-SPEC §18.1)
@@ -436,6 +441,7 @@ paths:
             schema: { $ref: '#/components/schemas/Preferences' }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Preferences' } } } }
+        '422': { $ref: '#/components/responses/Validation' }
 
   /students/me/data-export:
     get:

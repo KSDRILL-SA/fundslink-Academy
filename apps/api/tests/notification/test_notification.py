@@ -46,3 +46,36 @@ def test_put_preferences_rejects_unknown_channel(notif_client):
         PREFS, headers=bearer(token), json={"per_trigger": {"DECISION_APPROVED": ["PIGEON"]}}
     )
     assert resp.status_code == 422  # channel enum validated at the boundary
+
+
+def test_saved_preferences_can_be_read_back(notif_client):
+    # S20 had no way to read them: every visit opened with nothing ticked, and saving again wiped
+    # the student's earlier choices (#298).
+    token, _ = register_student(notif_client)
+    assert notif_client.get(PREFS, headers=bearer(token)).json() == {"per_trigger": {}}
+    chosen = {"DECISION_APPROVED": ["EMAIL", "IN_APP", "SMS"], "APPLICATION_SUBMITTED": ["EMAIL"]}
+    notif_client.put(PREFS, headers=bearer(token), json={"per_trigger": chosen})
+    assert notif_client.get(PREFS, headers=bearer(token)).json() == {"per_trigger": chosen}
+
+
+def test_preferences_are_the_callers_own(notif_client):
+    a_token, _ = register_student(notif_client)
+    b_token, _ = register_student(notif_client)
+    notif_client.put(PREFS, headers=bearer(a_token),
+                     json={"per_trigger": {"DECISION_APPROVED": ["SMS"]}})
+    assert notif_client.get(PREFS, headers=bearer(b_token)).json() == {"per_trigger": {}}
+
+
+def test_a_trigger_that_does_not_exist_is_refused_not_silently_stored(notif_client):
+    # Two of the screen's rows were saved under invented codes, which the worker never looks up.
+    token, _ = register_student(notif_client)
+    resp = notif_client.put(
+        PREFS, headers=bearer(token),
+        json={"per_trigger": {"APPLICATION_REVIEWED": ["SMS"], "DECISION_APPROVED": ["SMS"]}},
+    )
+    assert resp.status_code == 422
+    body = resp.json()["error"]
+    assert body["code"] == "invalid_notification_trigger"
+    assert "APPLICATION_REVIEWED" in body["message"]
+    assert "DECISION_APPROVED" in body["details"]["allowed"]
+    assert notif_client.get(PREFS, headers=bearer(token)).json() == {"per_trigger": {}}

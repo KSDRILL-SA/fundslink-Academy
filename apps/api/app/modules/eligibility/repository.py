@@ -7,8 +7,6 @@ staff-only). The application reads (status/type/owner) are reused from the appli
 
 from __future__ import annotations
 
-from datetime import date, timedelta
-
 from app.db import sql
 from app.db.cuid import cuid
 from app.db.repository import BaseRepository
@@ -123,20 +121,24 @@ class ReturnRepository(BaseRepository):
         )
         return int(row[0])
 
-    async def insert(
-        self, *, application_id: str, cycle_no: int, fix_list: list[str], respond_days: int = 14
-    ) -> None:
+    async def insert(self, *, application_id: str, cycle_no: int, fix_list: list[str]) -> None:
+        """Record a return. ``respond_by`` is today plus ``return_respond_days`` (config, D-006).
+
+        The window was a literal ``14`` here. It is computed in SQL from the config table, on the
+        database's date, so the reminder job and this insert can never disagree about "today". A
+        missing key leaves ``respond_by`` NULL: no date is an honest answer, an invented one is not.
+        """
         import json
 
         await sql.execute(
             self.session,
             "INSERT INTO application_return (id, application_id, cycle_no, fix_list, respond_by)"
-            " VALUES (:id, :app, :cycle, :fix, :respond_by)",
+            " VALUES (:id, :app, :cycle, :fix,"
+            "  current_date + (SELECT value::int FROM config WHERE key = 'return_respond_days'))",
             id=cuid(),
             app=application_id,
             cycle=cycle_no,
             fix=json.dumps(fix_list),
-            respond_by=date.today() + timedelta(days=respond_days),
         )
 
     async def mark_resolved(self, application_id: str) -> None:

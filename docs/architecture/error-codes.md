@@ -36,6 +36,7 @@ Every business error is an `AppError(code, message, status_code)` rendered as a 
 | `profile_required` | 409 | Action needs a profile first (apply, upload) |
 | `id_number_taken` | 409 | SA ID already registered to another user (BR-A04) |
 | `invalid_consent_purpose` | 422 | Unknown consent purpose |
+| `invalid_notification_trigger` | 422 | Preferences named a trigger that does not exist (`details.allowed` lists the real ones) — refused rather than stored and silently ignored |
 | `validation_error` | 422 | Request failed schema validation (FastAPI's handler). Can be the person's input (an email the validator refuses) OR a malformed request from a client, so its copy must not attribute blame either way |
 | `sa_id_required` | 409 | SUBMIT blocked: no SA ID on file (D-007) |
 | `application_not_found` | 404 | Application absent or not the caller's (RLS → 404, never data) |

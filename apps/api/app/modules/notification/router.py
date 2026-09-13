@@ -31,6 +31,14 @@ async def list_my_notifications(
     )
 
 
+@router.get("/notifications/preferences", operation_id="getPreferences")
+async def get_preferences(
+    current: CurrentUser = Depends(authenticated_only),
+    session=Depends(get_session),
+) -> Preferences:
+    return await NotificationService(session).get_preferences(actor_id=current.id)
+
+
 @router.put("/notifications/preferences", operation_id="putPreferences")
 async def put_preferences(
     body: Preferences,
