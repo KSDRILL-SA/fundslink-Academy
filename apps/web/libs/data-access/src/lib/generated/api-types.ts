@@ -414,6 +414,7 @@ export interface paths {
         /**
          * Review queue (ADMIN_REVIEWER — S3.21 deny-by-default)
          * @description Ordered for triage, not by arrival (D-002 / D-013): highest priority first (CRITICAL, URGENT, NORMAL), then the soonest review due date, then the soonest `needed_by`, then the application that has waited longest. The review due date is derived from `review_sla_days`, or `emergency_review_sla_days` for URGENT and CRITICAL, both read from the config table — never a literal in code. The cursor is opaque and encodes the whole sort key.
+         *     Without `status`, this returns the review queue: every application whose next transition is a person's — READY_FOR_REVIEW, UNSCREENED (the pre-screen engine was unavailable, so a person reviews without it — S8.51), UNDER_REVIEW, INTERVIEW_SCHEDULED, INTERVIEWED, APPROVED_PROPOSED and APPEALED (BR-E07). Drafts, applications waiting on the student and decided applications are not in it. `status` narrows the queue to a single status.
          */
         get: operations["adminListApplications"];
         put?: never;

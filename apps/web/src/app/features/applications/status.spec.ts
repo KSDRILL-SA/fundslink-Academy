@@ -57,11 +57,36 @@ describe('S14 application status', () => {
     expect(current?.textContent).toContain('With a reviewer');
   });
 
-  it('makes no promise about timing it cannot keep', () => {
-    // "About N days" needs the config endpoint (E12). Until then the screen
-    // says what it can defend rather than inventing a number.
-    load({ id: 'a1', status: 'READY_FOR_REVIEW', created_at: '2026-02-01T00:00:00Z' });
-    expect(text()).toContain('in the order they arrive');
+  it('tells the student when a decision is due, using the server date', () => {
+    // This test used to assert the sentence "in the order they arrive" was PRESENT. D-002's
+    // emergency lane makes that false, so it now pins the truth: the config-driven due date.
+    load({
+      id: 'a1',
+      status: 'READY_FOR_REVIEW',
+      created_at: '2026-02-01T00:00:00Z',
+      review_due_at: '2026-02-15T00:00:00Z',
+      sla_breached: false,
+    });
+    expect(text()).toContain('We aim to decide by');
+    expect(text()).toContain('15 February 2026');
+    expect(text()).not.toMatch(/in the order they arrive/i);
+  });
+
+  it('says plainly, as our fault, when a review is late', () => {
+    load({
+      id: 'a1',
+      status: 'UNDER_REVIEW',
+      created_at: '2026-02-01T00:00:00Z',
+      review_due_at: '2026-02-15T00:00:00Z',
+      sla_breached: true,
+    });
+    expect(text()).toContain('taking longer than we aim for');
+    expect(text()).not.toContain('We aim to decide by');
+  });
+
+  it('promises no date when no review is owed', () => {
+    load({ id: 'a1', status: 'RETURNED_FOR_INFO', created_at: '2026-02-01T00:00:00Z' });
+    expect(text()).not.toContain('We aim to decide by');
     expect(text()).not.toMatch(/\b\d+\s*(?:working\s*)?days\b/);
   });
 

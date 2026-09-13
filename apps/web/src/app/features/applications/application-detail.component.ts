@@ -163,19 +163,35 @@ const STAGE_INDEX: Readonly<Record<string, number>> = {
                 }
               </ol>
 
-              <!-- The SLA, stated honestly rather than implied. E12 makes this
-                   config-driven; until the config endpoint is contracted, the
-                   screen says what it can defend. -->
+              <!-- The review date, from the server (review_due_at — config-driven
+                   SLA, D-002). This used to say reviews happen "in the order they
+                   arrive", which D-002's emergency lane makes untrue: a student
+                   defunded at year-end is triaged first, as they should be.
+                   Late is said plainly, as ours to own — never hidden, never
+                   blamed on the student. -->
               <!-- We say where an update WILL appear, not how it will be
                    delivered. The notification outbox is real and drives this
                    screen and the notifications list; email delivery is not
                    switched on yet (the adapter logs rather than sends), so
                    promising an email is promising something that will not
                    arrive. -->
-              <p class="mt-2 text-sm text-muted-foreground">
-                Reviews are done by people, in the order they arrive. Every update appears here and
-                in your notifications the moment it happens.
-              </p>
+              @if (app.review_due_at && app.sla_breached) {
+                <p class="mt-2 text-sm text-muted-foreground">
+                  Your review is taking longer than we aim for, and we are sorry. A person will
+                  still read your application in full. Every update appears here and in your
+                  notifications the moment it happens.
+                </p>
+              } @else if (app.review_due_at) {
+                <p class="mt-2 text-sm text-muted-foreground">
+                  A person will review your application. We aim to decide by
+                  <span class="font-medium text-foreground">{{ dueDate(app.review_due_at) }}</span>.
+                  Every update appears here and in your notifications the moment it happens.
+                </p>
+              } @else {
+                <p class="mt-2 text-sm text-muted-foreground">
+                  Every update appears here and in your notifications the moment it happens.
+                </p>
+              }
             </ui-card>
 
             <!--
@@ -276,6 +292,14 @@ export class ApplicationDetailComponent {
    * still a decision, and the student is still owed the reasons and the doors
    * that remain open. What it does not get is another appeal button.
    */
+  /** "17 September 2026" — the server's date, formatted, never recomputed from this device. */
+  protected dueDate(iso: string): string {
+    const parsed = new Date(iso);
+    return Number.isNaN(parsed.getTime())
+      ? ''
+      : parsed.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
   protected isDecided(status: string | undefined): boolean {
     return (
       status === 'APPROVED' ||

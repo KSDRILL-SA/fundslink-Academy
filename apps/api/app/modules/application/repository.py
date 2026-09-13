@@ -19,6 +19,7 @@ from app.db.cuid import cuid
 from app.db.repository import BaseRepository
 from app.modules.application.state_machine import (
     AWAITING_FUNDSLINK_STATUSES,
+    AWAITING_HUMAN_STATUSES,
     EMERGENCY_PRIORITIES,
     REVIEW_CLOCK_STARTS,
 )
@@ -225,6 +226,11 @@ class ApplicationRepository(BaseRepository):
         if status:
             where += " AND fa.status = :status"
             params["status"] = status
+        else:
+            # No status means THE QUEUE: everything whose next step is a person's. It used to mean
+            # every application ever made, drafts and decisions included.
+            where += " AND fa.status = ANY(:awaiting_human)"
+            params["awaiting_human"] = list(AWAITING_HUMAN_STATUSES)
         cursor_clause = ""
         if after is not None:
             cursor_clause = (

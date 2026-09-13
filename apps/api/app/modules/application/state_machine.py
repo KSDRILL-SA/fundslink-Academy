@@ -38,6 +38,23 @@ AWAITING_FUNDSLINK_STATUSES: tuple[str, ...] = (
     "APPEALED",
 )
 
+# Statuses whose NEXT transition is a person's — the review queue (A01). Read from the transition
+# table, not guessed: each of these can only move by a human act. It deliberately includes
+# UNSCREENED (the engine was down, so a person reviews without a pre-screen — S8.51) and APPEALED
+# (BR-E07: a different reviewer reads it again). The queue used to request READY_FOR_REVIEW only,
+# so both were unreachable from the reviewer's screen and would have waited forever. Excludes
+# machine steps (SUBMITTED, PRE_SCREENING, RESUBMITTED), the student's clock (RETURNED_FOR_INFO),
+# the funding-pool wait (APPROVED_WAITLISTED) and post-approval lifecycle (SUSPENDED).
+AWAITING_HUMAN_STATUSES: tuple[str, ...] = (
+    "READY_FOR_REVIEW",
+    "UNSCREENED",
+    "UNDER_REVIEW",
+    "INTERVIEW_SCHEDULED",
+    "INTERVIEWED",
+    "APPROVED_PROPOSED",
+    "APPEALED",
+)
+
 # The events that put an application (back) into FundsLink's hands. The review clock starts at the
 # latest of these, so a resubmission or an appeal gets a fresh, fair review window.
 REVIEW_CLOCK_STARTS: tuple[str, ...] = ("SUBMITTED", "RESUBMITTED", "APPEALED")

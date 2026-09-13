@@ -31,38 +31,70 @@ from tests.application.conftest import (
 QUEUE = f"{BASE}/admin/applications"
 
 
+HUMAN_FINAL = {"APPROVED", "REJECTED", "REJECTED_FINAL"}
+
+
 def in_review(client, conn, *, priority: str = "NORMAL", submitted_days_ago: float = 0.0,
-              needed_by: str | None = None, status: str = "READY_FOR_REVIEW") -> str:
-    """An application waiting on FundsLink, whose review clock started ``submitted_days_ago``."""
+              needed_by: str | None = None, status: str = "READY_FOR_REVIEW",
+              submitted_at: datetime | None = None, decided_by: str | None = None) -> str:
+    """An application waiting on FundsLink, whose review clock started ``submitted_days_ago``.
+
+    ``submitted_at`` pins the exact clock start, for tests that need two applications to share a
+    due date — two calls a few milliseconds apart do NOT, and the due date outranks needed_by.
+
+    A decided status needs ``decided_by``, a human: the database refuses a SYSTEM decision
+    (fn_human_final, D-010). An earlier version of this fixture recorded one as SYSTEM and the
+    trigger rejected it, which is the invariant working, not the test.
+    """
     token, _uid = student_with_profile(client)
     app_id = create_application(client, token)["id"]
-    submitted_at = datetime.now(UTC) - timedelta(days=submitted_days_ago)
+    if submitted_at is None:
+        submitted_at = datetime.now(UTC) - timedelta(days=submitted_days_ago)
     # The clock-start event is inserted with its real time rather than UPDATEd afterwards:
     # application_status_event is append-only and the trigger refuses an edit, as it should.
-    conn.execute(
-        "INSERT INTO application_status_event"
-        " (id, application_id, to_status, actor_user_id, created_at)"
-        " VALUES (%s, %s, 'SUBMITTED', %s, %s)",
-        (f"ev_{uuid.uuid4().hex}", app_id, "SYSTEM", submitted_at),
-    )
-    conn.execute(
-        "INSERT INTO application_status_event (id, application_id, to_status, actor_user_id)"
-        " VALUES (%s, %s, %s, 'SYSTEM')",
-        (f"ev_{uuid.uuid4().hex}", app_id, status),
-    )
-    conn.execute(
-        "UPDATE funding_application SET status = %s, priority = %s, needed_by = %s WHERE id = %s",
-        (status, priority, needed_by, app_id),
-    )
+    # ONE transaction. These were three autocommit statements, so when the database refused a
+    # SYSTEM decision (fn_human_final) the backdated SUBMITTED event had already committed, leaving
+    # an application whose cached status disagreed with its events — six such rows, which the
+    # DB-D39 integrity job then (correctly) reported. A fixture that fails must leave nothing.
+    with conn.transaction():
+        conn.execute(
+            "INSERT INTO application_status_event"
+            " (id, application_id, to_status, actor_user_id, created_at)"
+            " VALUES (%s, %s, 'SUBMITTED', %s, %s)",
+            (f"ev_{uuid.uuid4().hex}", app_id, "SYSTEM", submitted_at),
+        )
+        actor = decided_by if status in HUMAN_FINAL else "SYSTEM"
+        assert actor, f"{status} needs a human decided_by (fn_human_final, D-010)"
+        conn.execute(
+            "INSERT INTO application_status_event (id, application_id, to_status, actor_user_id)"
+            " VALUES (%s, %s, %s, %s)",
+            (f"ev_{uuid.uuid4().hex}", app_id, status, actor),
+        )
+        conn.execute(
+            "UPDATE funding_application SET status = %s, priority = %s, needed_by = %s"
+            " WHERE id = %s",
+            (status, priority, needed_by, app_id),
+        )
     return app_id
 
 
-def queue_ids(client, token, *, status: str = "READY_FOR_REVIEW", limit: int = 100) -> list[str]:
-    """Every id in the queue, in queue order, by following next_cursor to the end."""
+def queue_ids(
+    client, token, *, status: str | None = "READY_FOR_REVIEW", limit: int = 100
+) -> list[str]:
+    """Every id in the queue, in queue order, by following next_cursor to the end.
+
+    ``status=None`` reads the default queue — what the reviewer's screen actually shows.
+
+    Two different failures are kept distinguishable. A cursor that comes back unchanged is STUCK
+    and fails immediately. A long queue is not a failure: the shared test database accumulates
+    rows across runs, and an earlier fixed ceiling of 100 pages tripped on a genuinely long queue
+    and looked exactly like a stuck cursor.
+    """
     ids: list[str] = []
     cursor = None
-    for _ in range(100):  # a hard ceiling: a cursor that never ends fails, it does not hang
-        params = {"status": status, "limit": limit}
+    seen: set[str] = set()
+    while True:
+        params = {"limit": limit, **({"status": status} if status else {})}
         if cursor:
             params["cursor"] = cursor
         resp = client.get(QUEUE, headers=bearer(token), params=params)
@@ -72,11 +104,16 @@ def queue_ids(client, token, *, status: str = "READY_FOR_REVIEW", limit: int = 1
         cursor = body["meta"]["next_cursor"]
         if not cursor:
             return ids
-    pytest.fail("the review-queue cursor never reached the end")
+        if cursor in seen:
+            pytest.fail(f"the review-queue cursor did not advance after {len(ids)} rows")
+        seen.add(cursor)
 
 
-def item(client, token, app_id: str) -> dict:
-    resp = client.get(f"{BASE}/applications/{app_id}", headers=bearer(token))
+def item(client, token, app_id: str, *, as_reviewer: bool = True) -> dict:
+    """One application, read the way its reader reads it: a reviewer through the admin endpoint,
+    a student through their own."""
+    path = f"{BASE}/admin/applications/{app_id}" if as_reviewer else f"{BASE}/applications/{app_id}"
+    resp = client.get(path, headers=bearer(token))
     assert resp.status_code == 200, resp.text
     return resp.json()
 
@@ -86,52 +123,72 @@ def config_days(conn, key: str) -> int:
 
 
 # --------------------------------------------------------------------------- ordering
+#
+# Every ordering test inserts THREE applications in a deliberately scrambled order, chosen so the
+# expected order is wrong under BOTH naive orderings — newest-first (the old ORDER BY created_at
+# DESC) and oldest-first. The first version used two rows inserted in the "nice" order, and its
+# negative control showed the two headline priority tests PASSING against the broken query: the
+# CRITICAL row happened to be inserted last, so newest-first put it on top by accident. Those tests
+# were measuring insertion order, not the triage rule.
 
 
-def test_a_critical_application_is_reviewed_before_older_normal_ones(app_client, admin_conn):
-    """The case the old ORDER BY got backwards — and the one D-002 exists for."""
+def assert_order(ids: list[str], *expected: str) -> None:
+    positions = [ids.index(app_id) for app_id in expected]
+    assert positions == sorted(positions), f"queue order was {positions} for the expected sequence"
+
+
+def test_a_critical_application_is_reviewed_before_normal_ones_either_side_of_it(
+    app_client, admin_conn
+):
+    """The case D-002 exists for — and the one the old ORDER BY got wrong."""
     reviewer, _ = make_reviewer(app_client, admin_conn)
-    older_normal = in_review(app_client, admin_conn, priority="NORMAL", submitted_days_ago=10)
-    newer_critical = in_review(app_client, admin_conn, priority="CRITICAL", submitted_days_ago=0)
+    normal_older = in_review(app_client, admin_conn, priority="NORMAL", submitted_days_ago=10)
+    critical = in_review(app_client, admin_conn, priority="CRITICAL", submitted_days_ago=5)
+    normal_newer = in_review(app_client, admin_conn, priority="NORMAL", submitted_days_ago=1)
 
     ids = queue_ids(app_client, reviewer)
 
-    assert ids.index(newer_critical) < ids.index(older_normal)
+    # Newest-first would put normal_newer on top; oldest-first, normal_older. Only triage says this.
+    assert ids.index(critical) < ids.index(normal_older)
+    assert ids.index(critical) < ids.index(normal_newer)
 
 
 def test_priority_order_is_critical_then_urgent_then_normal(app_client, admin_conn):
     reviewer, _ = make_reviewer(app_client, admin_conn)
-    normal = in_review(app_client, admin_conn, priority="NORMAL", submitted_days_ago=2)
+    # Inserted urgent, normal, critical: newest-first gives critical, normal, urgent and
+    # oldest-first gives urgent, normal, critical — both wrong.
     urgent = in_review(app_client, admin_conn, priority="URGENT", submitted_days_ago=1)
+    normal = in_review(app_client, admin_conn, priority="NORMAL", submitted_days_ago=2)
     critical = in_review(app_client, admin_conn, priority="CRITICAL", submitted_days_ago=0)
 
-    ids = queue_ids(app_client, reviewer)
-
-    assert ids.index(critical) < ids.index(urgent) < ids.index(normal)
+    assert_order(queue_ids(app_client, reviewer), critical, urgent, normal)
 
 
 def test_among_equals_the_longest_waiting_is_reviewed_first(app_client, admin_conn):
-    """Not newest-first. A triage queue that rewards arriving late is not a queue."""
+    """Waiting is measured by the review clock, not by when the row was inserted."""
     reviewer, _ = make_reviewer(app_client, admin_conn)
-    waited_longer = in_review(app_client, admin_conn, submitted_days_ago=6)
-    arrived_later = in_review(app_client, admin_conn, submitted_days_ago=1)
+    middle = in_review(app_client, admin_conn, submitted_days_ago=4)
+    longest = in_review(app_client, admin_conn, submitted_days_ago=8)
+    latest = in_review(app_client, admin_conn, submitted_days_ago=1)
 
-    ids = queue_ids(app_client, reviewer)
-
-    assert ids.index(waited_longer) < ids.index(arrived_later)
+    assert_order(queue_ids(app_client, reviewer), longest, middle, latest)
 
 
 def test_same_priority_and_due_date_the_sooner_need_goes_first(app_client, admin_conn):
     reviewer, _ = make_reviewer(app_client, admin_conn)
-    soon = (datetime.now(UTC) + timedelta(days=5)).date().isoformat()
-    later = (datetime.now(UTC) + timedelta(days=60)).date().isoformat()
-    # Same submission moment, so the due dates match; only needed_by separates them.
-    needs_later = in_review(app_client, admin_conn, submitted_days_ago=3, needed_by=later)
-    needs_soon = in_review(app_client, admin_conn, submitted_days_ago=3, needed_by=soon)
+    today = datetime.now(UTC).date()
+    # The SAME submission instant, so due dates are identical and only needed_by separates them.
+    # (Two calls with submitted_days_ago=3 differ by milliseconds, and the due date is the higher
+    # key — an earlier version of this test tripped on exactly that.)
+    moment = datetime.now(UTC) - timedelta(days=3)
+    needs_middle = in_review(app_client, admin_conn, submitted_at=moment,
+                             needed_by=(today + timedelta(days=30)).isoformat())
+    needs_soon = in_review(app_client, admin_conn, submitted_at=moment,
+                           needed_by=(today + timedelta(days=5)).isoformat())
+    needs_later = in_review(app_client, admin_conn, submitted_at=moment,
+                            needed_by=(today + timedelta(days=60)).isoformat())
 
-    ids = queue_ids(app_client, reviewer)
-
-    assert ids.index(needs_soon) < ids.index(needs_later)
+    assert_order(queue_ids(app_client, reviewer), needs_soon, needs_middle, needs_later)
 
 
 # --------------------------------------------------------------------------- the SLA
@@ -200,8 +257,10 @@ def test_no_review_is_owed_when_the_application_is_not_waiting_on_fundslink(
     app_client, admin_conn, status
 ):
     """RETURNED_FOR_INFO is the student's clock (D-006); a decided application owes nothing."""
-    reviewer, _ = make_reviewer(app_client, admin_conn)
-    app_id = in_review(app_client, admin_conn, submitted_days_ago=40, status=status)
+    reviewer, reviewer_id = make_reviewer(app_client, admin_conn)
+    app_id = in_review(
+        app_client, admin_conn, submitted_days_ago=40, status=status, decided_by=reviewer_id
+    )
 
     body = item(app_client, reviewer, app_id)
 
@@ -213,7 +272,7 @@ def test_a_draft_owes_no_review(app_client, admin_conn):
     token, _uid = student_with_profile(app_client)
     app_id = create_application(app_client, token)["id"]
 
-    body = item(app_client, token, app_id)
+    body = item(app_client, token, app_id, as_reviewer=False)
 
     assert body.get("review_due_at") is None
     assert body.get("sla_breached") is None
@@ -251,3 +310,82 @@ def test_a_cursor_from_another_list_restarts_rather_than_mis_paginating(app_clie
 
     assert resp.status_code == 200, resp.text
     assert resp.json()["items"], "a foreign cursor emptied the queue instead of restarting"
+
+
+# --------------------------------------------------------------------------- the reviewer's read
+
+
+def test_a_reviewer_can_read_one_application_through_the_admin_endpoint(app_client, admin_conn):
+    """A02 used the student endpoint and got 403 for exactly the people who use it."""
+    reviewer, _ = make_reviewer(app_client, admin_conn)
+    app_id = in_review(app_client, admin_conn)
+
+    student_endpoint = app_client.get(f"{BASE}/applications/{app_id}", headers=bearer(reviewer))
+    admin_endpoint = app_client.get(f"{BASE}/admin/applications/{app_id}", headers=bearer(reviewer))
+
+    assert student_endpoint.status_code == 403, "the defect this endpoint exists to fix"
+    assert admin_endpoint.status_code == 200, admin_endpoint.text
+    assert admin_endpoint.json()["id"] == app_id
+
+
+def test_a_student_cannot_use_the_admin_read(app_client, admin_conn):
+    token, _uid = student_with_profile(app_client)
+    app_id = create_application(app_client, token)["id"]
+
+    resp = app_client.get(f"{BASE}/admin/applications/{app_id}", headers=bearer(token))
+
+    assert resp.status_code == 403
+
+
+def test_the_admin_read_of_an_unknown_application_is_404(app_client, admin_conn):
+    reviewer, _ = make_reviewer(app_client, admin_conn)
+
+    resp = app_client.get(f"{BASE}/admin/applications/app_does_not_exist", headers=bearer(reviewer))
+
+    assert resp.status_code == 404
+    assert resp.json()["error"]["code"] == "application_not_found"
+
+
+# --------------------------------------------------------------------------- what is in the queue
+
+
+def test_the_default_queue_holds_everything_that_waits_on_a_person(app_client, admin_conn):
+    """UNSCREENED and APPEALED were unreachable from the reviewer's screen (#288)."""
+    reviewer, reviewer_id = make_reviewer(app_client, admin_conn)
+    waiting = {
+        status: in_review(app_client, admin_conn, status=status)
+        for status in ("READY_FOR_REVIEW", "UNSCREENED", "UNDER_REVIEW", "INTERVIEW_SCHEDULED",
+                       "INTERVIEWED", "APPROVED_PROPOSED", "APPEALED")
+    }
+
+    ids = set(queue_ids(app_client, reviewer, status=None))
+
+    missing = [status for status, app_id in waiting.items() if app_id not in ids]
+    assert missing == [], f"waiting on a person but not in the queue: {missing}"
+
+
+def test_the_default_queue_leaves_out_what_does_not_wait_on_a_reviewer(app_client, admin_conn):
+    reviewer, reviewer_id = make_reviewer(app_client, admin_conn)
+    token, _uid = student_with_profile(app_client)
+    draft = create_application(app_client, token)["id"]
+    elsewhere = {
+        "RETURNED_FOR_INFO": in_review(app_client, admin_conn, status="RETURNED_FOR_INFO"),
+        "APPROVED": in_review(app_client, admin_conn, status="APPROVED", decided_by=reviewer_id),
+        "REJECTED": in_review(app_client, admin_conn, status="REJECTED", decided_by=reviewer_id),
+    }
+
+    ids = set(queue_ids(app_client, reviewer, status=None))
+
+    assert draft not in ids, "a draft nobody has sent is in the review queue"
+    leaked = [status for status, app_id in elsewhere.items() if app_id in ids]
+    assert leaked == [], f"not waiting on a reviewer, but in the queue: {leaked}"
+
+
+def test_status_narrows_the_queue_to_one_status(app_client, admin_conn):
+    reviewer, _ = make_reviewer(app_client, admin_conn)
+    appealed = in_review(app_client, admin_conn, status="APPEALED")
+    ready = in_review(app_client, admin_conn, status="READY_FOR_REVIEW")
+
+    ids = queue_ids(app_client, reviewer, status="APPEALED")
+
+    assert appealed in ids and ready not in ids

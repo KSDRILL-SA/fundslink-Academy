@@ -62,6 +62,10 @@ const APPLICATION = {
   academic_year: '2026',
   requested_amount: '48500.00',
   created_at: '2026-02-10T09:00:00Z',
+  // The server's config-driven review date (D-002). Present only while the application waits on
+  // FundsLink, exactly as the real API sends it.
+  review_due_at: '2026-02-24T09:00:00Z',
+  sla_breached: false,
 };
 
 const BURSARIES = [
@@ -148,10 +152,20 @@ const TRACKED = [
   },
 ];
 
+// Shaped like the real queue (#288): only statuses that wait on a person, in triage order. This
+// fixture once held a RETURNED_FOR_INFO application, which the real queue never returns — preview
+// mode was showing reviewers a queue the system does not have.
 const QUEUE = [
-  { ...APPLICATION, id: 'app_preview_1', status: 'READY_FOR_REVIEW' },
-  { ...APPLICATION, id: 'app_preview_2', status: 'UNDER_REVIEW' },
-  { ...APPLICATION, id: 'app_preview_3', status: 'RETURNED_FOR_INFO' },
+  {
+    ...APPLICATION,
+    id: 'app_preview_1',
+    status: 'APPEALED',
+    priority: 'CRITICAL',
+    review_due_at: '2026-02-13T09:00:00Z',
+    sla_breached: true,
+  },
+  { ...APPLICATION, id: 'app_preview_2', status: 'UNSCREENED', priority: 'URGENT' },
+  { ...APPLICATION, id: 'app_preview_3', status: 'READY_FOR_REVIEW' },
 ];
 
 const page = (items: unknown[]) => ({ items, meta: { next_cursor: null } });
@@ -175,6 +189,9 @@ const ROUTES: ReadonlyArray<{
   { method: 'GET', match: /^\/students\/me\/data-export$/, body: () => ({ profile: PROFILE }) },
   { method: 'POST', match: /^\/students\/me\/documents$/, body: () => DOCUMENT },
   { method: 'GET', match: /^\/admin\/applications$/, body: () => page(QUEUE) },
+  // A02's own read. Preview used to answer the STUDENT endpoint for a reviewer, which is why A02
+  // looked fine here while the real API returned 403 (#288).
+  { method: 'GET', match: /^\/admin\/applications\/[^/]+$/, body: () => APPLICATION },
   { method: 'GET', match: /^\/applications$/, body: () => page([APPLICATION]) },
   { method: 'POST', match: /^\/applications$/, body: () => ({ ...APPLICATION, status: 'DRAFT' }) },
   { method: 'GET', match: /^\/applications\/[^/]+$/, body: () => APPLICATION },
