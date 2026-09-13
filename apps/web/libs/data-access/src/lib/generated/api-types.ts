@@ -445,6 +445,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/applications/{id}/recusal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Step aside from an application because of a conflict of interest (BR-E09 · E8)
+         * @description A reviewer who personally knows an applicant must not review them. Recording a recusal is append-only and audit-logged. From then on the application leaves this reviewer's queue (and stays in everyone else's), and this reviewer's review and priority actions on it are refused with `reviewer_recused`. A second recusal by the same reviewer is 409.
+         */
+        post: operations["adminRecuse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/applications/{id}/review": {
         parameters: {
             query?: never;
@@ -770,6 +790,8 @@ export interface components {
              * @description When FundsLink owes this application a review (D-002 / D-013). Starts when the application last came into FundsLink's hands — SUBMITTED, RESUBMITTED or APPEALED — and adds `review_sla_days`, or `emergency_review_sla_days` for URGENT and CRITICAL, from the config table. Present only while the application is waiting on FundsLink; absent while it is a draft, waiting on the student (RETURNED_FOR_INFO), or decided.
              */
             review_due_at?: string;
+            /** @description Reviewer reads only (adminGetApplication): true when the caller has stepped aside from this application (BR-E09), so the screen can withhold the decision and priority actions. Never present on a student's read. */
+            recused_by_me?: boolean;
             /** @description True when `review_due_at` has passed and the application is still waiting on FundsLink. Lets a reviewer see an overdue application without doing date arithmetic, and lets a student be told honestly that a review is late. */
             sla_breached?: boolean;
             /** @description Position on the waitlist, 1-based, only on APPROVED_WAITLISTED (E4). Derived from the order in which applications were waitlisted. There is deliberately NO pool-size field: how many students the pool can fund depends on money this system does not yet hold or track, and S16-WAIT tells the truth it has rather than inventing a denominator. */
@@ -1726,6 +1748,42 @@ export interface operations {
             };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    adminRecuse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        application_id: string;
+                        /** Format: date-time */
+                        created_at: string;
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Validation"];
         };
     };
     adminReview: {

@@ -287,6 +287,61 @@ describe('A02 application detail', () => {
     expect(ownWords).toBeLessThan(flags);
   });
 
+  describe('conflict of interest (BR-E09 · E8)', () => {
+    const READY = {
+      id: 'a1',
+      application_type: 'POSTGRAD',
+      academic_year: '2026',
+      status: 'READY_FOR_REVIEW',
+      created_at: '2026-02-01T00:00:00Z',
+      recused_by_me: false,
+    };
+    const button = (label: string) =>
+      Array.from(el().querySelectorAll('button')).find((b) => b.textContent?.includes(label));
+
+    it('offers to step aside before any action, and asks how the reviewer knows them', () => {
+      load(READY);
+      expect(text()).toContain('Do you know this applicant?');
+      expect(text().indexOf('Do you know this applicant?')).toBeLessThan(
+        text().indexOf('Triage priority'),
+      );
+      button('Step aside from this application')?.click();
+      fixture.detectChanges();
+      expect(text()).toContain('How you know them');
+    });
+
+    it('records the reason, then withholds the decision and priority actions', () => {
+      load(READY);
+      button('Step aside from this application')?.click();
+      fixture.detectChanges();
+      const reason = el().querySelector('textarea') as HTMLTextAreaElement;
+      reason.value = 'She is my cousin and I know the family.';
+      reason.dispatchEvent(new Event('input'));
+      reason.dispatchEvent(new Event('blur'));
+      (el().querySelector('form[class*="flex-col"] button[type="submit"]') as HTMLButtonElement).click();
+
+      const request = http.expectOne((r) => r.url === '/api/v1/admin/applications/a1/recusal');
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({ reason: 'She is my cousin and I know the family.' });
+      request.flush({ application_id: 'a1', created_at: '2026-09-14T08:00:00Z' }, { status: 201, statusText: 'Created' });
+
+      load({ ...READY, recused_by_me: true });
+      expect(text()).toContain('You stepped aside from this application');
+      expect(text()).not.toContain('Triage priority');
+      expect(el().querySelector('fl-decision-compose')).toBeNull();
+    });
+
+    it('does not send a recusal without a reason', () => {
+      load(READY);
+      button('Step aside from this application')?.click();
+      fixture.detectChanges();
+      (el().querySelector('form[class*="flex-col"] button[type="submit"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      http.expectNone((r) => r.url.endsWith('/recusal'));
+      expect(text()).toContain('Say briefly how you know them');
+    });
+  });
+
   it('has no serious or critical accessibility violations', async () => {
     load({
       id: 'a1',

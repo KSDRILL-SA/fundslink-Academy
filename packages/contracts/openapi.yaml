@@ -373,6 +373,41 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /admin/applications/{id}/recusal:
+    post:
+      operationId: adminRecuse
+      summary: Step aside from an application because of a conflict of interest (BR-E09 · E8)
+      description: >-
+        A reviewer who personally knows an applicant must not review them. Recording a recusal
+        is append-only and audit-logged. From then on the application leaves this reviewer's
+        queue (and stays in everyone else's), and this reviewer's review and priority actions on
+        it are refused with `reviewer_recused`. A second recusal by the same reviewer is 409.
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 10, maxLength: 2000 }
+      responses:
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [application_id, created_at]
+                properties:
+                  application_id: { type: string }
+                  created_at: { type: string, format: date-time }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Validation' }
+
   /admin/applications/{id}/review:
     post:
       operationId: adminReview
@@ -769,6 +804,12 @@ components:
                 CRITICAL, from the config table. Present only while the application is waiting
                 on FundsLink; absent while it is a draft, waiting on the student
                 (RETURNED_FOR_INFO), or decided.
+            recused_by_me:
+              type: boolean
+              description: >-
+                Reviewer reads only (adminGetApplication): true when the caller has stepped aside
+                from this application (BR-E09), so the screen can withhold the decision and
+                priority actions. Never present on a student's read.
             sla_breached:
               type: boolean
               description: >-

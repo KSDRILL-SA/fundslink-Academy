@@ -96,6 +96,56 @@ type Application = Schema<'Application'>;
             }
           </div>
 
+
+          <!--
+            Conflict of interest (BR-E09 · E8).
+
+            A reviewer who knows the applicant personally steps aside. It is recorded, it cannot be
+            undone, and the application leaves this reviewer's queue for someone else's. Offered
+            here, above every action, because the moment to declare it is before touching anything.
+          -->
+          @if (app.recused_by_me) {
+            <ui-card class="mt-6">
+              <h2 class="text-lg font-semibold">You stepped aside from this application</h2>
+              <p class="mt-2 max-w-prose text-muted-foreground">
+                You declared a conflict of interest, so another reviewer will decide it. It has left
+                your queue, and the review and priority actions are not available to you here.
+              </p>
+            </ui-card>
+          } @else {
+            <ui-card class="mt-6">
+              <h2 class="text-lg font-semibold">Do you know this applicant?</h2>
+              <p class="mt-2 max-w-prose text-muted-foreground">
+                If you know them personally, step aside before you review. Another reviewer will take
+                it. This is recorded and cannot be undone.
+              </p>
+
+              @if (!recusing()) {
+                <ui-button class="mt-4" variant="secondary" (clicked)="recusing.set(true)">
+                  Step aside from this application
+                </ui-button>
+              } @else {
+                <form class="mt-4 flex flex-col gap-3" [formGroup]="recusalForm" (ngSubmit)="recuse(app.id)">
+                  <ui-form-field label="How you know them" [error]="recusalReasonError()" required>
+                    <textarea uiInput rows="3" formControlName="reason"></textarea>
+                  </ui-form-field>
+                  <div class="flex flex-wrap gap-3">
+                    <ui-button type="submit" [loading]="savingRecusal()">Step aside</ui-button>
+                    <ui-button variant="ghost" (clicked)="recusing.set(false)">Cancel</ui-button>
+                  </div>
+                </form>
+              }
+
+              @if (recusalFailure(); as problem) {
+                <div role="alert" class="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4">
+                  <p class="font-medium text-foreground">{{ problem.title }}</p>
+                  <p class="mt-1 text-sm text-muted-foreground">{{ problem.message }}</p>
+                </div>
+              }
+            </ui-card>
+          }
+
+          @if (!app.recused_by_me) {
           <!--
             Triage.
 
@@ -140,6 +190,7 @@ type Application = Schema<'Application'>;
               <p role="status" class="mt-4 text-sm font-medium text-success">Priority updated.</p>
             }
           </ui-card>
+          }
 
           @if (app.motivation; as motivation) {
             <!-- Category D. Someone wrote this expecting a person to read every
@@ -194,9 +245,11 @@ type Application = Schema<'Application'>;
             </ui-card>
           }
 
-          <div class="mt-10">
-            <fl-decision-compose />
-          </div>
+          @if (!app.recused_by_me) {
+            <div class="mt-10">
+              <fl-decision-compose />
+            </div>
+          }
         }
       }
     }
@@ -235,6 +288,54 @@ export class AdminApplicationComponent {
     priority: ['NORMAL', { validators: [Validators.required] }],
     note: ['', { validators: [Validators.required, Validators.minLength(8)], updateOn: 'blur' }],
   });
+
+  /** BR-E09: stepping aside needs a reason; it is kept on the staff-only recusal record. */
+  protected readonly recusing = signal(false);
+  protected readonly savingRecusal = signal(false);
+  private readonly recusalError = signal<string | null>(null);
+  protected readonly recusalFailure = computed(() => {
+    const code = this.recusalError();
+    return code ? presentError(code) : null;
+  });
+  readonly recusalForm = this.fb.nonNullable.group({
+    reason: ['', { validators: [Validators.required, Validators.minLength(10)], updateOn: 'blur' }],
+  });
+
+  protected recusalReasonError(): string | null {
+    const control = this.recusalForm.controls.reason;
+    if (!control.touched || control.valid) {
+      return null;
+    }
+    return 'Say briefly how you know them — at least 10 characters.';
+  }
+
+  protected recuse(id: string): void {
+    this.recusalForm.markAllAsTouched();
+    if (this.recusalForm.invalid) {
+      return;
+    }
+    this.savingRecusal.set(true);
+    this.recusalError.set(null);
+    this.api
+      .post('/admin/applications/{id}/recusal', this.recusalForm.getRawValue(), { path: { id } })
+      .subscribe({
+        next: () => {
+          this.savingRecusal.set(false);
+          this.recusing.set(false);
+          // Re-read: the server now says recused_by_me, and the actions go away.
+          this.load();
+        },
+        error: (error: unknown) => {
+          this.savingRecusal.set(false);
+          const code = error instanceof ApiError ? error.code : null;
+          if (code === 'already_recused') {
+            this.load();
+            return;
+          }
+          this.recusalError.set(code);
+        },
+      });
+  }
 
   protected priorityNoteError(): string | null {
     const control = this.priorityForm.controls.note;
