@@ -3,7 +3,17 @@ import { Router, RouterLink, RouterOutlet } from '@angular/router';
 // Narrow entry, not the 'auth' barrel: the barrel re-exports the five auth
 // screens, and this shell loads on every authenticated route (see #210).
 import { AuthService } from 'auth/session';
-import { Bell, FileText, House, LogOut, Search, Send, ShieldCheck, UserRound } from 'lucide';
+import {
+  Bell,
+  FileText,
+  History,
+  House,
+  LogOut,
+  Search,
+  Send,
+  ShieldCheck,
+  UserRound,
+} from 'lucide';
 import {
   UiAvatarComponent,
   UiIconComponent,
@@ -160,6 +170,13 @@ export class AppShellComponent {
       hint: 'Password and two-factor',
       icon: ShieldCheck as IconNode,
       route: '/app/account',
+    },
+    {
+      id: 'activity',
+      label: 'Account activity',
+      hint: 'Sign-ins and every change',
+      icon: History as IconNode,
+      route: '/app/activity',
     },
     {
       id: 'privacy',

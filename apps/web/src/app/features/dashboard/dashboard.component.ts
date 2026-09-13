@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { Router, RouterLink } from '@angular/router';
 import {
   ArrowRight,
+  Bell,
   FilePlus2,
   FileText,
   LayoutGrid,
@@ -19,10 +20,14 @@ import {
   UiIconTileComponent,
   UiProgressRingComponent,
   UiSkeletonComponent,
+  UiStatComponent,
   UiStatusChipComponent,
   type IconNode,
 } from 'ui';
+import { AccountActivityComponent } from './account-activity.component';
 import { ApplicationsStore } from './applications.store';
+import { OverviewStore, type StudentOverview } from './overview.store';
+import { SecuritySummaryComponent } from './security-summary.component';
 import { ProfileStore } from '../profile/profile.store';
 import { STUDY_LEVEL_LABELS } from '../applications/application-labels';
 
@@ -40,7 +45,11 @@ interface QuickAction {
  *
  * One question answered above everything else: **what is happening with my
  * application, and what should I do next.** Everything on this screen serves
- * that, which is why there is no activity feed and no vanity statistics.
+ * that. Its figures are the student's own, counted by the server from the
+ * database on every visit (`getMyOverview`) — nothing here is a sample, a
+ * placeholder or a number the page works out for itself. Its activity list
+ * (`listMyActivity`) is the account's real history: every sign-in, change and
+ * application step, so a student would notice one that was not theirs.
  *
  * The banner is the only place on the platform that uses the full navy-and-gold
  * atmosphere, and it earns it: this is the screen a student opens over and over
@@ -67,10 +76,13 @@ interface QuickAction {
     UiIconComponent,
     UiIconTileComponent,
     UiProgressRingComponent,
+    UiStatComponent,
     UiStatusChipComponent,
     UiSkeletonComponent,
     UiEmptyStateComponent,
     UiErrorStateComponent,
+    AccountActivityComponent,
+    SecuritySummaryComponent,
   ],
   template: `
     <!-- ---------- Welcome banner ---------- -->
@@ -142,6 +154,70 @@ interface QuickAction {
           </div>
         }
       </div>
+    </section>
+
+    <!-- ---------- At a glance ---------- -->
+    <section class="mt-8" aria-labelledby="glance-heading">
+      <h2 id="glance-heading" class="text-lg font-semibold">At a glance</h2>
+
+      @switch (overview.state().status) {
+        @case ('error') {
+          <ui-card class="mt-4">
+            <ui-error-state [code]="overview.state().errorCode" (retry)="overview.load()" />
+          </ui-card>
+        }
+
+        @case ('success') {
+          @if (overview.overview(); as figures) {
+            <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <li>
+                <ui-stat
+                  label="Applications"
+                  [value]="count(figures.applications.total)"
+                  [hint]="applicationsHint(figures)"
+                  [icon]="icons.application"
+                  tone="gold"
+                />
+              </li>
+              <li>
+                <ui-stat
+                  label="Bursaries you track"
+                  [value]="count(figures.tracking.active)"
+                  [hint]="trackingHint(figures)"
+                  [icon]="icons.tracking"
+                  tone="navy"
+                />
+              </li>
+              <li>
+                <ui-stat
+                  label="Matches found"
+                  [value]="count(figures.matches.total)"
+                  [hint]="lastTime('Last search', figures.matches.last_run_at, 'Not searched yet')"
+                  [icon]="icons.matches"
+                  tone="success"
+                />
+              </li>
+              <li>
+                <ui-stat
+                  label="Messages sent to you"
+                  [value]="count(figures.notifications.total)"
+                  [hint]="lastTime('Latest', figures.notifications.last_at, 'None yet')"
+                  [icon]="icons.notifications"
+                  tone="neutral"
+                />
+              </li>
+            </ul>
+          }
+        }
+
+        @default {
+          <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            @for (tile of [1, 2, 3, 4]; track tile) {
+              <ui-skeleton class="h-32 w-full" shape="block" />
+            }
+          </div>
+        }
+      }
     </section>
 
     <!-- ---------- Quick actions ---------- -->
@@ -242,6 +318,24 @@ interface QuickAction {
       }
     </section>
 
+    <!-- ---------- Account activity (preview; the full history has its own page) ---------- -->
+    <section class="mt-8" aria-labelledby="activity-heading">
+      <div class="flex flex-wrap items-end justify-between gap-2">
+        <h2 id="activity-heading" class="text-lg font-semibold">Recent account activity</h2>
+        <a routerLink="/app/activity" class="text-sm font-medium underline-offset-4 hover:underline">
+          See all
+        </a>
+      </div>
+
+      @if (overview.overview(); as figures) {
+        <div class="mt-3">
+          <fl-security-summary [account]="figures.account" />
+        </div>
+      }
+
+      <fl-account-activity [preview]="true" />
+    </section>
+
     <!-- ---------- Your profile ---------- -->
     <section class="mt-8" aria-labelledby="profile-heading">
       <h2 id="profile-heading" class="text-lg font-semibold">Your profile</h2>
@@ -299,6 +393,7 @@ export class DashboardComponent {
   private readonly router = inject(Router);
   protected readonly applications = inject(ApplicationsStore);
   protected readonly profile = inject(ProfileStore);
+  protected readonly overview = inject(OverviewStore);
 
   protected readonly icons = {
     apply: FilePlus2 as IconNode,
@@ -306,6 +401,9 @@ export class DashboardComponent {
     application: FileText as IconNode,
     arrow: ArrowRight as IconNode,
     sparkle: Sparkles as IconNode,
+    tracking: Send as IconNode,
+    matches: LayoutGrid as IconNode,
+    notifications: Bell as IconNode,
   };
 
   protected readonly quickActions: readonly QuickAction[] = [
@@ -348,29 +446,28 @@ export class DashboardComponent {
 
   protected readonly hasApplication = computed(() => this.applications.current() !== null);
 
-  /** Both requests have settled, whichever way they went. */
+  /** The requests the ring depends on have settled successfully — never a guess while in flight. */
   protected readonly journeyReady = computed(
     () =>
-      this.applications.state().status !== 'loading' &&
-      this.profile.state().status !== 'loading',
+      this.overview.state().status === 'success' && this.profile.state().status !== 'loading',
   );
 
   /**
-   * The four steps of the journey, each derived from data already on screen.
+   * The four steps of the journey, each from the server's own figures.
    *
-   * Nothing here re-implements a server rule: "submitted" means the server is
-   * no longer calling it a draft, and "decided" means the server has moved it
-   * to a terminal status. An unrecognised status counts as neither, so a new
-   * backend status can never make this claim something untrue about a student.
+   * "Decided" used to be a list kept in this file — which counted WITHDRAWN (the student stopped
+   * it; nobody decided anything) and EXPIRED (not a status at all), and missed REJECTED_FINAL and
+   * APPROVED_WAITLISTED, so a waitlisted student was told no decision had been made. The server
+   * now counts drafts and decisions with the state machine's own lists; this only reads them.
    */
   protected readonly journey = computed(() => {
-    const application = this.applications.current();
-    const status = application?.status ?? '';
+    const applications = this.overview.overview()?.applications;
+    const total = applications?.total ?? 0;
     return [
       { label: 'Profile created', done: this.profile.profile() !== null },
-      { label: 'Application started', done: application !== null },
-      { label: 'Submitted for review', done: application !== null && status !== 'DRAFT' },
-      { label: 'Decision made', done: DECIDED.has(status) },
+      { label: 'Application started', done: total > 0 },
+      { label: 'Submitted for review', done: total - (applications?.drafts ?? 0) > 0 },
+      { label: 'Decision made', done: (applications?.decided ?? 0) > 0 },
     ];
   });
 
@@ -381,6 +478,47 @@ export class DashboardComponent {
   constructor() {
     this.applications.load();
     this.profile.load();
+    this.overview.load();
+  }
+
+  protected count(value: number): string {
+    return value.toLocaleString('en-ZA');
+  }
+
+  /** The part of the total that asks something of the student comes first. */
+  protected applicationsHint(figures: StudentOverview): string {
+    const { needs_your_action, with_fundslink, decided, drafts, total } = figures.applications;
+    if (total === 0) {
+      return 'You have not applied yet';
+    }
+    const parts = [
+      needs_your_action ? `${needs_your_action} need${needs_your_action === 1 ? 's' : ''} you` : '',
+      drafts ? `${drafts} draft${drafts === 1 ? '' : 's'}` : '',
+      with_fundslink ? `${with_fundslink} with FundsLink` : '',
+      decided ? `${decided} decided` : '',
+    ].filter(Boolean);
+    return parts.join(' · ') || 'Open your applications for details';
+  }
+
+  protected trackingHint(figures: StudentOverview): string {
+    const deadline = figures.tracking.next_deadline;
+    if (deadline) {
+      return `Next deadline: ${deadline.bursary_name}, ${this.date(deadline.due_on)}`;
+    }
+    return figures.tracking.total === 0 ? 'Nothing tracked yet' : 'No deadlines ahead';
+  }
+
+  protected lastTime(prefix: string, iso: string | null | undefined, none: string): string {
+    return iso ? `${prefix}: ${this.date(iso)}` : none;
+  }
+
+  /** A calendar date ("17 September 2026"). A bare YYYY-MM-DD is read as that day, not as UTC
+   *  midnight — which in some time zones is the day before. */
+  protected date(iso: string): string {
+    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T12:00:00`) : new Date(iso);
+    return Number.isNaN(parsed.getTime())
+      ? ''
+      : parsed.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   /**
@@ -399,11 +537,28 @@ export class DashboardComponent {
         return 'We are checking that everything we need is here. This step cannot approve or decline you — only a person can do that.';
       case 'RETURNED_FOR_INFO':
         return 'A few small things need your attention before this goes back in the queue.';
+      case 'RESUBMITTED':
+        return 'Thank you for sending what we asked for. We are checking it now.';
+      case 'UNSCREENED':
       case 'READY_FOR_REVIEW':
       case 'UNDER_REVIEW':
+      case 'APPROVED_PROPOSED':
         return 'Your application is with a reviewer. We will let you know as soon as there is a decision.';
+      case 'INTERVIEW_SCHEDULED':
+        return 'You have an interview. Open your application for the details.';
+      case 'INTERVIEWED':
+        return 'Thank you for your interview. A reviewer will make a decision and tell you.';
+      case 'APPEALED':
+        return 'Your appeal is with a different reviewer, who will look at your application again.';
       case 'APPROVED':
         return 'Your funding was approved. Open your application for the details.';
+      case 'APPROVED_WAITLISTED':
+        return 'You qualify and are on the waitlist. Open your application to see your place.';
+      case 'REJECTED':
+      case 'REJECTED_FINAL':
+        return 'We could not fund this application. Open it to read why, and what you can do next.';
+      case 'WITHDRAWN':
+        return 'You withdrew this application. You can start a new one when you are ready.';
       default:
         return 'Open your application to see where it stands.';
     }
@@ -421,6 +576,3 @@ export class DashboardComponent {
     void this.router.navigateByUrl('/app/profile');
   }
 }
-
-/** Terminal statuses — a person has ruled, one way or the other. */
-const DECIDED = new Set(['APPROVED', 'REJECTED', 'WITHDRAWN', 'EXPIRED']);

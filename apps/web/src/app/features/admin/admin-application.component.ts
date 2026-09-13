@@ -8,7 +8,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiError, ApiService, type Schema } from 'data-access';
 import {
   UiBadgeComponent,
@@ -23,6 +23,7 @@ import {
   presentError,
 } from 'ui';
 import { asyncState } from '../../core/async-state';
+import { APPLICATION_TYPE_LABELS } from '../applications/application-labels';
 import { DecisionComposeComponent } from './decision-compose.component';
 
 type Application = Schema<'Application'>;
@@ -45,6 +46,7 @@ type Application = Schema<'Application'>;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     UiCardComponent,
     UiStatusChipComponent,
     UiSkeletonComponent,
@@ -58,6 +60,17 @@ type Application = Schema<'Application'>;
     UiSelectDirective,
   ],
   template: `
+    <!-- A reviewer finishes one application and goes to the next. This screen had no way back to
+         the queue except the browser's own button. -->
+    <a
+      routerLink="/app/admin/queue"
+      class="mb-5 inline-flex items-center gap-2 rounded-sm text-sm font-medium text-muted-foreground
+             underline-offset-4 outline-none hover:text-foreground hover:underline
+             focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
+      <span aria-hidden="true">←</span> Back to the review queue
+    </a>
+
     @switch (state().status) {
       @case ('loading') {
         <div class="flex flex-col gap-4">
@@ -74,7 +87,7 @@ type Application = Schema<'Application'>;
       @default {
         @if (application(); as app) {
           <h1 class="text-2xl font-semibold tracking-tight">
-            {{ app.application_type }} · {{ app.academic_year }}
+            {{ typeLabel(app.application_type) }} · {{ app.academic_year }}
           </h1>
           <div class="mt-3 flex flex-wrap items-center gap-3">
             <ui-status-chip [status]="app.status" />
@@ -229,6 +242,11 @@ export class AdminApplicationComponent {
       return null;
     }
     return 'Say why — this is recorded against your name.';
+  }
+
+  /** The same words the queue and the student use — never the internal category code. */
+  protected typeLabel(type: string): string {
+    return APPLICATION_TYPE_LABELS[type] ?? 'Funding application';
   }
 
   protected priorityLabel(priority: string): string {

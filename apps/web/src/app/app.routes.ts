@@ -123,6 +123,14 @@ export const routes: Routes = [
           import('./features/profile/profile.component').then((m) => m.ProfileComponent),
       },
       {
+        // S08a — the account's full activity history (#294). The dashboard shows a preview.
+        path: 'activity',
+        loadComponent: () =>
+          import('./features/dashboard/activity-page.component').then(
+            (m) => m.ActivityPageComponent,
+          ),
+      },
+      {
         path: 'account',
         loadComponent: () =>
           import('./features/account/account.component').then((m) => m.AccountComponent),
@@ -177,7 +185,13 @@ export const routes: Routes = [
       // non-reviewer gets a 403 rather than data. An adminGuard lands when the
       // token carries a role the client can read.
       {
+        // A00 — the staff home: live operations figures and system activity (#294).
         path: 'admin',
+        loadComponent: () =>
+          import('./features/admin/admin-overview.component').then((m) => m.AdminOverviewComponent),
+      },
+      {
+        path: 'admin/queue',
         loadComponent: () =>
           import('./features/admin/review-queue.component').then((m) => m.ReviewQueueComponent),
       },
