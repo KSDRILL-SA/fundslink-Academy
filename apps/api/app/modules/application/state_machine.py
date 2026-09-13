@@ -21,6 +21,30 @@ from app.db.context import SYSTEM_PRINCIPAL
 # Final human-only decisions — mirrors fn_human_final (schema.sql) and BR-E03.
 HUMAN_FINAL_STATUSES = frozenset({"APPROVED", "REJECTED", "REJECTED_FINAL"})
 
+# The application is in FundsLink's hands and a review is owed (D-002 / D-013 SLA). Deliberately
+# excludes DRAFT (nobody has sent it), RETURNED_FOR_INFO (the clock is the student's — D-006's
+# respond_by), and every decided or post-decision status. One list, used by the review-queue SQL
+# and the SLA flag, so the two can never disagree about what "waiting on us" means.
+AWAITING_FUNDSLINK_STATUSES: tuple[str, ...] = (
+    "SUBMITTED",
+    "PRE_SCREENING",
+    "READY_FOR_REVIEW",
+    "RESUBMITTED",
+    "UNSCREENED",
+    "UNDER_REVIEW",
+    "INTERVIEW_SCHEDULED",
+    "INTERVIEWED",
+    "APPROVED_PROPOSED",
+    "APPEALED",
+)
+
+# The events that put an application (back) into FundsLink's hands. The review clock starts at the
+# latest of these, so a resubmission or an appeal gets a fresh, fair review window.
+REVIEW_CLOCK_STARTS: tuple[str, ...] = ("SUBMITTED", "RESUBMITTED", "APPEALED")
+
+# Priorities that take the shorter emergency SLA (D-002).
+EMERGENCY_PRIORITIES: tuple[str, ...] = ("URGENT", "CRITICAL")
+
 # to_status → notification trigger (lk_notify_trigger); None ⇒ no notification for that hop.
 STATUS_TRIGGER: dict[str, str | None] = {
     "SUBMITTED": "APPLICATION_SUBMITTED",

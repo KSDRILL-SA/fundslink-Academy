@@ -335,6 +335,13 @@ paths:
     get:
       operationId: adminListApplications
       summary: Review queue (ADMIN_REVIEWER — S3.21 deny-by-default)
+      description: >-
+        Ordered for triage, not by arrival (D-002 / D-013): highest priority first
+        (CRITICAL, URGENT, NORMAL), then the soonest review due date, then the soonest
+        `needed_by`, then the application that has waited longest. The review due date is
+        derived from `review_sla_days`, or `emergency_review_sla_days` for URGENT and
+        CRITICAL, both read from the config table — never a literal in code. The cursor is
+        opaque and encodes the whole sort key.
       parameters:
         - { name: status, in: query, schema: { type: string } }
         - { $ref: '#/components/parameters/Cursor' }
@@ -664,6 +671,22 @@ components:
               type: string
               format: date-time
               description: When the decision was recorded, so the screen can say it plainly.
+            review_due_at:
+              type: string
+              format: date-time
+              description: >-
+                When FundsLink owes this application a review (D-002 / D-013). Starts when the
+                application last came into FundsLink's hands — SUBMITTED, RESUBMITTED or APPEALED
+                — and adds `review_sla_days`, or `emergency_review_sla_days` for URGENT and
+                CRITICAL, from the config table. Present only while the application is waiting
+                on FundsLink; absent while it is a draft, waiting on the student
+                (RETURNED_FOR_INFO), or decided.
+            sla_breached:
+              type: boolean
+              description: >-
+                True when `review_due_at` has passed and the application is still waiting on
+                FundsLink. Lets a reviewer see an overdue application without doing date
+                arithmetic, and lets a student be told honestly that a review is late.
             waitlist_position:
               type: integer
               minimum: 1

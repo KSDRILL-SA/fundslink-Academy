@@ -411,7 +411,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Review queue (ADMIN_REVIEWER — S3.21 deny-by-default) */
+        /**
+         * Review queue (ADMIN_REVIEWER — S3.21 deny-by-default)
+         * @description Ordered for triage, not by arrival (D-002 / D-013): highest priority first (CRITICAL, URGENT, NORMAL), then the soonest review due date, then the soonest `needed_by`, then the application that has waited longest. The review due date is derived from `review_sla_days`, or `emergency_review_sla_days` for URGENT and CRITICAL, both read from the config table — never a literal in code. The cursor is opaque and encodes the whole sort key.
+         */
         get: operations["adminListApplications"];
         put?: never;
         post?: never;
@@ -663,6 +666,13 @@ export interface components {
              * @description When the decision was recorded, so the screen can say it plainly.
              */
             decided_at?: string;
+            /**
+             * Format: date-time
+             * @description When FundsLink owes this application a review (D-002 / D-013). Starts when the application last came into FundsLink's hands — SUBMITTED, RESUBMITTED or APPEALED — and adds `review_sla_days`, or `emergency_review_sla_days` for URGENT and CRITICAL, from the config table. Present only while the application is waiting on FundsLink; absent while it is a draft, waiting on the student (RETURNED_FOR_INFO), or decided.
+             */
+            review_due_at?: string;
+            /** @description True when `review_due_at` has passed and the application is still waiting on FundsLink. Lets a reviewer see an overdue application without doing date arithmetic, and lets a student be told honestly that a review is late. */
+            sla_breached?: boolean;
             /** @description Position on the waitlist, 1-based, only on APPROVED_WAITLISTED (E4). Derived from the order in which applications were waitlisted. There is deliberately NO pool-size field: how many students the pool can fund depends on money this system does not yet hold or track, and S16-WAIT tells the truth it has rather than inventing a denominator. */
             waitlist_position?: number;
             /** Format: date-time */
