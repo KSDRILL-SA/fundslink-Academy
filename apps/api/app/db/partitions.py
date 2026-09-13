@@ -4,6 +4,12 @@ High-volume append-only tables are range-partitioned by month. Migration 0001 cr
 the first 12 months; this job, run on a schedule, keeps month N+12 ahead so inserts
 never fall off the end of the partition range. Idempotent (CREATE TABLE IF NOT EXISTS).
 
+Every run also SEALS every partition (#292). PostgreSQL applies row-level security to the relation
+named in a query, so a partition named directly bypasses its parent's policies — and the default
+privileges from 0005/0006 grant the app roles access to each partition this job creates. The seal
+(``fn_seal_partitions()``, migration 0021) revokes those privileges and enables RLS with no policy.
+It runs on every call, not only after a create, so a partition that was ever re-granted is healed.
+
 Run: ``python -m app.db.partitions`` (or ``make partitions``).
 """
 
@@ -40,6 +46,7 @@ def ensure_partitions(
             )
             if existed is None:
                 created.append(name)
+    conn.execute("SELECT fn_seal_partitions()")
     return created
 
 

@@ -26,8 +26,12 @@
 | `0015` | Matching config (DB-D24) — spend cost-per-call + per-user daily quota (Stage 03 · module 4) |
 | `0016` | Eligibility signals (D-016/017) — `lk_income_band`/`lk_nsfas_decline_reason`/`lk_prior_funder` + 4 self-declared columns on `funding_application` (0014 SELECT-only pattern) |
 | `0017` | Eligibility rulesets v2 (BR-E02/§5.7) — `ers_ug_cat_c_v2` + `ers_postgrad_v2` with the `field_flag` annotation checks (D-016/017); v1 versions preserved |
+| `0018` | Matching — one match record per student–bursary pair (DB-D8) |
+| `0019` | Waitlist — `fn_waitlist_position` (E4 transparent position, S16-WAIT) |
+| `0020` | Waitlist ordered by need: postgraduate, then income band, then time waitlisted (E4 · D-017) |
+| `0021` | **Security** — closes the RLS bypass (#292): every partition sealed from the app roles (`fn_seal_partitions`, re-applied by partition maintenance, checked by `make integrity`); RLS on `application_status_event`, `tracked_status_event`, `user_role` |
 
-Single head = `0017`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
+Single head = `0021`. `make` targets: `integrity` · `partitions` · `restore-drill` · `explain` · `verify`.
 
 ## Stores (3-store polyglot — ADR-004 rejected)
 PostgreSQL is the **system of record** (auth, applications, tracking, match records, outbox,
@@ -68,6 +72,15 @@ bypasses (migrations); the app is always subject. **Auth tables (`user`/`refresh
 carry RLS (0010)** with a SYSTEM-context login/token path (no `user_id` at login) — see D-015;
 the SYSTEM principal is seeded with the literal `user.id='SYSTEM'` (so `fn_human_final` keys on it).
 
+**Until 0021 that claim was not true** (#292). Two ways round it were proven as `fundslink_app`
+with a stranger's student context: naming a partition directly (`audit_log_202609` returned 7033
+rows while `audit_log` returned 0 — PostgreSQL applies RLS to the relation *named in the query*,
+and default privileges granted the app every partition), and three tables that never had RLS
+(`application_status_event` with reviewer notes, `tracked_status_event`, `user_role`). Both are
+now gated, not remembered: `test_every_table_without_rls_is_reference_data` fails CI for any
+readable table without RLS that is not on the reference allowlist, and the integrity job's
+**partition-seal check** fails if any partition is reachable by an app role.
+
 ## Backend integration contracts (every later phase MUST honor)
 1. **Connect as `fundslink_app`**, never the owner/superuser; the owner is for migrations only.
 2. **Per request, in the transaction:** `SET LOCAL app.user_id = '<cuid>'` and
@@ -75,7 +88,8 @@ the SYSTEM principal is seeded with the literal `user.id='SYSTEM'` (so `fn_human
 3. **The SYSTEM principal's `user.id` MUST be literally `'SYSTEM'`** (seeded in 0010) or
    `fn_human_final` won't catch it.
 4. **New append-only table** ⇒ its migration `REVOKE UPDATE, DELETE … FROM fundslink_app`.
-5. **New owned table** ⇒ add RLS policies following the 0007 pattern.
+5. **New owned table** ⇒ add RLS policies following the 0007 pattern. The completeness test fails until you do.
+   **Never grant on a partition** — the app reaches partitioned data only through the parent.
 6. **Money / financial-history paths** ⇒ raw parameterised SQL + NUMERIC (ADR-003); CRUD via ORM.
 7. **Status change** ⇒ transition-table check + status event + outbox row, in **one** transaction.
 8. **Endpoints** come FROM `packages/contracts/openapi.yaml` (S2.7); each declares a permission.

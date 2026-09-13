@@ -34,6 +34,7 @@ def test_integrity_clean_on_seeded_db(conn):
         "status-cache consistency",
         "dangling-reference scan",
         "partition-horizon check",
+        "partition-seal check",
     }
 
 

@@ -1,7 +1,7 @@
 """Integrity job suite skeleton (DB-D39).
 
 Ch01's anomaly warnings, automated: a single command that reports variance and exits
-non-zero if anything is wrong. Three checks at v1:
+non-zero if anything is wrong. Four checks at v1:
 
 1. **Status-cache consistency** — every cached ``status`` column must equal the latest
    append-only status event (the event log is the truth; the column is a cache, DB-D24).
@@ -10,6 +10,9 @@ non-zero if anything is wrong. Three checks at v1:
    DB-D35); those stores are wired in Stage 03, so this reports as deferred, not silent.
 3. **Partition-horizon check** — every partitioned table must have a partition covering
    at least ``REQUIRED_MONTHS_AHEAD`` months out, or inserts will start failing.
+4. **Partition-seal check** — no partition may be reachable by an application role. RLS is applied
+   to the relation named in a query, so a readable partition is a way around every policy on its
+   parent (#292). Partition maintenance seals them; this proves it happened.
 
 Run: ``python -m app.db.integrity`` (or ``make integrity``).
 """
@@ -93,11 +96,39 @@ def check_partition_horizon(conn: psycopg.Connection) -> CheckResult:
     )
 
 
+APP_ROLES = ("fundslink_app", "fundslink_readonly")
+
+
+def check_partition_seal(conn: psycopg.Connection) -> CheckResult:
+    rows = conn.execute(
+        "SELECT c.relname, r.rolname"
+        " FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace"
+        " CROSS JOIN pg_roles r"
+        " WHERE n.nspname = 'public' AND c.relispartition AND c.relkind IN ('r', 'p')"
+        "   AND r.rolname = ANY(%s)"
+        "   AND (NOT c.relrowsecurity"
+        "        OR has_table_privilege(r.oid, c.oid, 'SELECT, INSERT, UPDATE, DELETE'))"
+        " ORDER BY 1, 2",
+        (list(APP_ROLES),),
+    ).fetchall()
+    total = conn.execute(
+        "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace"
+        " WHERE n.nspname = 'public' AND c.relispartition AND c.relkind IN ('r', 'p')"
+    ).fetchone()[0]
+    if rows:
+        exposed = "; ".join(f"{name} ({role})" for name, role in rows)
+        detail = f"reachable partitions: {exposed} — run partition maintenance (fn_seal_partitions)"
+    else:
+        detail = f"all {total} partitions sealed from {', '.join(APP_ROLES)}"
+    return CheckResult("partition-seal check", not rows, detail)
+
+
 def run_all(conn: psycopg.Connection) -> list[CheckResult]:
     return [
         check_status_cache(conn),
         check_dangling_references(conn),
         check_partition_horizon(conn),
+        check_partition_seal(conn),
     ]
 
 
