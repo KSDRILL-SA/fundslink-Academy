@@ -59,6 +59,24 @@ AWAITING_HUMAN_STATUSES: tuple[str, ...] = (
 # latest of these, so a resubmission or an appeal gets a fresh, fair review window.
 REVIEW_CLOCK_STARTS: tuple[str, ...] = ("SUBMITTED", "RESUBMITTED", "APPEALED")
 
+# A person has ruled on the application, one way or the other — including what can follow a ruling
+# (a waitlist place, a suspension or revocation, completion). WITHDRAWN is not here: the student
+# stopped it, nobody decided it. Used by the dashboards so "decided" means one thing everywhere.
+DECIDED_STATUSES: tuple[str, ...] = (
+    "APPROVED",
+    "APPROVED_WAITLISTED",
+    "REJECTED",
+    "REJECTED_FINAL",
+    "SUSPENDED",
+    "REVOKED",
+    "COMPLETED",
+)
+
+# The decision outcomes counted as throughput (A00): each is an event a reviewer's ruling produces.
+FUNDED_DECISIONS: tuple[str, ...] = ("APPROVED",)
+WAITLISTED_DECISIONS: tuple[str, ...] = ("APPROVED_WAITLISTED",)
+NOT_FUNDED_DECISIONS: tuple[str, ...] = ("REJECTED", "REJECTED_FINAL")
+
 # Priorities that take the shorter emergency SLA (D-002).
 EMERGENCY_PRIORITIES: tuple[str, ...] = ("URGENT", "CRITICAL")
 

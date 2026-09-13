@@ -16,7 +16,10 @@ from app.db.cuid import cuid
 from app.db.repository import BaseRepository
 
 # Active = not terminal; eligible for reminders / silence follow-ups (BR-T06).
-_ACTIVE = "('REGISTERED','SUBMITTED','UNDER_REVIEW','SHORTLISTED','INTERVIEW')"
+ACTIVE_TRACKED_STATUSES: tuple[str, ...] = (
+    "REGISTERED", "SUBMITTED", "UNDER_REVIEW", "SHORTLISTED", "INTERVIEW",
+)
+_ACTIVE = "(" + ",".join(f"'{s}'" for s in ACTIVE_TRACKED_STATUSES) + ")"
 
 
 class TrackedRepository(BaseRepository):

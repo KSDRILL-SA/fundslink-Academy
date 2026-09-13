@@ -38,7 +38,7 @@ from app.modules.application.state_machine import (
 # and CRITICAL, `review_sla_days` otherwise. Both were seeded (0002 / 0004) and, until this, read by
 # nothing. If a key is ever missing the due date is NULL rather than a number invented in code: no
 # SLA is an honest answer, a made-up one is not.
-_REVIEW_DUE_SQL = (
+REVIEW_DUE_SQL = (
     "CASE WHEN fa.status = ANY(:sla_awaiting) THEN"
     " (SELECT max(e.created_at) FROM application_status_event e"
     "   WHERE e.application_id = fa.id AND e.to_status = ANY(:sla_clock_starts))"
@@ -52,7 +52,7 @@ _REVIEW_DUE_SQL = (
 # the cursor and the ORDER BY can never drift apart.
 NO_DEADLINE = "infinity"
 
-_SLA_PARAMS = {
+SLA_PARAMS = {
     "sla_awaiting": list(AWAITING_FUNDSLINK_STATUSES),
     "sla_clock_starts": list(REVIEW_CLOCK_STARTS),
     "sla_emergency": list(EMERGENCY_PRIORITIES),
@@ -61,7 +61,7 @@ _SLA_PARAMS = {
 # date. New columns go on the end.
 _APPLICATION_COLS = (
     "fa.id, fa.application_type, fa.academic_year, fa.requested_amount, fa.status, fa.currency,"
-    f" fa.created_at, fa.priority, fa.needed_by, ({_REVIEW_DUE_SQL}) AS review_due_at"
+    f" fa.created_at, fa.priority, fa.needed_by, ({REVIEW_DUE_SQL}) AS review_due_at"
 )
 
 
@@ -172,7 +172,7 @@ class ApplicationRepository(BaseRepository):
             f"SELECT {_APPLICATION_COLS} FROM funding_application fa"
             " WHERE fa.id = :id AND fa.deleted_at IS NULL",
             id=application_id,
-            **_SLA_PARAMS,
+            **SLA_PARAMS,
         )
 
     async def set_priority(self, application_id: str, priority: str) -> None:
@@ -197,7 +197,7 @@ class ApplicationRepository(BaseRepository):
             " ORDER BY fa.created_at DESC, fa.id DESC LIMIT :limit",
             limit=limit + 1,
             **params,
-            **_SLA_PARAMS,
+            **SLA_PARAMS,
         )
 
     async def list_for_review(self, *, status: str | None, limit: int, after=None):
@@ -266,7 +266,7 @@ class ApplicationRepository(BaseRepository):
             limit=limit + 1,
             no_deadline=NO_DEADLINE,
             **params,
-            **_SLA_PARAMS,
+            **SLA_PARAMS,
         )
 
 

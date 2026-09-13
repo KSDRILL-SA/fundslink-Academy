@@ -530,6 +530,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/students/me/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My account activity — one timeline of everything recorded about my account
+         * @description Newest first, cursor-paged. Merges the caller's own audit trail (sign-ins, password and MFA changes, profile, documents, preferences, data exports), every status change on their applications and every change on their bursary trackers. `actor` says whether the student did it (YOU) or FundsLink did (FUNDSLINK) — a reviewer's identity is never disclosed, and neither audit `detail` nor status-event notes are ever returned. Which audit actions are shown is a server-side allowlist; routine token refreshes are not. `category` narrows the timeline to one heading, filtered in the query so every page is a full page.
+         */
+        get: operations["listMyActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/students/me/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My dashboard figures — every number read from the database at request time */
+        get: operations["getMyOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Operations overview for staff (APPLICATION_REVIEW — S3.21 deny-by-default)
+         * @description Live figures for the people running the review: the queue by status, how much of it is overdue against the config SLA (D-002), emergencies, applications reviewed without a pre-screen (S8.51), throughput and median time to decision over the chosen window, notification delivery health and account security events. `days` is the reporting window the viewer chooses; it is not a business rule.
+         */
+        get: operations["adminGetOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent system activity from the audit log (APPLICATION_REVIEW — S3.21)
+         * @description Newest first, cursor-paged. Action, resource and the KIND of actor (STUDENT, STAFF, SYSTEM, ANONYMOUS) with time. Audit `detail` is never returned — it can hold an email address — and actors are not named.
+         */
+        get: operations["adminListActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -771,6 +848,129 @@ export interface components {
         };
         NotificationPage: {
             items: components["schemas"]["Notification"][];
+            meta: components["schemas"]["PageMeta"];
+        };
+        ActivityItem: {
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            /** @enum {string} */
+            category: "SECURITY" | "ACCOUNT" | "PRIVACY" | "DOCUMENTS" | "APPLICATION" | "MATCHING" | "TRACKING";
+            /** @description An audit action code (e.g. AUTH_LOGIN_SUCCESS), or APPLICATION_STATUS_CHANGED / TRACKER_STATUS_CHANGED for a status change, whose new status is `to_status`. */
+            event: string;
+            /** @enum {string} */
+            actor: "YOU" | "FUNDSLINK";
+            resource_id?: string | null;
+            to_status?: string | null;
+            /** @description The bursary name, for tracker events */
+            label?: string | null;
+        };
+        ActivityPage: {
+            items: components["schemas"]["ActivityItem"][];
+            meta: components["schemas"]["PageMeta"];
+        };
+        StatusCount: {
+            status: string;
+            count: number;
+        };
+        StudentOverview: {
+            /** Format: date-time */
+            generated_at: string;
+            applications: {
+                total: number;
+                drafts: number;
+                /** @description RETURNED_FOR_INFO — the clock is the student's */
+                needs_your_action: number;
+                /** @description Waiting on FundsLink (the status list the review SLA uses) */
+                with_fundslink: number;
+                decided: number;
+                by_status: components["schemas"]["StatusCount"][];
+            };
+            tracking: {
+                total: number;
+                active: number;
+                by_status: components["schemas"]["StatusCount"][];
+                next_deadline: components["schemas"]["TrackedDeadline"] | null;
+            };
+            matches: {
+                total: number;
+                /** Format: date-time */
+                last_run_at: string | null;
+            };
+            notifications: {
+                total: number;
+                /** Format: date-time */
+                last_at: string | null;
+            };
+            account: {
+                /** Format: date-time */
+                member_since: string;
+                /**
+                 * Format: date-time
+                 * @description The sign-in before the latest one — so a student can spot one that was not theirs
+                 */
+                previous_sign_in_at: string | null;
+                mfa_enabled: boolean;
+            };
+        };
+        TrackedDeadline: {
+            tracked_application_id: string;
+            bursary_name: string;
+            /** Format: date */
+            due_on: string;
+            deadline_type: string;
+        };
+        AdminOverview: {
+            /** Format: date-time */
+            generated_at: string;
+            window_days: number;
+            queue: {
+                /** @description Every application whose next step is a person's */
+                awaiting_review: number;
+                /** @description Past the config review SLA (D-002) */
+                overdue: number;
+                /** @description URGENT or CRITICAL priority, awaiting review */
+                emergency: number;
+                /** @description Waiting without a pre-screen (S8.51) */
+                unscreened: number;
+                /** @description RETURNED_FOR_INFO */
+                awaiting_student: number;
+                by_status: components["schemas"]["StatusCount"][];
+            };
+            flow: {
+                submitted: number;
+                approved: number;
+                waitlisted: number;
+                not_funded: number;
+                median_days_to_decision: number | null;
+            };
+            notifications: {
+                pending: number;
+                /** @description Gave up after retries (DEAD) */
+                failed: number;
+                /** @description Sent in the window */
+                sent: number;
+            };
+            accounts: {
+                registered: number;
+                sign_ins: number;
+                failed_sign_ins: number;
+                /** @description Account lockouts after repeated failed sign-ins */
+                locked: number;
+            };
+        };
+        AdminActivityItem: {
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            action: string;
+            resource_type: string;
+            resource_id?: string | null;
+            /** @enum {string} */
+            actor_kind: "STUDENT" | "STAFF" | "SYSTEM" | "ANONYMOUS";
+        };
+        AdminActivityPage: {
+            items: components["schemas"]["AdminActivityItem"][];
             meta: components["schemas"]["PageMeta"];
         };
     };
@@ -1658,6 +1858,99 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    listMyActivity: {
+        parameters: {
+            query?: {
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                category?: "SECURITY" | "ACCOUNT" | "PRIVACY" | "DOCUMENTS" | "APPLICATION" | "MATCHING" | "TRACKING";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityPage"];
+                };
+            };
+            422: components["responses"]["Validation"];
+        };
+    };
+    getMyOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentOverview"];
+                };
+            };
+        };
+    };
+    adminGetOverview: {
+        parameters: {
+            query?: {
+                days?: 7 | 30 | 90;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOverview"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["Validation"];
+        };
+    };
+    adminListActivity: {
+        parameters: {
+            query?: {
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminActivityPage"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
         };
     };
 }

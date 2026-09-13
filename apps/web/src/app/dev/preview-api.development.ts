@@ -187,6 +187,10 @@ const ROUTES: ReadonlyArray<{
     body: (request) => ({ ...PROFILE, ...(request.body as object) }),
   },
   { method: 'GET', match: /^\/students\/me\/data-export$/, body: () => ({ profile: PROFILE }) },
+  { method: 'GET', match: /^\/students\/me\/overview$/, body: () => STUDENT_OVERVIEW },
+  { method: 'GET', match: /^\/students\/me\/activity$/, body: () => page(ACTIVITY) },
+  { method: 'GET', match: /^\/admin\/overview$/, body: () => ADMIN_OVERVIEW },
+  { method: 'GET', match: /^\/admin\/activity$/, body: () => page(ADMIN_ACTIVITY) },
   { method: 'POST', match: /^\/students\/me\/documents$/, body: () => DOCUMENT },
   { method: 'GET', match: /^\/admin\/applications$/, body: () => page(QUEUE) },
   // A02's own read. Preview used to answer the STUDENT endpoint for a reviewer, which is why A02
@@ -206,6 +210,66 @@ const ROUTES: ReadonlyArray<{
   },
   { method: 'GET', match: /^\/tracked-applications$/, body: () => page(TRACKED) },
   { method: 'POST', match: /^\/tracked-applications$/, body: () => TRACKED[0] },
+];
+
+// Dashboard figures (#294). Preview only — in the product every one of these is counted by the
+// server from the database; these exist so the screens can be looked at without an API.
+const STUDENT_OVERVIEW = {
+  generated_at: '2026-09-13T08:00:00Z',
+  applications: {
+    total: 1, drafts: 0, needs_your_action: 1, with_fundslink: 0, decided: 0,
+    by_status: [{ status: 'RETURNED_FOR_INFO', count: 1 }],
+  },
+  tracking: {
+    total: 3, active: 2, by_status: [{ status: 'SHORTLISTED', count: 1 }],
+    next_deadline: {
+      tracked_application_id: 'ta_preview', bursary_name: 'Sasol Bursary',
+      due_on: '2026-09-30', deadline_type: 'APPLICATION',
+    },
+  },
+  matches: { total: 6, last_run_at: '2026-09-10T09:00:00Z' },
+  notifications: { total: 4, last_at: '2026-09-12T09:00:00Z' },
+  account: {
+    member_since: '2026-01-15T08:00:00Z', previous_sign_in_at: '2026-09-11T06:15:00Z',
+    mfa_enabled: false,
+  },
+};
+
+const ACTIVITY = [
+  { id: 'ev_p1', occurred_at: '2026-09-12T10:00:00Z', category: 'APPLICATION',
+    event: 'APPLICATION_STATUS_CHANGED', actor: 'FUNDSLINK', resource_id: 'app_preview',
+    to_status: 'RETURNED_FOR_INFO', label: null },
+  { id: 'ev_p2', occurred_at: '2026-09-11T06:15:00Z', category: 'SECURITY',
+    event: 'AUTH_LOGIN_SUCCESS', actor: 'YOU', resource_id: null, to_status: null, label: null },
+  { id: 'ev_p3', occurred_at: '2026-09-10T09:00:00Z', category: 'MATCHING', event: 'MATCHING_RUN',
+    actor: 'YOU', resource_id: null, to_status: null, label: null },
+  { id: 'ev_p4', occurred_at: '2026-09-09T12:00:00Z', category: 'TRACKING',
+    event: 'TRACKER_STATUS_CHANGED', actor: 'YOU', resource_id: 'ta_preview',
+    to_status: 'SHORTLISTED', label: 'Sasol Bursary' },
+];
+
+const ADMIN_OVERVIEW = {
+  generated_at: '2026-09-13T08:00:00Z',
+  window_days: 7,
+  queue: {
+    awaiting_review: 14, overdue: 2, emergency: 3, unscreened: 1, awaiting_student: 6,
+    by_status: [
+      { status: 'READY_FOR_REVIEW', count: 9 }, { status: 'APPEALED', count: 4 },
+      { status: 'UNSCREENED', count: 1 }, { status: 'RETURNED_FOR_INFO', count: 6 },
+    ],
+  },
+  flow: { submitted: 40, approved: 8, waitlisted: 4, not_funded: 11, median_days_to_decision: 6.5 },
+  notifications: { pending: 3, failed: 1, sent: 120 },
+  accounts: { registered: 31, sign_ins: 210, failed_sign_ins: 17, locked: 2 },
+};
+
+const ADMIN_ACTIVITY = [
+  { id: 'al_p1', occurred_at: '2026-09-13T07:40:00Z', action: 'APPLICATION_REVIEWED',
+    resource_type: 'funding_application', resource_id: 'app_preview', actor_kind: 'STAFF' },
+  { id: 'al_p2', occurred_at: '2026-09-13T07:12:00Z', action: 'AUTH_LOGIN_FAILURE',
+    resource_type: 'user', resource_id: null, actor_kind: 'ANONYMOUS' },
+  { id: 'al_p3', occurred_at: '2026-09-13T06:58:00Z', action: 'APPLICATION_SUBMITTED',
+    resource_type: 'funding_application', resource_id: 'app_preview', actor_kind: 'STUDENT' },
 ];
 
 const TOKENS = {

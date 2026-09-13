@@ -448,6 +448,65 @@ paths:
             application/json:
               schema: { type: object, additionalProperties: true }
 
+  /students/me/activity:
+    get:
+      operationId: listMyActivity
+      summary: My account activity — one timeline of everything recorded about my account
+      description: >-
+        Newest first, cursor-paged. Merges the caller's own audit trail (sign-ins, password and
+        MFA changes, profile, documents, preferences, data exports), every status change on their
+        applications and every change on their bursary trackers. `actor` says whether the student
+        did it (YOU) or FundsLink did (FUNDSLINK) — a reviewer's identity is never disclosed, and
+        neither audit `detail` nor status-event notes are ever returned. Which audit actions are
+        shown is a server-side allowlist; routine token refreshes are not. `category` narrows
+        the timeline to one heading, filtered in the query so every page is a full page.
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { name: category, in: query, schema: { type: string, enum: [SECURITY, ACCOUNT, PRIVACY, DOCUMENTS, APPLICATION, MATCHING, TRACKING] } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ActivityPage' } } } }
+        '422': { $ref: '#/components/responses/Validation' }
+
+  /students/me/overview:
+    get:
+      operationId: getMyOverview
+      summary: My dashboard figures — every number read from the database at request time
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/StudentOverview' } } } }
+
+  /admin/overview:
+    get:
+      operationId: adminGetOverview
+      summary: Operations overview for staff (APPLICATION_REVIEW — S3.21 deny-by-default)
+      description: >-
+        Live figures for the people running the review: the queue by status, how much of it is
+        overdue against the config SLA (D-002), emergencies, applications reviewed without a
+        pre-screen (S8.51), throughput and median time to decision over the chosen window,
+        notification delivery health and account security events. `days` is the reporting window
+        the viewer chooses; it is not a business rule.
+      parameters:
+        - { name: days, in: query, schema: { type: integer, enum: [7, 30, 90], default: 7 } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminOverview' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/Validation' }
+
+  /admin/activity:
+    get:
+      operationId: adminListActivity
+      summary: Recent system activity from the audit log (APPLICATION_REVIEW — S3.21)
+      description: >-
+        Newest first, cursor-paged. Action, resource and the KIND of actor (STUDENT, STAFF,
+        SYSTEM, ANONYMOUS) with time. Audit `detail` is never returned — it can hold an email
+        address — and actors are not named.
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminActivityPage' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
 components:
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
@@ -815,4 +874,146 @@ components:
       required: [items, meta]
       properties:
         items: { type: array, items: { $ref: '#/components/schemas/Notification' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+
+    ActivityItem:
+      type: object
+      required: [id, occurred_at, category, event, actor]
+      properties:
+        id: { type: string }
+        occurred_at: { type: string, format: date-time }
+        category: { type: string, enum: [SECURITY, ACCOUNT, PRIVACY, DOCUMENTS, APPLICATION, MATCHING, TRACKING] }
+        event:
+          type: string
+          description: >-
+            An audit action code (e.g. AUTH_LOGIN_SUCCESS), or APPLICATION_STATUS_CHANGED /
+            TRACKER_STATUS_CHANGED for a status change, whose new status is `to_status`.
+        actor: { type: string, enum: [YOU, FUNDSLINK] }
+        resource_id: { type: [string, "null"] }
+        to_status: { type: [string, "null"] }
+        label: { type: [string, "null"], description: "The bursary name, for tracker events" }
+    ActivityPage:
+      type: object
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/ActivityItem' } }
+        meta: { $ref: '#/components/schemas/PageMeta' }
+
+    StatusCount:
+      type: object
+      required: [status, count]
+      properties:
+        status: { type: string }
+        count: { type: integer }
+
+    StudentOverview:
+      type: object
+      required: [generated_at, applications, tracking, matches, notifications, account]
+      properties:
+        generated_at: { type: string, format: date-time }
+        applications:
+          type: object
+          required: [total, drafts, needs_your_action, with_fundslink, decided, by_status]
+          properties:
+            total: { type: integer }
+            drafts: { type: integer }
+            needs_your_action: { type: integer, description: "RETURNED_FOR_INFO — the clock is the student's" }
+            with_fundslink: { type: integer, description: "Waiting on FundsLink (the status list the review SLA uses)" }
+            decided: { type: integer }
+            by_status: { type: array, items: { $ref: '#/components/schemas/StatusCount' } }
+        tracking:
+          type: object
+          required: [total, active, by_status, next_deadline]
+          properties:
+            total: { type: integer }
+            active: { type: integer }
+            by_status: { type: array, items: { $ref: '#/components/schemas/StatusCount' } }
+            next_deadline: { oneOf: [ { $ref: '#/components/schemas/TrackedDeadline' }, { type: "null" } ] }
+        matches:
+          type: object
+          required: [total, last_run_at]
+          properties:
+            total: { type: integer }
+            last_run_at: { type: [string, "null"], format: date-time }
+        notifications:
+          type: object
+          required: [total, last_at]
+          properties:
+            total: { type: integer }
+            last_at: { type: [string, "null"], format: date-time }
+        account:
+          type: object
+          required: [member_since, previous_sign_in_at, mfa_enabled]
+          properties:
+            member_since: { type: string, format: date-time }
+            previous_sign_in_at:
+              type: [string, "null"]
+              format: date-time
+              description: "The sign-in before the latest one — so a student can spot one that was not theirs"
+            mfa_enabled: { type: boolean }
+    TrackedDeadline:
+      type: object
+      required: [tracked_application_id, bursary_name, due_on, deadline_type]
+      properties:
+        tracked_application_id: { type: string }
+        bursary_name: { type: string }
+        due_on: { type: string, format: date }
+        deadline_type: { type: string }
+
+    AdminOverview:
+      type: object
+      required: [generated_at, window_days, queue, flow, notifications, accounts]
+      properties:
+        generated_at: { type: string, format: date-time }
+        window_days: { type: integer }
+        queue:
+          type: object
+          required: [awaiting_review, overdue, emergency, unscreened, awaiting_student, by_status]
+          properties:
+            awaiting_review: { type: integer, description: "Every application whose next step is a person's" }
+            overdue: { type: integer, description: "Past the config review SLA (D-002)" }
+            emergency: { type: integer, description: "URGENT or CRITICAL priority, awaiting review" }
+            unscreened: { type: integer, description: "Waiting without a pre-screen (S8.51)" }
+            awaiting_student: { type: integer, description: "RETURNED_FOR_INFO" }
+            by_status: { type: array, items: { $ref: '#/components/schemas/StatusCount' } }
+        flow:
+          type: object
+          required: [submitted, approved, waitlisted, not_funded, median_days_to_decision]
+          properties:
+            submitted: { type: integer }
+            approved: { type: integer }
+            waitlisted: { type: integer }
+            not_funded: { type: integer }
+            median_days_to_decision: { type: [number, "null"] }
+        notifications:
+          type: object
+          required: [pending, failed, sent]
+          properties:
+            pending: { type: integer }
+            failed: { type: integer, description: "Gave up after retries (DEAD)" }
+            sent: { type: integer, description: "Sent in the window" }
+        accounts:
+          type: object
+          required: [registered, sign_ins, failed_sign_ins, locked]
+          properties:
+            registered: { type: integer }
+            sign_ins: { type: integer }
+            failed_sign_ins: { type: integer }
+            locked: { type: integer, description: "Account lockouts after repeated failed sign-ins" }
+
+    AdminActivityItem:
+      type: object
+      required: [id, occurred_at, action, resource_type, actor_kind]
+      properties:
+        id: { type: string }
+        occurred_at: { type: string, format: date-time }
+        action: { type: string }
+        resource_type: { type: string }
+        resource_id: { type: [string, "null"] }
+        actor_kind: { type: string, enum: [STUDENT, STAFF, SYSTEM, ANONYMOUS] }
+    AdminActivityPage:
+      type: object
+      required: [items, meta]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AdminActivityItem' } }
         meta: { $ref: '#/components/schemas/PageMeta' }

@@ -52,6 +52,8 @@ type Application = Schema<'Application'>;
     <fl-page-header
       eyebrow="Admin"
       title="Review queue"
+      backRoute="/app/admin"
+      backLabel="Operations overview"
       lead="Applications waiting for a person. Every decision here is final for someone."
       [icon]="queueIcon"
     >

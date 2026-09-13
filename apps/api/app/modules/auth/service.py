@@ -166,10 +166,10 @@ class AuthService:
             await self.consents.record(
                 user_id=user_id, purpose=consent.purpose, wording_version=consent.wording_version
             )
-        await self.audit.write(
-            actor_user_id=user_id, action="AUTH_REGISTER", resource_type="user",
-            resource_id=user_id, request_id=request_id, detail={"email": req.email},
-        )
+        # No audit write here: _issue records AUTH_REGISTER below. There used to be one here too, so
+        # every account was audited as registering twice — which doubled any registration count
+        # read from the log (#294) — and this copy put the email address into an append-only table
+        # that can never be erased, when the user row already holds it.
         if settings.email_verification_required:
             await self._send_verification(user_id, req.email, request_id)
         return await self._issue(

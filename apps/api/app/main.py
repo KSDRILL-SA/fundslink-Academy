@@ -18,6 +18,7 @@ from app.db.guard import verify_least_privilege
 from app.modules.application.router import router as application_router
 from app.modules.auth.router import router as auth_router
 from app.modules.eligibility.router import router as eligibility_router
+from app.modules.insights.router import router as insights_router
 from app.modules.matching.router import router as matching_router
 from app.modules.notification.router import router as notification_router
 from app.modules.profile.router import router as profile_router
@@ -38,6 +39,7 @@ app.include_router(eligibility_router, prefix="/api/v1")
 app.include_router(matching_router, prefix="/api/v1")
 app.include_router(tracking_router, prefix="/api/v1")
 app.include_router(notification_router, prefix="/api/v1")
+app.include_router(insights_router, prefix="/api/v1")
 
 
 @app.get("/healthz", tags=["meta"], include_in_schema=False)
