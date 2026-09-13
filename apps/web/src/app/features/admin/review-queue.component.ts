@@ -1,9 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiService, type Page, type Schema } from 'data-access';
 import { ClipboardList } from 'lucide';
 import {
   UiBadgeComponent,
+  UiButtonComponent,
   UiCardComponent,
   UiEmptyStateComponent,
   UiErrorStateComponent,
@@ -26,15 +28,18 @@ type Application = Schema<'Application'>;
  * the queue does not become a place to nudge it.
  *
  * Every row is an application from a person who is waiting. The queue shows
- * how long they have been waiting, because a list sorted only by status makes
- * it easy to leave someone at the bottom indefinitely.
+ * when each review is DUE, and the server orders it for triage — highest
+ * priority, then soonest due, then soonest need, then longest wait — because a
+ * list sorted by arrival lets an emergency sit at the bottom indefinitely.
  */
 @Component({
   selector: 'fl-review-queue',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NgTemplateOutlet,
     RouterLink,
+    UiButtonComponent,
     UiCardComponent,
     UiStatusChipComponent,
     UiBadgeComponent,
@@ -79,20 +84,24 @@ type Application = Schema<'Application'>;
       }
 
       @case ('success') {
-        <!-- A queue is the table case: a reviewer scans one column — how long
-             someone has been waiting — across every row, and cards force them
-             to re-find that number in a different place on each one. -->
+        <!-- A queue is the table case: a reviewer scans one column — when a
+             review is due — across every row, and cards force them to re-find
+             that date in a different place on each one. -->
         <div class="fl-surface fl-table-frame mt-8 hidden overflow-x-auto md:block">
           <table class="fl-table">
+            <!-- The order is the SERVER's (D-002 / D-013) and is described here
+                 exactly: this caption once said "oldest wait first" while the
+                 list was newest first. -->
             <caption class="sr-only">
-              Applications waiting for review, oldest wait first.
+              Applications waiting on a reviewer, in triage order: highest priority first, then the
+              soonest review due date, then the soonest need, then the longest wait.
             </caption>
             <thead>
               <tr>
                 <th scope="col">Application</th>
                 <th scope="col">Status</th>
                 <th scope="col">Priority</th>
-                <th scope="col">Waiting</th>
+                <th scope="col">Review due</th>
               </tr>
             </thead>
             <tbody>
@@ -121,7 +130,10 @@ type Application = Schema<'Application'>;
                     }
                   </td>
                   <td class="tabular text-sm">
-                    {{ waitingDays(application) }} days
+                    <ng-container
+                      [ngTemplateOutlet]="due"
+                      [ngTemplateOutletContext]="{ $implicit: application }"
+                    />
                   </td>
                 </tr>
               }
@@ -154,16 +166,46 @@ type Application = Schema<'Application'>;
                     </div>
                   </div>
 
-                  <p class="tabular text-sm text-muted-foreground">
-                    Waiting {{ waitingDays(application) }} days
+                  <p class="tabular text-sm">
+                    <ng-container
+                      [ngTemplateOutlet]="due"
+                      [ngTemplateOutletContext]="{ $implicit: application }"
+                    />
                   </p>
                 </div>
               </ui-card>
             </li>
           }
         </ul>
+
+        @if (nextCursor()) {
+          <!-- The queue is paged by the server. It used to fetch the first page
+               only, so an application past the twentieth was unreachable. -->
+          <div class="mt-6 flex justify-center">
+            <ui-button variant="secondary" [loading]="loadingMore()" (click)="loadMore()">
+              Show more applications
+            </ui-button>
+          </div>
+        }
       }
     }
+
+    <!-- When a review is due, from the SERVER's review_due_at and sla_breached
+         (config-driven SLA, D-002). Dates only: no arithmetic against this
+         device's clock, which is how "Waiting N days" used to be computed —
+         from when the draft was created, not when it reached us. Overdue says
+         so in words, never by colour alone (P3). -->
+    <ng-template #due let-application>
+      @if (application.review_due_at) {
+        @if (application.sla_breached) {
+          <ui-badge tone="warning" [label]="'Overdue — was due ' + dueDate(application.review_due_at)" />
+        } @else {
+          <span>Due {{ dueDate(application.review_due_at) }}</span>
+        }
+      } @else {
+        <span class="text-muted-foreground">No review owed</span>
+      }
+    </ng-template>
   `,
 })
 export class ReviewQueueComponent {
@@ -183,25 +225,58 @@ export class ReviewQueueComponent {
     this.load();
   }
 
+  /**
+   * The review queue — every application whose next step is a person's.
+   *
+   * No status filter, on purpose. This used to request READY_FOR_REVIEW only, so UNSCREENED
+   * applications (the pre-screen engine was down, S8.51) and APPEALED ones (BR-E07) never appeared
+   * on the one screen reviewers use, and would have waited forever. The server now defines the
+   * queue and its order (#288).
+   */
   protected load(): void {
     this.store.loading();
-    this.api
-      .get<Page<Application>>('/admin/applications', { query: { status: 'READY_FOR_REVIEW' } })
-      .subscribe({
-        next: (page) => this.store.loaded(page.items),
-        error: (error: unknown) => this.store.failed(error),
-      });
+    this.api.get<Page<Application>>('/admin/applications').subscribe({
+      next: (page) => {
+        this.nextCursor.set(page.meta?.next_cursor ?? null);
+        this.store.loaded(page.items);
+      },
+      error: (error: unknown) => this.store.failed(error),
+    });
+  }
+
+  protected loadMore(): void {
+    const cursor = this.nextCursor();
+    if (!cursor || this.loadingMore()) {
+      return;
+    }
+    this.loadingMore.set(true);
+    this.api.get<Page<Application>>('/admin/applications', { query: { cursor } }).subscribe({
+      next: (page) => {
+        this.nextCursor.set(page.meta?.next_cursor ?? null);
+        this.store.loaded([...this.applications(), ...page.items]);
+        this.loadingMore.set(false);
+      },
+      error: (error: unknown) => {
+        // Keep what is already on screen; a failed "more" must not blank the queue.
+        this.loadingMore.set(false);
+        this.store.failed(error);
+      },
+    });
+  }
+
+  protected readonly nextCursor = signal<string | null>(null);
+  protected readonly loadingMore = signal(false);
+
+  /** "17 September 2026" — the server's date, formatted, never recomputed from this clock. */
+  protected dueDate(iso: string): string {
+    const parsed = new Date(iso);
+    return Number.isNaN(parsed.getTime())
+      ? ''
+      : parsed.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   protected priorityLabel(priority: string): string {
     return priority === 'CRITICAL' ? 'Critical' : 'Urgent';
   }
 
-  protected waitingDays(application: Application): number {
-    const created = Date.parse(application.created_at);
-    if (Number.isNaN(created)) {
-      return 0;
-    }
-    return Math.max(0, Math.floor((Date.now() - created) / 86_400_000));
-  }
 }

@@ -75,6 +75,11 @@ const WITHDRAWN: readonly { text: RegExp; because: string }[] = [
     because: 'There is no counselling service — only a role in the permission model.',
   },
   {
+    text: /in the order they arrive|oldest wait first|first come,? first served/i,
+    because:
+      'Applications are triaged — priority, then review due date, then need, then longest wait (D-002 / D-013). An emergency is not queued behind later arrivals.',
+  },
+  {
     text: /counted by when each application was waitlisted/i,
     because:
       'The waitlist is postgraduate first, then greatest need, then time (E4 / D-017, migration 0020) — not arrival order.',

@@ -12,12 +12,20 @@ Every mutation also writes audit_log in the same transaction (S3.33).
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from app.common.errors import AppError
-from app.common.pagination import clamp_limit, decode_cursor, encode_cursor
+from app.common.pagination import (
+    clamp_limit,
+    decode_cursor,
+    decode_keyset,
+    encode_cursor,
+    encode_keyset,
+)
 from app.db.context import set_system_context
 from app.modules.application.repository import (
+    NO_DEADLINE,
     AppealRepository,
     ApplicationRepository,
     MotivationRepository,
@@ -38,6 +46,24 @@ from app.modules.application.schemas import (
 from app.modules.application.state_machine import ApplicationStateMachine
 from app.modules.auth.repository import AuditRepository
 
+
+def _is_breached(review_due_at: datetime | None) -> bool | None:
+    """Late, on time, or not applicable (no review owed)."""
+    if review_due_at is None:
+        return None
+    return review_due_at < datetime.now(UTC)
+
+
+def review_queue_cursor(row) -> str:
+    """The five sort keys of a review-queue row, in the order list_for_review sorts by.
+
+    Rebuilt here rather than returned by SQL because the "no deadline" sentinel is 'infinity',
+    which has no Python datetime. It uses the repository's NO_DEADLINE so the cursor and the
+    ORDER BY cannot drift apart.
+    """
+    due = row[9].isoformat() if row[9] is not None else NO_DEADLINE
+    needed = row[8].isoformat() if row[8] is not None else NO_DEADLINE
+    return encode_keyset(row[10], due, needed, row[6], row[0])
 
 class ApplicationService:
     def __init__(self, session) -> None:
@@ -109,6 +135,8 @@ class ApplicationService:
             decision_reason=decision_reason,
             decided_at=decided_at,
             waitlist_position=waitlist_position,
+            review_due_at=row[9],
+            sla_breached=_is_breached(row[9]),
         )
 
     async def apps_waitlist_position(self, app_id: str) -> int | None:
@@ -174,6 +202,17 @@ class ApplicationService:
         if row is None:
             raise AppError("application_not_found", "Application not found", status_code=404)
         return await self._to_application(row, with_motivation=row[1] == "OTHER")
+
+    async def admin_get_application(self, *, application_id: str) -> Application:
+        """One application for a reviewer (A02).
+
+        Runs under the reviewer's RLS context, which admits any application, and always includes
+        the motivation: a reviewer reads the applicant's own words first, whatever the category.
+        """
+        row = await self.apps.get_full(application_id)
+        if row is None:
+            raise AppError("application_not_found", "Application not found", status_code=404)
+        return await self._to_application(row, with_motivation=True)
 
     async def list_my_applications(
         self, *, actor_id: str, cursor: str | None, limit: int | None
@@ -261,9 +300,13 @@ class ApplicationService:
     ) -> ApplicationPage:
         n = clamp_limit(limit)
         rows = await self.apps.list_for_review(
-            status=status, limit=n, after=decode_cursor(cursor)
+            status=status, limit=n, after=decode_keyset(cursor, 5)
         )
-        return await self._page(rows, n)
+        has_more = len(rows) > n
+        page = rows[:n]
+        items = [await self._to_application(r, with_motivation=False, detail=False) for r in page]
+        next_cursor = review_queue_cursor(page[-1]) if has_more and page else None
+        return ApplicationPage(items=items, meta=PageMeta(next_cursor=next_cursor))
 
     async def set_priority(
         self,

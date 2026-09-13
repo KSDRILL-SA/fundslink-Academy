@@ -283,7 +283,9 @@ export class AdminApplicationComponent {
       return;
     }
     this.store.loading();
-    this.api.get<Application>('/applications/{id}', { path: { id } }).subscribe({
+    // The reviewer's own endpoint. This called the STUDENT endpoint, which is ownership-scoped and
+    // returns 403 to a reviewer — so A02 only ever rendered against dev preview fixtures (#288).
+    this.api.get<Application>('/admin/applications/{id}', { path: { id } }).subscribe({
       next: (application) => this.store.loaded(application),
       error: (error: unknown) => this.store.failed(error),
     });

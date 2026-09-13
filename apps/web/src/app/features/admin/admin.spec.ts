@@ -170,17 +170,47 @@ describe('A01 review queue', () => {
     expect(el().querySelector('input')).toBeNull();
   });
 
-  it('shows how long someone has been waiting', () => {
+  it('shows when each review is due, from the server, and says overdue in words', () => {
+    // Replaces "Waiting N days", which was computed on this device's clock from when the DRAFT
+    // was created. The due date and the breach flag are the server's (config-driven SLA, D-002).
     load([
       {
-        id: 'a1',
+        id: 'on-time',
         application_type: 'POSTGRAD',
         academic_year: '2026',
         status: 'READY_FOR_REVIEW',
-        created_at: new Date(Date.now() - 12 * 86_400_000).toISOString(),
+        created_at: '2026-09-01T08:00:00Z',
+        review_due_at: '2026-09-17T08:00:00Z',
+        sla_breached: false,
+      },
+      {
+        id: 'late',
+        application_type: 'UG_CAT_A',
+        academic_year: '2026',
+        status: 'UNDER_REVIEW',
+        created_at: '2026-08-01T08:00:00Z',
+        review_due_at: '2026-08-15T08:00:00Z',
+        sla_breached: true,
       },
     ]);
-    expect(el().textContent).toContain('Waiting 12 days');
+    const text = el().textContent ?? '';
+    expect(text).toContain('Due 17 September 2026');
+    expect(text).toContain('Overdue — was due 15 August 2026');
+    expect(text).not.toMatch(/Waiting \d+ days/);
+  });
+
+  it('keeps the server order, and describes it truthfully to screen readers', () => {
+    load([
+      { id: 'first', application_type: 'POSTGRAD', academic_year: '2026', status: 'APPEALED',
+        created_at: '2026-09-10T08:00:00Z', priority: 'CRITICAL' },
+      { id: 'second', application_type: 'POSTGRAD', academic_year: '2026', status: 'UNSCREENED',
+        created_at: '2026-08-01T08:00:00Z' },
+    ]);
+    const rows = Array.from(el().querySelectorAll('tbody th a')).map((a) => a.getAttribute('href'));
+    expect(rows[0]).toContain('first');
+    expect(rows[1]).toContain('second');
+    expect(el().querySelector('caption')?.textContent).toMatch(/triage order/i);
+    expect(el().querySelector('caption')?.textContent).not.toMatch(/oldest wait first/i);
   });
 
   it('has no serious or critical accessibility violations', async () => {
@@ -209,7 +239,8 @@ describe('A02 application detail', () => {
   });
 
   function load(application: Record<string, unknown>) {
-    http.expectOne((r) => r.url === '/api/v1/applications/a1').flush(application);
+    // The reviewer's endpoint — the student one returns 403 to a reviewer (#288).
+    http.expectOne((r) => r.url === '/api/v1/admin/applications/a1').flush(application);
     fixture.detectChanges();
   }
 

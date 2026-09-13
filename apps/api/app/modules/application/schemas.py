@@ -133,6 +133,10 @@ class Application(BaseModel):
     decided_at: datetime | None = None
     # Only meaningful on APPROVED_WAITLISTED (E4). No pool size: see the contract.
     waitlist_position: int | None = None
+    # When FundsLink owes a review, and whether it is late (D-002 / D-013). Both None unless the
+    # application is waiting on FundsLink — see the contract for when the clock starts.
+    review_due_at: datetime | None = None
+    sla_breached: bool | None = None
     created_at: datetime
 
 
