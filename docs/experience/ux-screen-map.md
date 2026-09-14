@@ -96,7 +96,9 @@ Each item: what's needed, **why we need it** (one sentence), and an inline uploa
 Columns or cards by status; every status chip carries its **source badge** (You reported · From email · From partner — P3). Deadline countdown chips from `bursary_deadline`. Silent-bursary indicator at day 25+: *"We'll nudge them for you on day 30"* (§12.5).
 
 ### A03 — Decision Compose (admin)
-The reviewer cannot submit a rejection without: selecting reason category, writing ≥40 words of human text, and ticking *"I confirm this message offers a concrete next step."* The kind rejection is **enforced at the compose screen**, not hoped for. Approve path routes to APPROVED_PROPOSED (second human at v2 — §16.4).
+The reviewer cannot submit a rejection without: selecting reason category, writing ≥40 words of human text, and ticking *"I confirm this message offers a concrete next step."* The kind rejection is **enforced at the compose screen**, not hoped for, and the same floor applies to an authorizer's refusal and to an upheld appeal — a student turned down at the last step reads the same considered message as one turned down at the first.
+
+Approve routes to APPROVED_PROPOSED, which is a proposal and not a decision. A **second person** holding APPLICATION_AUTHORIZE rules on it in the authorise card on A02 (§16.4): approve, approve-and-waitlist, or refuse, always with a recorded reason. The proposer may not authorise their own proposal — the server reads who proposed it from the append-only status event and refuses with `two_person_rule`. On an APPEALED application the compose screen becomes the appeal ruling (BR-E07): overturn (back to APPROVED_PROPOSED, so a second person still authorises it) or uphold (REJECTED_FINAL, the end of the road), and the reviewer may not be the person who made the original decision.
 
 ---
 

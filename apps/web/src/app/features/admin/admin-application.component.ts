@@ -24,6 +24,7 @@ import {
 } from 'ui';
 import { asyncState } from '../../core/async-state';
 import { APPLICATION_TYPE_LABELS } from '../applications/application-labels';
+import { AUTHORISABLE, AuthoriseDecisionComponent } from './authorise-decision.component';
 import { DecisionComposeComponent } from './decision-compose.component';
 
 type Application = Schema<'Application'>;
@@ -52,6 +53,7 @@ type Application = Schema<'Application'>;
     UiSkeletonComponent,
     UiErrorStateComponent,
     DecisionComposeComponent,
+    AuthoriseDecisionComponent,
     ReactiveFormsModule,
     UiBadgeComponent,
     UiButtonComponent,
@@ -246,8 +248,34 @@ type Application = Schema<'Application'>;
           }
 
           @if (!app.recused_by_me) {
+            <!--
+              Which half of the decision is this person's (MASTER-SPEC §16.4)?
+
+              An authorizer rules on what a reviewer proposed; a reviewer proposes and never
+              approves. Showing both to everyone would mean showing every reviewer a control that
+              always refuses them. The server still authorises each call — can_authorize decides what
+              is rendered, never what is allowed.
+            -->
             <div class="mt-10">
-              <fl-decision-compose />
+              @if (app.can_authorize) {
+                @if (canAuthoriseNow(app.status)) {
+                  <fl-authorise-decision
+                    [applicationId]="app.id"
+                    [status]="app.status"
+                    (ruled)="load()"
+                  />
+                } @else {
+                  <ui-card>
+                    <h2 class="text-lg font-semibold">Nothing to authorise yet</h2>
+                    <p class="mt-2 max-w-prose text-muted-foreground">
+                      A reviewer has to propose a decision before you can rule on it. This one is
+                      still with them.
+                    </p>
+                  </ui-card>
+                }
+              } @else {
+                <fl-decision-compose [status]="app.status" (decided)="load()" />
+              }
             </div>
           }
         }
@@ -348,6 +376,11 @@ export class AdminApplicationComponent {
   /** The same words the queue and the student use — never the internal category code. */
   protected typeLabel(type: string): string {
     return APPLICATION_TYPE_LABELS[type] ?? 'Funding application';
+  }
+
+  /** A second person only has something to rule on once a decision has been proposed. */
+  protected canAuthoriseNow(status: string): boolean {
+    return AUTHORISABLE.includes(status);
   }
 
   protected priorityLabel(priority: string): string {

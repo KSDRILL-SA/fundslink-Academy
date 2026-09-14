@@ -76,18 +76,33 @@ def student_with_profile(client, *, with_sa_id: bool = True) -> tuple[str, str]:
     return token, uid
 
 
-def make_reviewer(client, admin_conn) -> tuple[str, str]:
-    """Register a user, grant ADMIN_REVIEWER in the DB, and mint a full-scope reviewer token."""
+def make_staff(client, admin_conn, role: str) -> tuple[str, str]:
+    """Register a user, grant `role` in the DB, and mint a full-scope token for it.
+
+    The role is granted as data, so the token's claims and the seeded RBAC matrix agree — a test
+    cannot hand itself a permission the product would not grant.
+    """
     _token, uid = register_student(client)
     admin_conn.execute(
         "INSERT INTO user_role (id, user_id, role_id)"
-        " SELECT %s, %s, r.id FROM role r WHERE r.code = 'ADMIN_REVIEWER'"
+        " SELECT %s, %s, r.id FROM role r WHERE r.code = %s"
         " ON CONFLICT DO NOTHING",
-        (f"ur_{uuid.uuid4().hex}", uid),
+        (f"ur_{uuid.uuid4().hex}", uid, role),
     )
-    access, _jti = create_access_token(sub=uid, role="ADMIN_REVIEWER", email="rev@fundslink.io",
-                                       version=1)
+    access, _jti = create_access_token(
+        sub=uid, role=role, email=f"{role.lower()}@fundslink.io", version=1
+    )
     return access, uid
+
+
+def make_reviewer(client, admin_conn) -> tuple[str, str]:
+    """A reviewer: proposes decisions, never authorises them (MASTER-SPEC §16.4)."""
+    return make_staff(client, admin_conn, "ADMIN_REVIEWER")
+
+
+def make_authorizer(client, admin_conn) -> tuple[str, str]:
+    """An authorizer: the second person a funding decision needs (MASTER-SPEC §16.4)."""
+    return make_staff(client, admin_conn, "ADMIN_AUTHORIZER")
 
 
 def create_application(client, token, **overrides) -> dict:

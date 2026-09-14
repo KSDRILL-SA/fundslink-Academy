@@ -1,9 +1,10 @@
 """Application router — applications + admin review (operations FROM the contract, S2.7).
 
-createApplication / listMyApplications / getApplication / submitApplication / appealDecision and
-the admin review queue (adminListApplications / adminReview). The router authorises via
-require(Permission.X) (deny-by-default, S3.21) and delegates to ApplicationService — it touches
-no DB driver (layering S4.79).
+createApplication / listMyApplications / getApplication / submitApplication / appealDecision, the
+admin review queue (adminListApplications / adminReview) and the second person's ruling that
+actually funds someone (adminAuthorize — MASTER-SPEC §16.4). The router authorises via
+require(Permission.X) / require_any(...) (deny-by-default, S3.21) and delegates to
+ApplicationService — it touches no DB driver (layering S4.79).
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from app.modules.application.schemas import (
     Application,
     ApplicationInput,
     ApplicationPage,
+    AuthorizeRequest,
     PriorityRequest,
     Recusal,
     RecusalRequest,
@@ -24,7 +26,15 @@ from app.modules.application.schemas import (
 )
 from app.modules.application.service import ApplicationService
 from app.modules.auth.deps import CurrentUser
-from app.modules.auth.permissions import Permission, require
+from app.modules.auth.permissions import Permission, require, require_any
+
+# Reading any application and acting on one are different powers (TAD §3.4). ADMIN_AUTHORIZER
+# holds APPLICATION_READ_ANY but not APPLICATION_REVIEW, so while the admin reads were gated on
+# REVIEW an authorizer could not open the application they had to rule on. The reads take the
+# read permission; every write below still names the specific power it needs.
+admin_read = require(Permission.APPLICATION_READ_ANY)
+# Either job may have a conflict of interest, and either must be able to step aside (BR-E09).
+admin_acts = require_any(Permission.APPLICATION_REVIEW, Permission.APPLICATION_AUTHORIZE)
 
 router = APIRouter(tags=["application"])
 
@@ -100,7 +110,7 @@ async def admin_list_applications(
     status: str | None = Query(default=None),
     cursor: str | None = Query(default=None),
     limit: int | None = Query(default=None),
-    current: CurrentUser = Depends(require(Permission.APPLICATION_REVIEW)),
+    current: CurrentUser = Depends(admin_read),
     session=Depends(get_session),
 ) -> ApplicationPage:
     return await ApplicationService(session).admin_list(
@@ -111,12 +121,12 @@ async def admin_list_applications(
 @router.get("/admin/applications/{id}", operation_id="adminGetApplication")
 async def admin_get_application(
     id: str,  # noqa: A002 — matches the contract's path parameter name
-    current: CurrentUser = Depends(require(Permission.APPLICATION_REVIEW)),
+    current: CurrentUser = Depends(admin_read),
     session=Depends(get_session),
 ) -> Application:
     """A02's read. The student endpoint is ownership-scoped and 403s a reviewer (#288)."""
     return await ApplicationService(session).admin_get_application(
-        application_id=id, reviewer_id=current.id
+        application_id=id, reviewer_id=current.id, role=current.role
     )
 
 
@@ -125,7 +135,7 @@ async def admin_recuse(
     id: str,  # noqa: A002 — matches the contract's path parameter name
     body: RecusalRequest,
     request: Request,
-    current: CurrentUser = Depends(require(Permission.APPLICATION_REVIEW)),
+    current: CurrentUser = Depends(admin_acts),
     session=Depends(get_session),
 ) -> Recusal:
     """BR-E09 / E8 — step aside from an application the reviewer has a conflict with."""
@@ -150,6 +160,24 @@ async def admin_review(
         application_id=id,
         decision=body.decision,
         note=body.note,
+        request_id=get_request_id(request),
+    )
+
+
+@router.post("/admin/applications/{id}/authorize", operation_id="adminAuthorize")
+async def admin_authorize(
+    id: str,  # noqa: A002 — matches the contract's path parameter name
+    body: AuthorizeRequest,
+    request: Request,
+    current: CurrentUser = Depends(require(Permission.APPLICATION_AUTHORIZE)),
+    session=Depends(get_session),
+) -> Application:
+    """The second person's ruling on a proposed decision — MASTER-SPEC §16.4, BR-S05."""
+    return await ApplicationService(session).admin_authorize(
+        authorizer_id=current.id,
+        application_id=id,
+        decision=body.decision,
+        reason=body.reason,
         request_id=get_request_id(request),
     )
 

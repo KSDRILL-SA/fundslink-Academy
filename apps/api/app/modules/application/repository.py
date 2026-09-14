@@ -336,6 +336,23 @@ class StatusEventRepository(BaseRepository):
             app=application_id,
         )
 
+    async def actor_of(self, application_id: str, to_status: str) -> str | None:
+        """Who last moved this application INTO ``to_status``.
+
+        The two-person rule (MASTER-SPEC §16.4) has to know who proposed a decision before it can
+        refuse to let that same person authorise it. The append-only status event is the only
+        record of that, and the only one the caller cannot supply or edit.
+        """
+        row = await sql.fetch_one(
+            self.session,
+            "SELECT actor_user_id FROM application_status_event"
+            " WHERE application_id = :app AND to_status = :to"
+            " ORDER BY created_at DESC LIMIT 1",
+            app=application_id,
+            to=to_status,
+        )
+        return row[0] if row else None
+
     async def waitlist_position(self, application_id: str) -> int | None:
         """Where this application sits on the waitlist, 1-based (E4).
 
@@ -524,6 +541,35 @@ class AppealRepository(BaseRepository):
                 "appeal_exists", "This application has already been appealed", status_code=409
             ) from exc
         return appeal_id
+
+    async def open_for(self, application_id: str):
+        """The appeal still awaiting a ruling: (id, original_decider_id), or None.
+
+        BR-E07 lives on this row. The appeal reviewer must not be the person who made the original
+        decision, and the answer comes from the record written when the appeal was lodged.
+        """
+        return await sql.fetch_one(
+            self.session,
+            "SELECT id, original_decider_id FROM appeal"
+            " WHERE application_id = :app AND reviewed_by IS NULL",
+            app=application_id,
+        )
+
+    async def rule(self, *, appeal_id: str, reviewed_by: str, outcome: str) -> None:
+        """Record who ruled on the appeal, and how (UPHELD / OVERTURNED).
+
+        ``ck_appeal_different_human`` re-checks BR-E07 in the database, so a mistake in the service
+        layer cannot write a self-reviewed appeal. The ``reviewed_by IS NULL`` clause means a
+        second ruling on an already-ruled appeal changes nothing rather than overwriting history.
+        """
+        await sql.execute(
+            self.session,
+            "UPDATE appeal SET reviewed_by = :by, outcome = :outcome"
+            " WHERE id = :id AND reviewed_by IS NULL",
+            by=reviewed_by,
+            outcome=outcome,
+            id=appeal_id,
+        )
 
     async def original_decider(self, application_id: str) -> str | None:
         """The human who made the last REJECTED decision — the appeal must go to someone else."""

@@ -52,6 +52,8 @@ Every business error is an `AppError(code, message, status_code)` rendered as a 
 | `already_recused` | 409 | The reviewer has already stepped aside from this application (BR-E09) |
 | `reviewer_recused` | 403 | A reviewer who stepped aside tried to review or re-prioritise that application (BR-E09) |
 | `human_final_required` | 409 | A final decision was attempted by a non-human actor (BR-E03 / D-010) |
+| `two_person_rule` | 403 | The person who proposed a decision tried to authorise it themselves (MASTER-SPEC 16.4 / BR-S05) |
+| `appeal_reviewer_conflict` | 403 | The reviewer who made the original decision tried to hear the appeal against it (BR-E07) |
 | `bursary_not_found` | 404 | Matching/tracking: bursary id absent |
 | `already_tracked` | 409 | External bursary already on the student's tracker |
 | `tracked_not_found` | 404 | Tracked external application absent or not the caller's |

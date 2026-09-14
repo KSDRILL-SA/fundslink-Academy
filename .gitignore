@@ -62,3 +62,6 @@ apps/api/requirements.audit.txt
 # Design masters (full-resolution sources for committed, optimised assets). Kept locally, never
 # committed: public/images/ holds the AVIF/WebP that ship.
 .design-sources/
+
+# Browser-automation scratch output (never part of the product)
+.playwright-mcp/

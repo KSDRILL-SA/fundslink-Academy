@@ -188,6 +188,18 @@ export const ERROR_PRESENTATION: Readonly<Record<string, ErrorPresentation>> = {
     message: 'One appeal per decision. Open your application to see how it is going.',
     retryable: false,
   },
+  two_person_rule: {
+    title: 'A second person has to authorise this',
+    message:
+      'You proposed this decision, so someone else signs it off. That is how every funding decision is made here.',
+    retryable: false,
+  },
+  appeal_reviewer_conflict: {
+    title: 'This appeal needs a different reviewer',
+    message:
+      'You made the original decision, so someone else hears the appeal against it. It stays in the queue for them.',
+    retryable: false,
+  },
   human_final_required: {
     title: 'This decision needs a person',
     message:

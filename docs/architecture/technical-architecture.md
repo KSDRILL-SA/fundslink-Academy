@@ -159,7 +159,7 @@ v1 implements **STUDENT** and **ADMIN_REVIEWER**; the schema and permission syst
 |------|-------|-------------|
 | STUDENT | v1 | Applies, tracks, self-reports statuses |
 | ADMIN_REVIEWER | v1 | Reviews applications, verifies documents, proposes approval |
-| ADMIN_AUTHORIZER | v2 | Second signature on funding + money (Spec §16.4). Mutually exclusive with REVIEWER per action |
+| ADMIN_AUTHORIZER | v1 (funding) · v1.5 (money) | Second signature on funding + money (Spec §16.4). Mutually exclusive with REVIEWER per action. Pulled forward from v2: without it an application stops at APPROVED_PROPOSED and nobody can be funded at all (#309) |
 | FINANCE_ADMIN | v1.5 | Donations ops, reconciliation, disbursement proposal |
 | INSTITUTION_OFFICER | v2 | Org-scoped: confirms distributions, flags ineligibility |
 | COUNSELLOR | v2.5 | Sole access to segregated counselling store (Spec §6.4) |
