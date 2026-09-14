@@ -384,7 +384,7 @@ paths:
   /admin/applications:
     get:
       operationId: adminListApplications
-      summary: Review queue (ADMIN_REVIEWER — S3.21 deny-by-default)
+      summary: Review queue (ADMIN_REVIEWER, ADMIN_AUTHORIZER — S3.21 deny-by-default)
       description: >-
         Ordered for triage, not by arrival (D-002 / D-013): highest priority first
         (CRITICAL, URGENT, NORMAL), then the soonest review due date, then the soonest
@@ -409,14 +409,20 @@ paths:
   /admin/applications/{id}:
     get:
       operationId: adminGetApplication
-      summary: One application, for review (ADMIN_REVIEWER — S3.21 deny-by-default)
+      summary: One application, for review or authorisation (S3.21 deny-by-default)
       description: >-
         The reviewer's read of a single application (A02). The student endpoint
         `getApplication` is ownership-scoped (ST-2.3) and requires APPLICATION_READ_OWN, which a
         reviewer does not hold — so A02 had been calling an endpoint that returns 403 to exactly
         the people who use it, and had only ever rendered against dev preview fixtures. This is
-        the reviewer's own door: APPLICATION_REVIEW, reviewer-scoped RLS, and the student's
-        motivation always included, because a reviewer reads the applicant's own words first.
+        the reviewer's own door: reviewer-scoped RLS, and the student's motivation always
+        included, because a reviewer reads the applicant's own words first.
+
+        Both admin reads require APPLICATION_READ_ANY, not APPLICATION_REVIEW. Reading any
+        application and acting on one are different powers in the TAD §3.4 matrix, and
+        ADMIN_AUTHORIZER holds the first but not the second — while it was the second that
+        guarded these routes, an authorizer could not open the application they had to rule
+        on. Acting is still gated separately, on each write.
       parameters: [ { $ref: '#/components/parameters/Id' } ]
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
@@ -461,7 +467,19 @@ paths:
   /admin/applications/{id}/review:
     post:
       operationId: adminReview
-      summary: Record review outcome (audit-logged; APPROVED requires second authorizer at v2 — BR-S05)
+      summary: Record a review outcome, or rule on an appeal (audit-logged — BR-S05 · BR-E07)
+      description: >-
+        A reviewer's ruling. `APPROVED_PROPOSED` is a proposal, not a decision: a different
+        person authorises it through `adminAuthorize` (§16.4). `REJECTED` refuses the
+        application and the student may appeal it once.
+
+        On an APPEALED application this is the appeal ruling (BR-E07), and the reviewer may
+        not be the person who made the original decision — that is refused with
+        `appeal_reviewer_conflict`. `APPROVED_PROPOSED` overturns the original decision and
+        sends it for authorisation; `REJECTED_FINAL` upholds it and ends the matter. Either
+        way the outcome and the reviewer are written to the appeal record, which is what
+        makes BR-E07 auditable rather than merely stated. `REJECTED_FINAL` is only reachable
+        from APPEALED — anywhere else it is an invalid transition (BR-S04).
       parameters: [ { $ref: '#/components/parameters/Id' } ]
       requestBody:
         required: true
@@ -471,12 +489,50 @@ paths:
               type: object
               required: [decision]
               properties:
-                decision: { type: string, enum: [UNDER_REVIEW, INTERVIEW_SCHEDULED, APPROVED_PROPOSED, REJECTED] }
+                decision: { type: string, enum: [UNDER_REVIEW, INTERVIEW_SCHEDULED, APPROVED_PROPOSED, REJECTED, REJECTED_FINAL] }
                 note: { type: string }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+
+  /admin/applications/{id}/authorize:
+    post:
+      operationId: adminAuthorize
+      summary: Authorise or refuse a proposed decision (two-person rule — MASTER-SPEC 16.4 · BR-S05)
+      description: >-
+        The second half of a funding decision, and the only way an application reaches
+        APPROVED. A reviewer proposes (`adminReview` → APPROVED_PROPOSED); a different person
+        holding APPLICATION_AUTHORIZE rules on that proposal here. Until this existed the
+        lifecycle stopped at the proposal, so nobody could be funded through the product.
+
+        The authoriser may not be the person who proposed the decision (§16.4) — that is
+        refused with `two_person_rule`, read from the status event that recorded the
+        proposal, not from anything the caller sends. Authorising an application you recused
+        yourself from is refused too (`reviewer_recused`, BR-E09). `reason` is recorded on
+        the status event and is the wording the student is shown.
+
+        `APPROVED_WAITLISTED` is a yes with no money behind it yet; the same endpoint later
+        moves a waitlisted application to `APPROVED` when funding is available. `REJECTED`
+        refuses the proposal, and the student may appeal that once (BR-E07).
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, reason]
+              properties:
+                decision: { type: string, enum: [APPROVED, APPROVED_WAITLISTED, REJECTED] }
+                reason: { type: string, minLength: 10, maxLength: 2000 }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Validation' }
 
   /admin/applications/{id}/priority:
     post:
@@ -882,6 +938,14 @@ components:
                 Reviewer reads only (adminGetApplication): true when the caller has stepped aside
                 from this application (BR-E09), so the screen can withhold the decision and
                 priority actions. Never present on a student's read.
+            can_authorize:
+              type: boolean
+              description: >-
+                Admin reads only (adminGetApplication): true when the caller holds
+                APPLICATION_AUTHORIZE, so the screen can offer the authorise step to the person
+                who has it and not to the reviewer who proposed the decision (MASTER-SPEC 16.4).
+                A UI hint, never the gate — the endpoint authorises every call on its own. Never
+                present on a student's read.
             sla_breached:
               type: boolean
               description: >-

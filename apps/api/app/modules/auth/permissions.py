@@ -83,6 +83,39 @@ def require(permission: Permission) -> Callable:
     return _dependency
 
 
+def require_any(*permissions: Permission) -> Callable:
+    """A route open to a caller holding ANY ONE of these permissions.
+
+    For the few routes two different jobs share. A reviewer and an authorizer both have to be able
+    to step aside from an application they have a conflict with (BR-E09), and they hold different
+    permissions by design — one proposes a decision, the other rules on it (MASTER-SPEC §16.4).
+    Without this, closing that gap would have meant granting one role the other's power, which is
+    the opposite of what the two-person rule is for.
+
+    Still deny-by-default (S3.21): the set is explicit and small, and the lint marker records every
+    permission that can open the door, so the route's posture stays readable from its declaration.
+    """
+    if not permissions:
+        raise ValueError("require_any() with no permissions would admit nobody, silently")
+    wanted = {p.value for p in permissions}
+
+    async def _dependency(
+        current: CurrentUser = Depends(get_current_user),
+        session=Depends(get_session),
+    ) -> CurrentUser:
+        granted = await RbacRepository(session).get_permissions_for_role(current.role)
+        if wanted.isdisjoint(granted):
+            raise AppError(
+                "forbidden",
+                "Missing required permission: one of " + ", ".join(sorted(wanted)),
+                status_code=403,
+            )
+        return current
+
+    _dependency._fundslink_permission = "|".join(sorted(wanted))
+    return _dependency
+
+
 def public_endpoint() -> None:
     """Explicit marker for an intentionally unauthenticated route (register/login/refresh)."""
     return None

@@ -32,11 +32,26 @@ class Priority(StrEnum):
 
 
 class ReviewDecision(StrEnum):
-    """The decisions a reviewer can record (contract adminReview enum)."""
+    """The decisions a reviewer can record (contract adminReview enum).
+
+    A reviewer proposes; a reviewer does not approve. APPROVED and APPROVED_WAITLISTED are absent
+    on purpose — they belong to a second person, through adminAuthorize (MASTER-SPEC §16.4).
+    REJECTED_FINAL is the appeal ruling that upholds an earlier rejection (BR-E07); the transition
+    table makes it reachable from APPEALED and from nowhere else.
+    """
 
     UNDER_REVIEW = "UNDER_REVIEW"
     INTERVIEW_SCHEDULED = "INTERVIEW_SCHEDULED"
     APPROVED_PROPOSED = "APPROVED_PROPOSED"
+    REJECTED = "REJECTED"
+    REJECTED_FINAL = "REJECTED_FINAL"
+
+
+class AuthorizeDecision(StrEnum):
+    """What a second person may do with a proposed decision (contract adminAuthorize enum)."""
+
+    APPROVED = "APPROVED"
+    APPROVED_WAITLISTED = "APPROVED_WAITLISTED"
     REJECTED = "REJECTED"
 
 
@@ -140,6 +155,10 @@ class Application(BaseModel):
     # Reviewer reads only (A02): has the caller stepped aside from this one (BR-E09)? None on
     # student reads — a student is never told who recused, or that anyone did.
     recused_by_me: bool | None = None
+    # Admin reads only (A02): may the caller authorise a proposed decision (§16.4)? A hint for the
+    # screen, so the authorise step is offered to the person who holds the power and not to the
+    # reviewer who proposed it. The endpoint still authorises every call itself.
+    can_authorize: bool | None = None
     created_at: datetime
 
 
@@ -177,3 +196,15 @@ class Recusal(BaseModel):
 class ReviewRequest(BaseModel):
     decision: ReviewDecision
     note: str | None = Field(default=None, max_length=4000)
+
+
+class AuthorizeRequest(BaseModel):
+    """The second person's ruling on a proposed decision (MASTER-SPEC §16.4).
+
+    ``reason`` is required, unlike a reviewer's optional note: this is the wording the student is
+    shown when they are funded, waitlisted or turned down, and "no reason given" is not an
+    acceptable answer to someone whose year depends on it.
+    """
+
+    decision: AuthorizeDecision
+    reason: str = Field(min_length=10, max_length=2000)

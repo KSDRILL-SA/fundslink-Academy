@@ -472,7 +472,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Review queue (ADMIN_REVIEWER — S3.21 deny-by-default)
+         * Review queue (ADMIN_REVIEWER, ADMIN_AUTHORIZER — S3.21 deny-by-default)
          * @description Ordered for triage, not by arrival (D-002 / D-013): highest priority first (CRITICAL, URGENT, NORMAL), then the soonest review due date, then the soonest `needed_by`, then the application that has waited longest. The review due date is derived from `review_sla_days`, or `emergency_review_sla_days` for URGENT and CRITICAL, both read from the config table — never a literal in code. The cursor is opaque and encodes the whole sort key.
          *     Without `status`, this returns the review queue: every application whose next transition is a person's — READY_FOR_REVIEW, UNSCREENED (the pre-screen engine was unavailable, so a person reviews without it — S8.51), UNDER_REVIEW, INTERVIEW_SCHEDULED, INTERVIEWED, APPROVED_PROPOSED and APPEALED (BR-E07). Drafts, applications waiting on the student and decided applications are not in it. `status` narrows the queue to a single status.
          */
@@ -493,8 +493,9 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * One application, for review (ADMIN_REVIEWER — S3.21 deny-by-default)
-         * @description The reviewer's read of a single application (A02). The student endpoint `getApplication` is ownership-scoped (ST-2.3) and requires APPLICATION_READ_OWN, which a reviewer does not hold — so A02 had been calling an endpoint that returns 403 to exactly the people who use it, and had only ever rendered against dev preview fixtures. This is the reviewer's own door: APPLICATION_REVIEW, reviewer-scoped RLS, and the student's motivation always included, because a reviewer reads the applicant's own words first.
+         * One application, for review or authorisation (S3.21 deny-by-default)
+         * @description The reviewer's read of a single application (A02). The student endpoint `getApplication` is ownership-scoped (ST-2.3) and requires APPLICATION_READ_OWN, which a reviewer does not hold — so A02 had been calling an endpoint that returns 403 to exactly the people who use it, and had only ever rendered against dev preview fixtures. This is the reviewer's own door: reviewer-scoped RLS, and the student's motivation always included, because a reviewer reads the applicant's own words first.
+         *     Both admin reads require APPLICATION_READ_ANY, not APPLICATION_REVIEW. Reading any application and acting on one are different powers in the TAD §3.4 matrix, and ADMIN_AUTHORIZER holds the first but not the second — while it was the second that guarded these routes, an authorizer could not open the application they had to rule on. Acting is still gated separately, on each write.
          */
         get: operations["adminGetApplication"];
         put?: never;
@@ -534,8 +535,34 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Record review outcome (audit-logged; APPROVED requires second authorizer at v2 — BR-S05) */
+        /**
+         * Record a review outcome, or rule on an appeal (audit-logged — BR-S05 · BR-E07)
+         * @description A reviewer's ruling. `APPROVED_PROPOSED` is a proposal, not a decision: a different person authorises it through `adminAuthorize` (§16.4). `REJECTED` refuses the application and the student may appeal it once.
+         *     On an APPEALED application this is the appeal ruling (BR-E07), and the reviewer may not be the person who made the original decision — that is refused with `appeal_reviewer_conflict`. `APPROVED_PROPOSED` overturns the original decision and sends it for authorisation; `REJECTED_FINAL` upholds it and ends the matter. Either way the outcome and the reviewer are written to the appeal record, which is what makes BR-E07 auditable rather than merely stated. `REJECTED_FINAL` is only reachable from APPEALED — anywhere else it is an invalid transition (BR-S04).
+         */
         post: operations["adminReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/applications/{id}/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Authorise or refuse a proposed decision (two-person rule — MASTER-SPEC 16.4 · BR-S05)
+         * @description The second half of a funding decision, and the only way an application reaches APPROVED. A reviewer proposes (`adminReview` → APPROVED_PROPOSED); a different person holding APPLICATION_AUTHORIZE rules on that proposal here. Until this existed the lifecycle stopped at the proposal, so nobody could be funded through the product.
+         *     The authoriser may not be the person who proposed the decision (§16.4) — that is refused with `two_person_rule`, read from the status event that recorded the proposal, not from anything the caller sends. Authorising an application you recused yourself from is refused too (`reviewer_recused`, BR-E09). `reason` is recorded on the status event and is the wording the student is shown.
+         *     `APPROVED_WAITLISTED` is a yes with no money behind it yet; the same endpoint later moves a waitlisted application to `APPROVED` when funding is available. `REJECTED` refuses the proposal, and the student may appeal that once (BR-E07).
+         */
+        post: operations["adminAuthorize"];
         delete?: never;
         options?: never;
         head?: never;
@@ -869,6 +896,8 @@ export interface components {
             review_due_at?: string;
             /** @description Reviewer reads only (adminGetApplication): true when the caller has stepped aside from this application (BR-E09), so the screen can withhold the decision and priority actions. Never present on a student's read. */
             recused_by_me?: boolean;
+            /** @description Admin reads only (adminGetApplication): true when the caller holds APPLICATION_AUTHORIZE, so the screen can offer the authorise step to the person who has it and not to the reviewer who proposed the decision (MASTER-SPEC 16.4). A UI hint, never the gate — the endpoint authorises every call on its own. Never present on a student's read. */
+            can_authorize?: boolean;
             /** @description True when `review_due_at` has passed and the application is still waiting on FundsLink. Lets a reviewer see an overdue application without doing date arithmetic, and lets a student be told honestly that a review is late. */
             sla_breached?: boolean;
             /** @description Position on the waitlist, 1-based, only on APPROVED_WAITLISTED (E4). Derived from the order in which applications were waitlisted. There is deliberately NO pool-size field: how many students the pool can fund depends on money this system does not yet hold or track, and S16-WAIT tells the truth it has rather than inventing a denominator. */
@@ -1949,7 +1978,7 @@ export interface operations {
             content: {
                 "application/json": {
                     /** @enum {string} */
-                    decision: "UNDER_REVIEW" | "INTERVIEW_SCHEDULED" | "APPROVED_PROPOSED" | "REJECTED";
+                    decision: "UNDER_REVIEW" | "INTERVIEW_SCHEDULED" | "APPROVED_PROPOSED" | "REJECTED" | "REJECTED_FINAL";
                     note?: string;
                 };
             };
@@ -1965,7 +1994,42 @@ export interface operations {
                 };
             };
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    adminAuthorize: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    decision: "APPROVED" | "APPROVED_WAITLISTED" | "REJECTED";
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Application"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Validation"];
         };
     };
     adminSetPriority: {

@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiError, ApiService, type Schema } from 'data-access';
 import {
@@ -17,6 +25,21 @@ export const MINIMUM_REASON_WORDS = 40;
 export function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
+
+/** The ordinary review path. Approval is proposed, never granted — a second person authorises
+ *  it through the authorise step (MASTER-SPEC §16.4). */
+const REVIEW_CHOICES = [
+  { value: 'UNDER_REVIEW', label: 'Move to under review' },
+  { value: 'INTERVIEW_SCHEDULED', label: 'Schedule an interview' },
+  { value: 'APPROVED_PROPOSED', label: 'Propose approval' },
+  { value: 'REJECTED', label: 'Decline' },
+] as const;
+
+/** Ruling on an appeal (BR-E07). REJECTED_FINAL is reachable from APPEALED and nowhere else. */
+const APPEAL_CHOICES = [
+  { value: 'APPROVED_PROPOSED', label: 'Overturn — propose approval' },
+  { value: 'REJECTED_FINAL', label: 'Uphold the original decision' },
+] as const;
 
 const REASON_CATEGORIES = [
   { value: 'FUNDS_EXHAUSTED', label: 'Funds for this intake are committed' },
@@ -74,13 +97,25 @@ const REASON_CATEGORIES = [
         </div>
       }
 
+      @if (isAppeal()) {
+        <!-- BR-E07. The student brought new information; this is the ruling on it. A different
+             reviewer from the one who decided originally — the server refuses otherwise. -->
+        <div class="rounded-lg border border-border bg-secondary/50 p-4">
+          <p class="font-medium">You are hearing an appeal</p>
+          <p class="mt-1 max-w-prose text-sm text-muted-foreground">
+            This student was declined and has appealed with new information. Overturning it
+            proposes approval, which a second person then authorises. Upholding it ends the
+            matter — there is no further appeal after this.
+          </p>
+        </div>
+      }
+
       <ui-form-field label="Decision" required>
         <select uiSelect formControlName="decision">
           <option value="">Choose…</option>
-          <option value="UNDER_REVIEW">Move to under review</option>
-          <option value="INTERVIEW_SCHEDULED">Schedule an interview</option>
-          <option value="APPROVED_PROPOSED">Propose approval</option>
-          <option value="REJECTED">Decline</option>
+          @for (choice of choices(); track choice.value) {
+            <option [value]="choice.value">{{ choice.label }}</option>
+          }
         </select>
       </ui-form-field>
 
@@ -154,6 +189,10 @@ export class DecisionComposeComponent {
 
   /** The application being decided. Supplied by the route in A02. */
   readonly applicationId = signal('');
+  /** Its current status — an appealed application is ruled on, not reviewed afresh (BR-E07). */
+  readonly status = input('');
+  /** The application changed; the detail screen re-reads it from the server. */
+  readonly decided = output<void>();
 
   protected readonly reasonCategories = REASON_CATEGORIES;
   protected readonly confirmId = 'decision-next-step-confirmed';
@@ -178,7 +217,19 @@ export class DecisionComposeComponent {
     this.form.valueChanges.subscribe(() => this.value.set(this.form.getRawValue()));
   }
 
-  protected readonly isDecline = computed(() => this.value().decision === 'REJECTED');
+  protected readonly isAppeal = computed(() => this.status() === 'APPEALED');
+  /** Only what the transition table allows from here, so no choice can 409 (BR-S04). */
+  protected readonly choices = computed(() =>
+    this.isAppeal() ? APPEAL_CHOICES : REVIEW_CHOICES,
+  );
+  /**
+   * Upholding an appeal is a decline too — the student reads it as the end of the road, so it
+   * carries the same floor. Leaving REJECTED_FINAL out would have made the kindest-possible
+   * refusal optional at exactly the point it matters most.
+   */
+  protected readonly isDecline = computed(
+    () => this.value().decision === 'REJECTED' || this.value().decision === 'REJECTED_FINAL',
+  );
   protected readonly wordCount = computed(() => countWords(this.value().note));
   protected readonly hasEnoughWords = computed(() => this.wordCount() >= MINIMUM_REASON_WORDS);
   protected readonly wordsRemaining = computed(() =>
@@ -243,7 +294,10 @@ export class DecisionComposeComponent {
         { path: { id: this.applicationId() } },
       )
       .subscribe({
-        next: () => this.submitting.set(false),
+        next: () => {
+          this.submitting.set(false);
+          this.decided.emit();
+        },
         error: (error: unknown) => {
           this.errorCode.set(error instanceof ApiError ? error.code : null);
           this.submitting.set(false);

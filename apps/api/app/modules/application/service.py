@@ -39,6 +39,7 @@ from app.modules.application.schemas import (
     Application,
     ApplicationInput,
     ApplicationPage,
+    AuthorizeDecision,
     Motivation,
     PageMeta,
     PreScreen,
@@ -46,7 +47,15 @@ from app.modules.application.schemas import (
     ReviewDecision,
 )
 from app.modules.application.state_machine import ApplicationStateMachine
-from app.modules.auth.repository import AuditRepository
+from app.modules.auth.repository import AuditRepository, RbacRepository
+
+# BR-E07: how an appeal ruling is recorded on the appeal record. Overturning it sends the
+# application back for authorisation as a proposal — an appeal cannot approve anyone by itself,
+# because that would let one person undo a rejection and grant funding in a single act (§16.4).
+APPEAL_OUTCOMES: dict[ReviewDecision, str] = {
+    ReviewDecision.APPROVED_PROPOSED: "OVERTURNED",
+    ReviewDecision.REJECTED_FINAL: "UPHELD",
+}
 
 
 def _is_breached(review_due_at: datetime | None) -> bool | None:
@@ -207,12 +216,16 @@ class ApplicationService:
         return await self._to_application(row, with_motivation=row[1] == "OTHER")
 
     async def admin_get_application(
-        self, *, application_id: str, reviewer_id: str | None = None
+        self, *, application_id: str, reviewer_id: str | None = None, role: str | None = None
     ) -> Application:
-        """One application for a reviewer (A02).
+        """One application for a reviewer or an authorizer (A02).
 
-        Runs under the reviewer's RLS context, which admits any application, and always includes
-        the motivation: a reviewer reads the applicant's own words first, whatever the category.
+        Runs under the caller's RLS context, which admits any application, and always includes the
+        motivation: a reviewer reads the applicant's own words first, whatever the category.
+
+        ``can_authorize`` tells the screen which half of the decision this person does (§16.4).
+        It is a hint for what to render — the authorise endpoint checks the permission itself, and
+        checks the two-person rule, which no client-side flag could.
         """
         row = await self.apps.get_full(application_id)
         if row is None:
@@ -220,6 +233,9 @@ class ApplicationService:
         application = await self._to_application(row, with_motivation=True)
         if reviewer_id:
             application.recused_by_me = await self.recusals.exists(application_id, reviewer_id)
+        if role:
+            granted = await RbacRepository(self.session).get_permissions_for_role(role)
+            application.can_authorize = "APPLICATION_AUTHORIZE" in granted
         return application
 
     async def recuse(
@@ -389,6 +405,18 @@ class ApplicationService:
         if owner is None:
             raise AppError("application_not_found", "Application not found", status_code=404)
         await self._refuse_if_recused(application_id, reviewer_id)
+
+        # BR-E07: on an appealed application this IS the appeal ruling, and the person who made
+        # the original decision may not be the one who reviews the appeal against it. The check
+        # runs before the transition, so a refused ruling leaves no status event behind.
+        appeal = await self.appeals.open_for(application_id)
+        if appeal is not None and appeal[1] == reviewer_id:
+            raise AppError(
+                "appeal_reviewer_conflict",
+                "You made the original decision, so someone else must hear the appeal",
+                status_code=403,
+            )
+
         # The reviewer (staff) is the actor — Human-Final (BR-E03) is satisfied by a human actor.
         await self.engine.transition(
             application_id=application_id,
@@ -398,6 +426,13 @@ class ApplicationService:
             request_id=request_id,
             note=note,
         )
+        # The transition succeeded, so this really was a ruling on the appeal — record who made it
+        # and which way it went. Until now these columns were never written by anything, which
+        # left BR-E07 stated in the schema and enforced by nobody.
+        if appeal is not None and decision in APPEAL_OUTCOMES:
+            await self.appeals.rule(
+                appeal_id=appeal[0], reviewed_by=reviewer_id, outcome=APPEAL_OUTCOMES[decision]
+            )
         await self.audit.write(
             actor_user_id=reviewer_id,
             action="APPLICATION_REVIEWED",
@@ -405,6 +440,59 @@ class ApplicationService:
             resource_id=application_id,
             request_id=request_id,
             detail={"decision": decision.value},
+        )
+        return await self._load_response(application_id)
+
+    async def admin_authorize(
+        self,
+        *,
+        authorizer_id: str,
+        application_id: str,
+        decision: AuthorizeDecision,
+        reason: str,
+        request_id: str,
+    ) -> Application:
+        """The second half of a funding decision — MASTER-SPEC §16.4, BR-S05.
+
+        A reviewer proposes (APPROVED_PROPOSED); a different person holding APPLICATION_AUTHORIZE
+        rules on that proposal here. Before this existed the lifecycle stopped at the proposal:
+        APPROVED was in the transition table, the permission was seeded, and no code path reached
+        either — so no student could be funded through the product.
+
+        The same endpoint releases a waitlisted application (APPROVED_WAITLISTED → APPROVED) when
+        money becomes available. The transition table decides what is legal from here (BR-S04);
+        this method decides who may ask.
+        """
+        owner = await self.apps.owner_of(application_id)
+        if owner is None:
+            raise AppError("application_not_found", "Application not found", status_code=404)
+        await self._refuse_if_recused(application_id, authorizer_id)
+
+        # §16.4: the proposer may not authorise their own proposal. Read from the append-only
+        # status event, never from the request — the caller does not get to say who proposed it.
+        proposer = await self.status_events.actor_of(application_id, "APPROVED_PROPOSED")
+        if proposer is not None and proposer == authorizer_id:
+            raise AppError(
+                "two_person_rule",
+                "You proposed this decision, so a second person has to authorise it",
+                status_code=403,
+            )
+
+        await self.engine.transition(
+            application_id=application_id,
+            owner_user_id=owner,
+            to_status=decision.value,
+            actor_user_id=authorizer_id,
+            request_id=request_id,
+            note=reason,
+        )
+        await self.audit.write(
+            actor_user_id=authorizer_id,
+            action="APPLICATION_AUTHORIZED",
+            resource_type="funding_application",
+            resource_id=application_id,
+            request_id=request_id,
+            detail={"decision": decision.value, "proposed_by": proposer},
         )
         return await self._load_response(application_id)
 
