@@ -135,7 +135,11 @@ async def logout(
 
 @router.get("/mfa", operation_id="authMfaStatus")
 async def mfa_status(
-    current: CurrentUser = Depends(authenticated_only),
+    # The step-up session too (like enrol and activate): a privileged account's FIRST sign-in
+    # returns only an mfa_pending token, and with `authenticated_only` here the account screen
+    # could not read its own state — so it showed an error where the "set up" button belongs, and
+    # a new reviewer could never enrol through the product at all.
+    current: CurrentUser = Depends(mfa_session),
     session=Depends(get_session),
     redis=Depends(get_redis_client),
 ) -> MfaStatus:

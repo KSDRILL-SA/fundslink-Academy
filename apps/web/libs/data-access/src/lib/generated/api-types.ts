@@ -79,7 +79,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Is two-step sign-in on for my account, and how many recovery codes are left */
+        /**
+         * Is two-step sign-in on for my account, and how many recovery codes are left
+         * @description Also answers during the MFA step-up session (the short-lived token a privileged account receives on its first sign-in, before enrolment), so the account screen can show the enrolment step rather than an error.
+         */
         get: operations["authMfaStatus"];
         put?: never;
         post?: never;
