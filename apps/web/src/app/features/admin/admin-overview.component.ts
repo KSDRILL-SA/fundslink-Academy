@@ -24,9 +24,11 @@ import {
 } from 'ui';
 import { asyncState } from '../../core/async-state';
 import { PageHeaderComponent } from '../../shared/page-header.component';
+import { THEME_TAGS } from './theme-tags';
 
 type AdminOverview = Schema<'AdminOverview'>;
 type AdminActivityItem = Schema<'AdminActivityItem'>;
+type ThemeClusters = Schema<'ThemeClusters'>;
 
 /**
  * A00 — Operations overview. The first screen for the people running the review.
@@ -177,6 +179,61 @@ type AdminActivityItem = Schema<'AdminActivityItem'>;
       }
     }
 
+    <!--
+      The quarterly theme report (MASTER-SPEC §5.6, D-018).
+
+      A case that fits no funding category is handled one at a time, and §5.6 promises the reasons
+      are counted so a recurring edge becomes a category of its own. It belongs on the screen the
+      people running the review already open, not in a query someone has to remember to run — the
+      whole failure this closes was a promise nobody could see.
+    -->
+    <section class="mt-10" aria-labelledby="themes-heading">
+      <h2 id="themes-heading" class="text-lg font-semibold">What the categories keep missing</h2>
+      <ui-card class="mt-4">
+        @switch (themes().status) {
+          @case ('error') {
+            <ui-error-state [code]="themes().errorCode" (retry)="loadThemes()" />
+          }
+          @case ('empty') {
+            <ui-empty-state
+              title="No themes recorded yet"
+              message="When a reviewer records what an out-of-category case was about, the count appears here."
+            />
+          }
+          @case ('success') {
+            @if (themeReport(); as report) {
+              <p class="max-w-prose text-muted-foreground">
+                {{ n(report.tagged_applications) }}
+                {{ report.tagged_applications === 1 ? 'case' : 'cases' }} outside our categories
+                {{ report.tagged_applications === 1 ? 'was' : 'were' }} given a theme in the last
+                {{ report.window_days }} days. A theme that keeps recurring is a category waiting
+                to exist.
+              </p>
+              <ul class="mt-4 flex flex-col gap-3">
+                @for (theme of report.themes; track theme.tag) {
+                  <li class="flex items-center gap-3">
+                    <span class="min-w-0 flex-1 truncate">{{ themeLabel(theme.tag) }}</span>
+                    <span
+                      class="h-2 rounded-full bg-primary/70"
+                      [style.width.%]="share(theme.applications, report)"
+                      aria-hidden="true"
+                    ></span>
+                    <span class="w-16 shrink-0 text-right tabular-nums font-medium">
+                      {{ n(theme.applications) }}
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+          }
+          @default {
+            <ui-skeleton class="h-24 w-full" shape="block" />
+            <p class="sr-only" role="status">Loading the theme report.</p>
+          }
+        }
+      </ui-card>
+    </section>
+
     <section class="mt-10" aria-labelledby="system-activity-heading">
       <h2 id="system-activity-heading" class="text-lg font-semibold">System activity</h2>
       <ui-card class="mt-4">
@@ -250,6 +307,11 @@ export class AdminOverviewComponent {
   protected readonly activity = this.activityStore.state;
   protected readonly activityItems = computed(() => this.activity().data ?? []);
   protected readonly activityCursor = signal<string | null>(null);
+  private readonly themeStore = asyncState<ThemeClusters | null>(
+    (report) => !report || report.themes.length === 0,
+  );
+  protected readonly themes = this.themeStore.state;
+  protected readonly themeReport = computed(() => this.themes().data ?? null);
   protected readonly loadingMore = signal(false);
 
   protected readonly icons = {
@@ -267,6 +329,26 @@ export class AdminOverviewComponent {
   constructor() {
     this.load();
     this.loadActivity();
+    this.loadThemes();
+  }
+
+  protected loadThemes(): void {
+    this.themeStore.loading();
+    this.api.get<ThemeClusters>('/admin/themes').subscribe({
+      next: (report) => this.themeStore.loaded(report),
+      error: (error: unknown) => this.themeStore.failed(error),
+    });
+  }
+
+  protected themeLabel(tag: string): string {
+    return THEME_TAGS.find((theme) => theme.value === tag)?.label ?? humanise(tag);
+  }
+
+  /** Bar width relative to the most common theme, so the shape reads at a glance. Never zero —
+   *  a theme with a real count must still be visible. */
+  protected share(applications: number, report: ThemeClusters): number {
+    const top = Math.max(...report.themes.map((theme) => theme.applications), 1);
+    return Math.max(6, Math.round((applications / top) * 100));
   }
 
   protected choose(days: number): void {

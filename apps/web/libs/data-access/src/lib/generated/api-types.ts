@@ -547,6 +547,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/applications/{id}/themes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tag an OTHER-category case with its themes (MASTER-SPEC 5.6 · D-018)
+         * @description A case that fits no funding category is handled one at a time, and §5.6 promises that the reasons are counted: "every OTHER decision records a theme tag assigned by the reviewer. Quarterly, theme clusters are reported to the Founder: recurring themes become candidate NEW official categories." This is how a student whose situation has no category today causes a category to exist tomorrow.
+         *     Tags are added, never replaced, and cannot be removed — `motivation_theme_tag` carries a staff INSERT policy and no DELETE. Re-sending a tag the application already has is a no-op rather than an error, so a reviewer adding a second theme does not have to remember the first. Only an application that has a motivation can be tagged: the theme describes what the applicant wrote, and without it there is nothing to characterise.
+         */
+        post: operations["adminTagThemes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/applications/{id}/authorize": {
         parameters: {
             query?: never;
@@ -667,6 +688,27 @@ export interface paths {
         };
         /** My dashboard figures — every number read from the database at request time */
         get: operations["getMyOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/themes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Theme clusters — the quarterly report 5.6 promises the Founder (D-018)
+         * @description How often each theme has been recorded on OTHER-category cases in the window, most frequent first, with the applications counted. This is the other half of the tagging loop: a tag nobody reads back is the same as no tag at all, and §5.6's promise is not the tagging, it is the report that turns a recurring edge into a candidate category.
+         *     `window_days` defaults to a quarter, because that is the cadence §5.6 names. Counts are of applications, not of tag rows — one application carrying three themes is one case, and counting rows would make a thorough reviewer look like a trend.
+         */
+        get: operations["adminThemeClusters"];
         put?: never;
         post?: never;
         delete?: never;
@@ -870,6 +912,17 @@ export interface components {
                 language: string;
             };
         };
+        ThemeClusters: {
+            /** Format: date-time */
+            generated_at: string;
+            window_days: number;
+            /** @description Distinct OTHER-category applications carrying at least one theme in the window. The denominator: a theme on 4 of 5 cases means something a theme on 4 of 400 does not. */
+            tagged_applications: number;
+            themes: {
+                tag: string;
+                applications: number;
+            }[];
+        };
         Application: components["schemas"]["ApplicationInput"] & {
             id: string;
             status: string;
@@ -903,6 +956,8 @@ export interface components {
             review_due_at?: string;
             /** @description Reviewer reads only (adminGetApplication): true when the caller has stepped aside from this application (BR-E09), so the screen can withhold the decision and priority actions. Never present on a student's read. */
             recused_by_me?: boolean;
+            /** @description Admin reads only (adminGetApplication): the themes a reviewer has recorded on this OTHER-category case (MASTER-SPEC 5.6, D-018), so the next reviewer sees what the last one concluded. Never present on a student's read — a theme is the reviewer's characterisation of someone's circumstances, written for a quarterly count and not addressed to the applicant. */
+            theme_tags?: string[];
             /** @description Admin reads only (adminGetApplication): true when the caller holds APPLICATION_AUTHORIZE, so the screen can offer the authorise step to the person who has it and not to the reviewer who proposed the decision (MASTER-SPEC 16.4). A UI hint, never the gate — the endpoint authorises every call on its own. Never present on a student's read. */
             can_authorize?: boolean;
             /** @description True when `review_due_at` has passed and the application is still waiting on FundsLink. Lets a reviewer see an overdue application without doing date arithmetic, and lets a student be told honestly that a review is late. */
@@ -2005,6 +2060,38 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    adminTagThemes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    tags: ("FINANCIAL_GAP" | "FAMILY_CRISIS" | "HEALTH" | "DOCUMENTATION" | "INSTITUTIONAL" | "OTHER")[];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Application"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Validation"];
+        };
+    };
     adminAuthorize: {
         parameters: {
             query?: never;
@@ -2204,6 +2291,29 @@ export interface operations {
                     "application/json": components["schemas"]["StudentOverview"];
                 };
             };
+        };
+    };
+    adminThemeClusters: {
+        parameters: {
+            query?: {
+                window_days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThemeClusters"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
         };
     };
     adminGetOverview: {

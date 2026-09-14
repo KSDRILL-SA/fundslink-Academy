@@ -23,6 +23,8 @@ from app.modules.application.schemas import (
     Recusal,
     RecusalRequest,
     ReviewRequest,
+    ThemeClusters,
+    ThemeRequest,
 )
 from app.modules.application.service import ApplicationService
 from app.modules.auth.deps import CurrentUser
@@ -162,6 +164,33 @@ async def admin_review(
         note=body.note,
         request_id=get_request_id(request),
     )
+
+
+@router.post("/admin/applications/{id}/themes", operation_id="adminTagThemes")
+async def admin_tag_themes(
+    id: str,  # noqa: A002 — matches the contract's path parameter name
+    body: ThemeRequest,
+    request: Request,
+    current: CurrentUser = Depends(require(Permission.APPLICATION_REVIEW)),
+    session=Depends(get_session),
+) -> Application:
+    """Record the themes of an OTHER-category case — MASTER-SPEC §5.6, D-018."""
+    return await ApplicationService(session).tag_themes(
+        reviewer_id=current.id,
+        application_id=id,
+        tags=body.tags,
+        request_id=get_request_id(request),
+    )
+
+
+@router.get("/admin/themes", operation_id="adminThemeClusters")
+async def admin_theme_clusters(
+    window_days: int = Query(default=90, ge=1, le=730),
+    current: CurrentUser = Depends(admin_read),  # noqa: ARG001 — posture, not a handler argument
+    session=Depends(get_session),
+) -> ThemeClusters:
+    """The quarterly theme report §5.6 promises the Founder (D-018)."""
+    return await ApplicationService(session).theme_clusters(window_days=window_days)
 
 
 @router.post("/admin/applications/{id}/authorize", operation_id="adminAuthorize")

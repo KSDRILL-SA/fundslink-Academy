@@ -33,6 +33,7 @@ from app.modules.application.repository import (
     PreScreenReadRepository,
     RecusalRepository,
     StatusEventRepository,
+    ThemeTagRepository,
     TransitionRepository,
 )
 from app.modules.application.schemas import (
@@ -45,6 +46,9 @@ from app.modules.application.schemas import (
     PreScreen,
     Recusal,
     ReviewDecision,
+    ThemeClusters,
+    ThemeCount,
+    ThemeTag,
 )
 from app.modules.application.state_machine import ApplicationStateMachine
 from app.modules.auth.repository import AuditRepository, RbacRepository
@@ -85,6 +89,7 @@ class ApplicationService:
         self.status_events = StatusEventRepository(session)
         self.appeals = AppealRepository(session)
         self.recusals = RecusalRepository(session)
+        self.themes = ThemeTagRepository(session)
         self.audit = AuditRepository(session)
         self.engine = ApplicationStateMachine(
             transitions=TransitionRepository(session),
@@ -236,7 +241,67 @@ class ApplicationService:
         if role:
             granted = await RbacRepository(self.session).get_permissions_for_role(role)
             application.can_authorize = "APPLICATION_AUTHORIZE" in granted
+        # §5.6: what the last reviewer concluded about a case that fits no category, so the next
+        # one is not starting from nothing. Staff-only by RLS, and absent from the student read.
+        application.theme_tags = await self.themes.tags_for(application_id)
         return application
+
+    async def tag_themes(
+        self, *, reviewer_id: str, application_id: str, tags: list[ThemeTag], request_id: str
+    ) -> Application:
+        """Record the themes of an OTHER-category case — MASTER-SPEC §5.6, D-018.
+
+        This is how a student whose situation has no funding category today causes a category to
+        exist tomorrow: §5.6 counts the themes quarterly and promotes a recurring one. The table
+        and its six themes have existed since the first migration and were written by nothing, so
+        the promise was stored and never kept.
+
+        Tags are added, not replaced — the table has a staff INSERT policy and no DELETE, and a
+        theme is a record of a reviewer's judgement rather than a working note.
+        """
+        if await self.apps.owner_of(application_id) is None:
+            raise AppError("application_not_found", "Application not found", status_code=404)
+        await self._refuse_if_recused(application_id, reviewer_id)
+
+        motivation_id = await self.motivations.id_for(application_id)
+        if motivation_id is None:
+            # A theme describes what the applicant wrote. Without a motivation there is nothing to
+            # characterise, and a tag on a categorised application would pollute a report whose
+            # whole purpose is finding what the categories miss.
+            raise AppError(
+                "motivation_required",
+                "Only an application with a motivation can be given a theme",
+                status_code=409,
+            )
+        await self.themes.add(
+            motivation_id=motivation_id, tags=[t.value for t in tags], tagged_by=reviewer_id
+        )
+        await self.audit.write(
+            actor_user_id=reviewer_id,
+            action="APPLICATION_THEMED",
+            resource_type="funding_application",
+            resource_id=application_id,
+            request_id=request_id,
+            detail={"tags": sorted({t.value for t in tags})},
+        )
+        return await self.admin_get_application(
+            application_id=application_id, reviewer_id=reviewer_id
+        )
+
+    async def theme_clusters(self, *, window_days: int) -> ThemeClusters:
+        """The quarterly report §5.6 promises the Founder (D-018).
+
+        The other half of the loop: a tag nobody reads back is the same as no tag at all. §5.6's
+        promise is not the tagging — it is the report that turns a recurring edge into a candidate
+        funding category.
+        """
+        rows = await self.themes.clusters(window_days)
+        return ThemeClusters(
+            generated_at=datetime.now(UTC),
+            window_days=window_days,
+            tagged_applications=await self.themes.tagged_applications(window_days),
+            themes=[ThemeCount(tag=tag, applications=int(count)) for tag, count in rows],
+        )
 
     async def recuse(
         self, *, reviewer_id: str, application_id: str, reason: str, request_id: str

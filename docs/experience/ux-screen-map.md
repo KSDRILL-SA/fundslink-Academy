@@ -95,6 +95,20 @@ Each item: what's needed, **why we need it** (one sentence), and an inline uploa
 ### S18 — Tracking Board
 Columns or cards by status; every status chip carries its **source badge** (You reported · From email · From partner — P3). Deadline countdown chips from `bursary_deadline`. Silent-bursary indicator at day 25+: *"We'll nudge them for you on day 30"* (§12.5).
 
+### A02 — Application detail: what an out-of-category case was about (§5.6 · D-018)
+
+Beside the applicant's own words, a reviewer records the themes of an OTHER-category case from six
+fixed choices. §5.6 counts them quarterly and promotes a recurring theme to a real funding
+category — which is how a student whose situation fits nothing today causes a category to exist
+tomorrow. The list is short on purpose: if every case can invent its own theme, nothing recurs and
+nothing is ever promoted.
+
+Tags are added, never removed (`motivation_theme_tag` has a staff INSERT policy and no DELETE),
+and the screen says so before a reviewer ticks anything. A student is never shown the theme put on
+their case — it is a characterisation written for a count, not a message addressed to them. The
+counts appear on **A00** as "What the categories keep missing", because a report nobody can see is
+the same failure as no report at all.
+
 ### A03 — Decision Compose (admin)
 The reviewer cannot submit a rejection without: selecting reason category, writing ≥40 words of human text, and ticking *"I confirm this message offers a concrete next step."* The kind rejection is **enforced at the compose screen**, not hoped for, and the same floor applies to an authorizer's refusal and to an upheld appeal — a student turned down at the last step reads the same considered message as one turned down at the first.
 

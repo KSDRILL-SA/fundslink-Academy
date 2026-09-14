@@ -14,6 +14,7 @@ import {
   UiBadgeComponent,
   UiButtonComponent,
   UiCardComponent,
+  UiCheckboxDirective,
   UiErrorStateComponent,
   UiFormFieldComponent,
   UiInputDirective,
@@ -24,6 +25,7 @@ import {
 } from 'ui';
 import { asyncState } from '../../core/async-state';
 import { APPLICATION_TYPE_LABELS } from '../applications/application-labels';
+import { THEME_TAGS, type ThemeTagValue } from './theme-tags';
 import { AUTHORISABLE, AuthoriseDecisionComponent } from './authorise-decision.component';
 import { DecisionComposeComponent } from './decision-compose.component';
 
@@ -57,6 +59,7 @@ type Application = Schema<'Application'>;
     ReactiveFormsModule,
     UiBadgeComponent,
     UiButtonComponent,
+    UiCheckboxDirective,
     UiFormFieldComponent,
     UiInputDirective,
     UiSelectDirective,
@@ -229,6 +232,77 @@ type Application = Schema<'Application'>;
             </ui-card>
           }
 
+          @if (app.motivation && !app.recused_by_me) {
+            <!--
+              What this case was actually about (MASTER-SPEC §5.6, D-018).
+
+              A case that fits no category is handled one at a time — and §5.6 promises those
+              reasons are counted, so a recurring edge becomes a real funding category. The table
+              and its six themes existed from the first migration and nothing wrote them, so the
+              promise was stored and never kept. It sits beside the applicant's own words because
+              that is what a theme describes.
+            -->
+            <ui-card class="mt-6">
+              <h2 class="text-lg font-semibold">What is this case about?</h2>
+              <p class="mt-2 max-w-prose text-muted-foreground">
+                This application fits none of our categories. Recording why helps us see what keeps
+                coming up — when a theme recurs often enough it becomes a category of its own, so
+                the next student in this position does not have to explain from scratch.
+              </p>
+
+              @if (app.theme_tags?.length) {
+                <ul class="mt-4 flex flex-wrap gap-2">
+                  @for (theme of app.theme_tags; track theme) {
+                    <li><ui-badge tone="neutral" [label]="themeLabel(theme)" /></li>
+                  }
+                </ul>
+              }
+
+              <form class="mt-5 flex flex-col gap-4" [formGroup]="themeForm" (ngSubmit)="saveThemes(app.id)">
+                <fieldset class="flex flex-col gap-3">
+                  <legend class="text-sm font-semibold text-muted-foreground">
+                    Add a theme
+                  </legend>
+                  <div class="flex flex-wrap gap-x-6 gap-y-3">
+                    @for (theme of themes; track theme.value) {
+                      <div class="flex items-center gap-2">
+                        <input
+                          uiCheckbox
+                          type="checkbox"
+                          [id]="'theme-' + theme.value"
+                          [formControlName]="theme.value"
+                        />
+                        <label [for]="'theme-' + theme.value" class="text-sm">
+                          {{ theme.label }}
+                        </label>
+                      </div>
+                    }
+                  </div>
+                </fieldset>
+
+                <p class="text-sm text-muted-foreground">
+                  A theme cannot be removed once added, and it is never shown to the student.
+                </p>
+
+                <div class="flex flex-wrap items-center gap-3">
+                  <ui-button type="submit" variant="secondary" [loading]="savingThemes()" [disabled]="!pickedThemes().length">
+                    Add {{ pickedThemes().length === 1 ? 'this theme' : 'these themes' }}
+                  </ui-button>
+                  @if (themesSaved()) {
+                    <p role="status" class="text-sm font-medium text-success">Recorded.</p>
+                  }
+                </div>
+
+                @if (themeFailure(); as problem) {
+                  <div role="alert" class="rounded-lg border border-warning/40 bg-warning/10 p-4">
+                    <p class="font-medium text-foreground">{{ problem.title }}</p>
+                    <p class="mt-1 text-sm text-muted-foreground">{{ problem.message }}</p>
+                  </div>
+                }
+              </form>
+            </ui-card>
+          }
+
           @if (annotations().length) {
             <ui-card class="mt-6">
               <h2 class="text-lg font-semibold">Worth checking</h2>
@@ -378,6 +452,56 @@ export class AdminApplicationComponent {
     return APPLICATION_TYPE_LABELS[type] ?? 'Funding application';
   }
 
+  /** §5.6 / D-018 — the six seeded themes (lk_theme_tag), in the reviewer's words. */
+  protected readonly themes = THEME_TAGS;
+  protected readonly savingThemes = signal(false);
+  protected readonly themesSaved = signal(false);
+  private readonly themeError = signal<string | null>(null);
+  protected readonly themeFailure = computed(() => {
+    const code = this.themeError();
+    return code ? presentError(code) : null;
+  });
+  readonly themeForm = this.fb.nonNullable.group(
+    Object.fromEntries(THEME_TAGS.map((theme) => [theme.value, false])) as Record<
+      ThemeTagValue,
+      boolean
+    >,
+  );
+  private readonly themeChoices = signal(this.themeForm.getRawValue());
+  protected readonly pickedThemes = computed(() =>
+    THEME_TAGS.filter((theme) => this.themeChoices()[theme.value]).map((theme) => theme.value),
+  );
+
+  protected themeLabel(value: string): string {
+    return THEME_TAGS.find((theme) => theme.value === value)?.label ?? value;
+  }
+
+
+  protected saveThemes(id: string): void {
+    const tags = this.pickedThemes();
+    if (!tags.length) {
+      return;
+    }
+    this.savingThemes.set(true);
+    this.themesSaved.set(false);
+    this.themeError.set(null);
+    this.api
+      .post<Application>('/admin/applications/{id}/themes', { tags }, { path: { id } })
+      .subscribe({
+        next: () => {
+          this.savingThemes.set(false);
+          this.themesSaved.set(true);
+          this.themeForm.reset();
+          // Re-read: the server decides which themes this case now carries.
+          this.load();
+        },
+        error: (error: unknown) => {
+          this.savingThemes.set(false);
+          this.themeError.set(error instanceof ApiError ? error.code : null);
+        },
+      });
+  }
+
   /** A second person only has something to rule on once a decision has been proposed. */
   protected canAuthoriseNow(status: string): boolean {
     return AUTHORISABLE.includes(status);
@@ -419,6 +543,24 @@ export class AdminApplicationComponent {
 
   constructor() {
     this.load();
+    this.themeForm.valueChanges.subscribe(() =>
+      this.themeChoices.set(this.themeForm.getRawValue()),
+    );
+    // A theme already on the case is not an option — disabling the control rather than binding
+    // [disabled] in the template, which reactive forms ignores. Re-enabled if a re-read ever
+    // shows it gone, so the form follows the server rather than a one-way local decision.
+    effect(() => {
+      const existing = this.application()?.theme_tags ?? [];
+      for (const theme of THEME_TAGS) {
+        const control = this.themeForm.controls[theme.value];
+        if (existing.includes(theme.value)) {
+          control.setValue(false, { emitEvent: false });
+          control.disable({ emitEvent: false });
+        } else if (control.disabled) {
+          control.enable({ emitEvent: false });
+        }
+      }
+    });
     // Hand the id to the compose form once it exists.
     effect(() => {
       const id = this.application()?.id;

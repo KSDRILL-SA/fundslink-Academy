@@ -497,6 +497,45 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 
+  /admin/applications/{id}/themes:
+    post:
+      operationId: adminTagThemes
+      summary: Tag an OTHER-category case with its themes (MASTER-SPEC 5.6 · D-018)
+      description: >-
+        A case that fits no funding category is handled one at a time, and §5.6 promises that the
+        reasons are counted: "every OTHER decision records a theme tag assigned by the reviewer.
+        Quarterly, theme clusters are reported to the Founder: recurring themes become candidate
+        NEW official categories." This is how a student whose situation has no category today
+        causes a category to exist tomorrow.
+
+        Tags are added, never replaced, and cannot be removed — `motivation_theme_tag` carries a
+        staff INSERT policy and no DELETE. Re-sending a tag the application already has is a
+        no-op rather than an error, so a reviewer adding a second theme does not have to remember
+        the first. Only an application that has a motivation can be tagged: the theme describes
+        what the applicant wrote, and without it there is nothing to characterise.
+      parameters: [ { $ref: '#/components/parameters/Id' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tags]
+              properties:
+                tags:
+                  type: array
+                  minItems: 1
+                  maxItems: 6
+                  items:
+                    type: string
+                    enum: [FINANCIAL_GAP, FAMILY_CRISIS, HEALTH, DOCUMENTATION, INSTITUTIONAL, OTHER]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Application' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Validation' }
+
   /admin/applications/{id}/authorize:
     post:
       operationId: adminAuthorize
@@ -621,6 +660,31 @@ paths:
       summary: My dashboard figures — every number read from the database at request time
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/StudentOverview' } } } }
+
+  /admin/themes:
+    get:
+      operationId: adminThemeClusters
+      summary: Theme clusters — the quarterly report 5.6 promises the Founder (D-018)
+      description: >-
+        How often each theme has been recorded on OTHER-category cases in the window, most
+        frequent first, with the applications counted. This is the other half of the tagging
+        loop: a tag nobody reads back is the same as no tag at all, and §5.6's promise is not the
+        tagging, it is the report that turns a recurring edge into a candidate category.
+
+        `window_days` defaults to a quarter, because that is the cadence §5.6 names. Counts are
+        of applications, not of tag rows — one application carrying three themes is one case, and
+        counting rows would make a thorough reviewer look like a trend.
+      parameters:
+        - name: window_days
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 730, default: 90 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ThemeClusters' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /admin/overview:
     get:
@@ -899,6 +963,26 @@ components:
             support_needed: { type: string }
             language: { type: string, default: en, description: Any SA official language — E11 }
 
+    ThemeClusters:
+      type: object
+      required: [generated_at, window_days, tagged_applications, themes]
+      properties:
+        generated_at: { type: string, format: date-time }
+        window_days: { type: integer }
+        tagged_applications:
+          type: integer
+          description: >-
+            Distinct OTHER-category applications carrying at least one theme in the window. The
+            denominator: a theme on 4 of 5 cases means something a theme on 4 of 400 does not.
+        themes:
+          type: array
+          items:
+            type: object
+            required: [tag, applications]
+            properties:
+              tag: { type: string }
+              applications: { type: integer }
+
     Application:
       allOf:
         - $ref: '#/components/schemas/ApplicationInput'
@@ -952,6 +1036,15 @@ components:
                 Reviewer reads only (adminGetApplication): true when the caller has stepped aside
                 from this application (BR-E09), so the screen can withhold the decision and
                 priority actions. Never present on a student's read.
+            theme_tags:
+              type: array
+              items: { type: string }
+              description: >-
+                Admin reads only (adminGetApplication): the themes a reviewer has recorded on
+                this OTHER-category case (MASTER-SPEC 5.6, D-018), so the next reviewer sees what
+                the last one concluded. Never present on a student's read — a theme is the
+                reviewer's characterisation of someone's circumstances, written for a quarterly
+                count and not addressed to the applicant.
             can_authorize:
               type: boolean
               description: >-
