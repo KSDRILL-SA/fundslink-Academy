@@ -3,15 +3,17 @@
 Runs inside the submit/resubmit transaction (the caller has set SYSTEM RLS context — pre-screen
 writes are staff-only). The engine:
   SUBMITTED/RESUBMITTED → PRE_SCREENING → READY_FOR_REVIEW | RETURNED_FOR_INFO | UNSCREENED.
-A RETURN is never a rejection (it carries a kind fix-list); after 3 return cycles the case is
-flagged for direct human outreach (BR-E04). If the engine can't evaluate (no ruleset / failure),
-the application degrades to UNSCREENED and flows straight to the human queue — students are never
-blocked by our machinery (§5.7 / S8.51). Every status hop reuses the module-2 state machine, so
-the outbox enqueue (BR-N01) and Human-Final guard (BR-E03) apply uniformly.
+A RETURN is never a rejection (it carries a kind fix-list); after ``pre_screen_outreach_cycle``
+return cycles (config, DB-D24) the case is flagged for direct human outreach (BR-E04). If the
+engine can't evaluate (no ruleset / failure), the application degrades to UNSCREENED and flows
+straight to the human queue — students are never blocked by our machinery (§5.7 / S8.51). Every
+status hop reuses the module-2 state machine, so the outbox enqueue (BR-N01) and Human-Final
+guard (BR-E03) apply uniformly.
 """
 
 from __future__ import annotations
 
+from app.db.config import ConfigRepository
 from app.modules.application.repository import (
     ApplicationRepository,
     OutboxRepository,
@@ -28,7 +30,12 @@ from app.modules.eligibility.repository import (
 )
 from app.modules.eligibility.rule_engine import READY, RETURNED, Facts, evaluate
 
-OUTREACH_CYCLE = 3  # after this many returns, a human reaches out directly (BR-E04)
+# After this many return cycles the loop stops and a person reaches out directly (BR-E04). Read
+# from config (DB-D24) — this is a judgement about how many times it is fair to send a student
+# back before someone picks up the phone, and that must be changeable without a deploy. The
+# literal stays as the fallback, so a database whose migrations have not run behaves as before.
+OUTREACH_CYCLE_KEY = "pre_screen_outreach_cycle"
+OUTREACH_CYCLE_DEFAULT = 3
 
 # pre_screen_result.outcome → the application status it drives.
 _STATUS_FOR = {READY: "READY_FOR_REVIEW", RETURNED: "RETURNED_FOR_INFO"}
@@ -43,6 +50,7 @@ class EligibilityService:
         self.results = PreScreenResultRepository(session)
         self.returns = ReturnRepository(session)
         self.audit = AuditRepository(session)
+        self.config = ConfigRepository(session)
         self.engine = ApplicationStateMachine(
             transitions=TransitionRepository(session),
             events=StatusEventRepository(session),
@@ -103,14 +111,17 @@ class EligibilityService:
             await self.returns.insert(
                 application_id=application_id, cycle_no=cycle_no, fix_list=outcome.fix_list
             )
-            if cycle_no >= OUTREACH_CYCLE:  # BR-E04 — stop the loop, a human reaches out
+            outreach_cycle = await self.config.get_int(
+                OUTREACH_CYCLE_KEY, OUTREACH_CYCLE_DEFAULT
+            )
+            if cycle_no >= outreach_cycle:  # BR-E04 — stop the loop, a human reaches out
                 await self.audit.write(
                     actor_user_id="SYSTEM",
                     action="APPLICATION_OUTREACH_FLAGGED",
                     resource_type="funding_application",
                     resource_id=application_id,
                     request_id=request_id,
-                    detail={"cycle_no": cycle_no},
+                    detail={"cycle_no": cycle_no, "outreach_cycle": outreach_cycle},
                 )
 
     async def resubmit(self, *, actor_id: str, application_id: str, request_id: str):

@@ -69,7 +69,7 @@ def test_daily_quota_is_enforced_st_2_6(match_client, admin_conn, monkeypatch):
     async def _quota_one(self, key, default):  # noqa: ANN001
         return 1
 
-    monkeypatch.setattr("app.modules.matching.repository.ConfigRepository.get_int", _quota_one)
+    monkeypatch.setattr("app.db.config.ConfigRepository.get_int", _quota_one)
     seed_bursary(admin_conn)
     token, _ = student_with_profile(match_client)
     assert match_client.post(RUN, headers=bearer(token)).status_code == 200

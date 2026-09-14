@@ -289,6 +289,31 @@ Legend: 🔑 PK · 🔗 FK · ⭐ UNIQUE · ⏱ timestamptz · all PKs cuid (DB-
 | audit_log | append-only, partitioned: actor, action, resource_type/id, request_id, created_at ⏱ |
 | config / config_history | key ⭐ · value · effective-dated history with approver (DB-D24, BR-F12) |
 
+### 3.4.1 Config keys in force (DB-D24)
+
+Every business value the platform acts on is a row here, changeable without a deploy. If a key is
+absent the code falls back to the value shown, so a database behind on migrations behaves exactly
+as it did before the key existed — it never fails and never silently does nothing.
+
+| Key | Value | What it decides | Rule |
+|---|---|---|---|
+| `review_sla_days` | 14 | When FundsLink owes a review | D-002 · BR-S12 |
+| `emergency_review_sla_days` | 3 | The same, for URGENT and CRITICAL | D-002 · BR-S11 |
+| `return_respond_days` | 14 | How long a student has to answer a return | D-006 |
+| `return_reminder_lead_days` | 3 | How early the gentle reminder goes out | D-006 |
+| `pre_screen_outreach_cycle` | 3 | How many returns before a person reaches out directly | BR-E04 |
+| `tracked_deadline_lead_days` | 3 | How early a tracked bursary's deadline is flagged | BR-T05 |
+| `tracked_silence_days` | 30,45,60 | The follow-up cadence for a tracked application gone quiet | BR-T06 |
+| `monthly_allowance_zar` | 1000.00 | The student allowance | BR-F12 |
+| `matching_daily_budget_zar` | 200.00 | The daily AI matching spend ceiling | ST-2.6 |
+| `matching_cost_per_call_zar` | 0.50 | What one matching call is assumed to cost | ST-2.6 |
+| `matching_user_daily_quota` | 5 | Matching runs per student per day | ST-2.6 |
+
+`tracked_silence_days` is a comma-separated list because BR-T06 is a cadence, not a single number.
+A value that is not a list of positive integers falls back to the seeded cadence: this is read by
+a scheduled job, where raising would be a silent night and an empty list would be a student nobody
+follows up on — and neither would be noticed.
+
 ## 3.5 [FWD] Financial & Institution (logical lock — DDL in v1.5/v2 migrations)
 
 | Table | Essentials |
