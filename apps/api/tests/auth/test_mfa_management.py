@@ -281,3 +281,47 @@ def admin_token(client):
     )
     assert full.status_code == 200, full.text
     return full.json()["access_token"], secret, email
+
+
+def test_a_privileged_first_sign_in_can_read_its_own_mfa_state(client):
+    """The step-up session must be able to see the account's MFA state.
+
+    A privileged account's FIRST sign-in returns only an mfa_pending token. When the status
+    endpoint refused it, the account screen showed an error where the "set up two-step sign-in"
+    button belongs — so a new reviewer could not enrol through the product at all.
+    """
+    email = f"adm_{uuid.uuid4().hex}@fundslink.io"
+    uid = f"adm_{uuid.uuid4().hex[:12]}"
+    admin = psycopg.connect(_conninfo(), autocommit=True)
+    try:
+        admin.execute(
+            'INSERT INTO "user"(id,email,password_hash,account_state) VALUES (%s,%s,%s,%s)',
+            (uid, email, passwords.hash_password(GOOD_PW), "ACTIVE"),
+        )
+        admin.execute(
+            "INSERT INTO user_role(id,user_id,role_id)"
+            " SELECT %s,%s,r.id FROM role r WHERE r.code='ADMIN_REVIEWER'",
+            (f"{uid}_r", uid),
+        )
+    finally:
+        admin.close()
+
+    stepup = client.post(f"{BASE}/login", json={"email": email, "password": GOOD_PW})
+    assert stepup.status_code == 200, stepup.text
+    token = stepup.json()["access_token"]
+
+    status = client.get(STATUS, headers=_bearer(token))
+    assert status.status_code == 200, status.text
+    assert status.json() == {
+        "enrolled": False,
+        "enabled": False,
+        "recovery_codes_remaining": 0,
+        "required_for_role": True,
+    }
+    # The step-up token still reaches nothing else — it is for enrolling, not for working.
+    locked = client.post(
+        f"{BASE}/change-password",
+        headers=_bearer(token),
+        json={"current_password": GOOD_PW, "new_password": "An0ther!Passw0rd"},
+    )
+    assert locked.status_code == 403
