@@ -102,6 +102,50 @@ def test_three_return_cycles_flag_human_outreach_br_e04(elig_client, admin_conn)
     assert flagged is not None  # after 3 cycles, a human reaches out (BR-E04)
 
 
+def test_the_outreach_cycle_is_read_from_config_br_e04(elig_client, admin_conn):
+    """How many times it is fair to send a student back before a person picks up the phone is a
+    judgement, and CLAUDE.md says a business value like that lives in config, not in code (#311).
+
+    Lowering it to 1 must flag outreach on the very first return; the negative control is the same
+    application under the seeded value, which does not flag until the third."""
+    before = admin_conn.execute(
+        "SELECT value FROM config WHERE key = 'pre_screen_outreach_cycle'"
+    ).fetchone()[0]
+    assert before == "3"
+
+    def flagged(app_id):
+        return admin_conn.execute(
+            "SELECT 1 FROM audit_log WHERE resource_id = %s"
+            " AND action = 'APPLICATION_OUTREACH_FLAGGED'",
+            (app_id,),
+        ).fetchone()
+
+    control_token, _ = student_with_profile(elig_client)
+    control = create_app(elig_client, control_token)
+    submit(elig_client, control_token, control["id"])
+    assert flagged(control["id"]) is None  # one return, seeded cycle of 3 — nobody called yet
+
+    admin_conn.execute(
+        "UPDATE config SET value = '1' WHERE key = 'pre_screen_outreach_cycle'"
+    )
+    try:
+        token, _ = student_with_profile(elig_client)
+        app = create_app(elig_client, token)
+        submit(elig_client, token, app["id"])  # cycle 1, and now that is enough
+        assert flagged(app["id"]) is not None
+        detail = admin_conn.execute(
+            "SELECT detail FROM audit_log WHERE resource_id = %s"
+            " AND action = 'APPLICATION_OUTREACH_FLAGGED'",
+            (app["id"],),
+        ).fetchone()[0]
+        # The threshold in force is recorded beside the cycle, so a flag can be explained later.
+        assert detail == {"cycle_no": 1, "outreach_cycle": 1}
+    finally:
+        admin_conn.execute(
+            "UPDATE config SET value = %s WHERE key = 'pre_screen_outreach_cycle'", (before,)
+        )
+
+
 def test_other_application_with_motivation_is_ready(elig_client):
     token, _ = student_with_profile(elig_client)
     app = create_app(

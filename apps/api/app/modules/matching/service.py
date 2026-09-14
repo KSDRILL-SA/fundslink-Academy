@@ -17,12 +17,12 @@ from decimal import Decimal
 
 from app.common.errors import AppError
 from app.common.pagination import clamp_limit, decode_cursor, encode_cursor
+from app.db.config import ConfigRepository
 from app.db.context import set_system_context
 from app.modules.application.schemas import PageMeta
 from app.modules.auth.repository import AuditRepository
 from app.modules.matching.repository import (
     BursaryRepository,
-    ConfigRepository,
     MatchResultRepository,
     ProfileReadRepository,
 )

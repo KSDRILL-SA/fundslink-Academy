@@ -133,16 +133,3 @@ class MatchResultRepository(BaseRepository):
             **params,
         )
 
-
-class ConfigRepository(BaseRepository):
-    async def get_decimal(self, key: str, default: Decimal) -> Decimal:
-        row = await sql.fetch_one(
-            self.session, "SELECT value FROM config WHERE key = :k", k=key
-        )
-        return Decimal(row[0]) if row else default
-
-    async def get_int(self, key: str, default: int) -> int:
-        row = await sql.fetch_one(
-            self.session, "SELECT value FROM config WHERE key = :k", k=key
-        )
-        return int(row[0]) if row else default
