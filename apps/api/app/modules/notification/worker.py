@@ -37,6 +37,19 @@ def _backoff(attempts: int) -> datetime:
 # §0 — P1 dignity first · P2 never a dead end · P4 a return is NOT a rejection · P5 humans are
 # visible. No IDs/PII in any body (P3 / POPIA — the student signs in for detail); channel-agnostic
 # and concise so the same warm words serve email, SMS, and in-app (P6).
+#
+# Keyed by language, then by trigger (D-008). The column recording which language a student wants
+# to be written to in has existed since migration 0004 and was read by nothing, so everyone was
+# written to in English by default rather than by their own choice.
+#
+# ``en`` is the only complete set today, and that is a statement of fact rather than a plan: the
+# other ten are a translation task, not an engineering one. Fabricating isiZulu or Sepedi copy
+# here would be worse than the gap — D-008 exists so that people are addressed with dignity in
+# their own language, and mangled copy in someone's home language is the opposite of that. Add a
+# language's entry when a real translation exists; anything absent falls back to English, per
+# trigger, so a partial translation is safe to ship.
+_TEMPLATES_BY_LANGUAGE: dict[str, dict[str, tuple[str, str]]] = {}
+
 _TEMPLATES: dict[str, tuple[str, str]] = {
     "APPLICATION_SUBMITTED": (
         "We've received your FundsLink application",
@@ -100,11 +113,26 @@ _DEFAULT_MESSAGE: tuple[str, str] = (
 )
 
 
-def _render(trigger: str, payload: dict) -> tuple[str, str]:
-    """The student-facing copy for a trigger (content track). Warm, dignified, channel-agnostic per
-    the UX emotional-design law (ux-screen-map §0, P1–P8); never embeds an id/PII (P3 / POPIA).
-    `payload` is intentionally unused — detail lives behind sign-in. Unknown triggers fall back."""
-    return _TEMPLATES.get(trigger, _DEFAULT_MESSAGE)
+_TEMPLATES_BY_LANGUAGE["en"] = _TEMPLATES
+
+DEFAULT_LANGUAGE = "en"
+
+
+def _render(trigger: str, payload: dict, language: str = DEFAULT_LANGUAGE) -> tuple[str, str]:
+    """The student-facing copy for a trigger, in the language the student asked for (D-008).
+
+    Warm, dignified, channel-agnostic per the UX emotional-design law (ux-screen-map §0, P1–P8);
+    never embeds an id/PII (P3 / POPIA). `payload` is intentionally unused — detail lives behind
+    sign-in.
+
+    Two fallbacks, both per-trigger rather than per-language, so a half-finished translation is
+    safe to deploy: a language we have no copy for falls back to English, and so does a single
+    trigger missing from an otherwise translated set. An unknown trigger falls back to the
+    generic message. Nobody is ever sent an empty notification because a translator has not
+    finished.
+    """
+    catalogue = _TEMPLATES_BY_LANGUAGE.get(language) or {}
+    return catalogue.get(trigger) or _TEMPLATES.get(trigger, _DEFAULT_MESSAGE)
 
 
 class NotificationWorker:
@@ -141,7 +169,8 @@ class NotificationWorker:
     async def _deliver(self, user_id: str, trigger: str, channels, payload: dict) -> None:
         effective = (await self.prefs.get(user_id)).get(trigger) or list(channels or [])
         granted = await self.consents.granted_purposes(user_id)
-        subject, body = _render(trigger, payload)
+        language = await self.repo.user_language(user_id)
+        subject, body = _render(trigger, payload, language)
         email = None
         for channel in effective:
             required = CHANNEL_CONSENT.get(channel)

@@ -24,6 +24,26 @@ class StudyLevel(StrEnum):
     PGDIP = "PGDIP"
 
 
+class PreferredLanguage(StrEnum):
+    """The eleven official South African languages — mirrors student_profile.ck_sp_language.
+
+    D-008. The column has existed since migration 0004 and was in no contract, no endpoint and no
+    screen, so every message went out in English by default rather than by anyone's choice.
+    """
+
+    EN = "en"
+    AF = "af"
+    NR = "nr"
+    XH = "xh"
+    ZU = "zu"
+    NSO = "nso"
+    ST = "st"
+    TN = "tn"
+    SS = "ss"
+    VE = "ve"
+    TS = "ts"
+
+
 class VerificationLevel(StrEnum):
     """Mirrors lk_verification_level (BRONZE < SILVER < GOLD < PLATINUM)."""
 
@@ -42,6 +62,9 @@ class StudentProfileInput(BaseModel):
     # SA ID number — encrypted at rest + blind-indexed for uniqueness (BR-A04). Write-only.
     id_number: str | None = Field(default=None, min_length=6, max_length=64)
     hardship_narrative: str | None = Field(default=None, max_length=8000)
+    # The language we write to this student in (D-008). Defaults to English because the column
+    # does, not because English is assumed — the screen asks, and says what it affects.
+    preferred_language: PreferredLanguage = PreferredLanguage.EN
 
 
 class StudentProfile(BaseModel):
@@ -54,6 +77,7 @@ class StudentProfile(BaseModel):
     level: StudyLevel
     field_of_study: str
     hardship_narrative: str | None = None
+    preferred_language: PreferredLanguage = PreferredLanguage.EN
     verification_level: VerificationLevel
     created_at: datetime
 

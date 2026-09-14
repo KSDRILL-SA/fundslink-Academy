@@ -21,7 +21,7 @@ class StudentProfileRepository(BaseRepository):
         return await sql.fetch_one(
             self.session,
             "SELECT id, first_name, last_name, phone, level, field_of_study,"
-            " hardship_narrative, verification_level, created_at"
+            " hardship_narrative, preferred_language, verification_level, created_at"
             " FROM student_profile WHERE id = :id AND deleted_at IS NULL",
             id=user_id,
         )
@@ -44,19 +44,21 @@ class StudentProfileRepository(BaseRepository):
         level: str,
         field_of_study: str,
         hardship_narrative: str | None,
+        preferred_language: str,
     ) -> None:
         """Create-or-replace the 1:1 profile (BR-A03, PK=FK). PUT semantics: a full replace."""
         await sql.execute(
             self.session,
             "INSERT INTO student_profile"
             " (id, first_name, last_name, phone, level, field_of_study, hardship_narrative,"
-            "  created_by)"
-            " VALUES (:id, :fn, :ln, :phone, :level, :fos, :hn, :id)"
+            "  preferred_language, created_by)"
+            " VALUES (:id, :fn, :ln, :phone, :level, :fos, :hn, :lang, :id)"
             " ON CONFLICT (id) DO UPDATE SET"
             "  first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name,"
             "  phone = EXCLUDED.phone, level = EXCLUDED.level,"
             "  field_of_study = EXCLUDED.field_of_study,"
-            "  hardship_narrative = EXCLUDED.hardship_narrative",
+            "  hardship_narrative = EXCLUDED.hardship_narrative,"
+            "  preferred_language = EXCLUDED.preferred_language",
             id=user_id,
             fn=first_name,
             ln=last_name,
@@ -64,6 +66,7 @@ class StudentProfileRepository(BaseRepository):
             level=level,
             fos=field_of_study,
             hn=hardship_narrative,
+            lang=preferred_language,
         )
 
     async def owns_application(self, user_id: str, application_id: str) -> bool:

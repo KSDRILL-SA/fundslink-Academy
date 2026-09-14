@@ -63,6 +63,44 @@ def test_put_twice_updates_the_same_single_profile_br_a03(profile_client):
     assert second.json()["field_of_study"] == "BCom Accounting"
 
 
+def test_a_student_says_which_language_to_write_to_them_in_d008(profile_client):
+    """D-008. The column existed from migration 0004 and was in no contract, no endpoint and no
+    screen — so nobody was ever asked, and English was a default rather than a choice (#315)."""
+    token, _ = register_student(profile_client)
+
+    # Not asked ⇒ English, because that is what the column defaults to. Stated, not inferred.
+    created = profile_client.put(PROFILE, headers=bearer(token), json=valid_profile())
+    assert created.json()["preferred_language"] == "en"
+
+    chosen = profile_client.put(
+        PROFILE, headers=bearer(token), json=valid_profile(preferred_language="nso")
+    )
+    assert chosen.status_code == 200, chosen.text
+    assert chosen.json()["preferred_language"] == "nso"
+    # It survives the round trip, and it is in the POPIA export like everything else we hold.
+    assert profile_client.get(PROFILE, headers=bearer(token)).json()["preferred_language"] == "nso"
+    export = profile_client.get(DATA_EXPORT, headers=bearer(token)).json()
+    assert export["profile"]["preferred_language"] == "nso"
+
+
+def test_only_an_official_south_african_language_is_accepted_d008(profile_client):
+    """ck_sp_language lists eleven languages; the API must refuse the twelfth before the database
+    has to, so a student sees a validation error and not a 500."""
+    token, _ = register_student(profile_client)
+    refused = profile_client.put(
+        PROFILE, headers=bearer(token), json=valid_profile(preferred_language="fr")
+    )
+    assert refused.status_code == 422
+    assert profile_client.get(PROFILE, headers=bearer(token)).status_code == 404  # nothing written
+
+    for language in ("en", "af", "nr", "xh", "zu", "nso", "st", "tn", "ss", "ve", "ts"):
+        ok = profile_client.put(
+            PROFILE, headers=bearer(token), json=valid_profile(preferred_language=language)
+        )
+        assert ok.status_code == 200, f"{language}: {ok.text}"
+        assert ok.json()["preferred_language"] == language
+
+
 def test_put_rejects_invalid_level(profile_client):
     token, _ = register_student(profile_client)
     resp = profile_client.put(PROFILE, headers=bearer(token), json=valid_profile(level="DIPLOMA"))

@@ -807,6 +807,13 @@ export interface components {
             /** @description Encrypted at rest; blind-indexed for uniqueness */
             id_number?: string;
             hardship_narrative?: string;
+            /**
+             * @description The language this student wants to be written to in — one of the eleven official South African languages (D-008, E11, `ck_sp_language`). The column has existed since migration 0004 and was in no contract, no endpoint and no screen, so nobody was ever asked and every message went out in English by default rather than by choice.
+             *     It is the language of the messages FundsLink sends, not of the interface: the notification templates are keyed by language and fall back to English for anything not yet translated. The screen says so plainly — promising a translated product we do not have would be worse than the gap.
+             * @default en
+             * @enum {string}
+             */
+            preferred_language: "en" | "af" | "nr" | "xh" | "zu" | "nso" | "st" | "tn" | "ss" | "ve" | "ts";
         };
         StudentProfile: components["schemas"]["StudentProfileInput"] & {
             id: string;
