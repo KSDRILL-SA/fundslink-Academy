@@ -311,7 +311,9 @@ def test_overturning_an_appeal_proposes_it_again_rather_than_approving_it(app_cl
     app_id, _student, _decider = rejected_and_appealed(app_client, admin_conn)
     other_token, other = make_reviewer(app_client, admin_conn)
 
-    resp = review(app_client, other_token, app_id, "APPROVED_PROPOSED", note="The UIF letter is new.")
+    resp = review(
+        app_client, other_token, app_id, "APPROVED_PROPOSED", note="The UIF letter is new."
+    )
     assert resp.status_code == 200, resp.text
     assert status_of(admin_conn, app_id) == "APPROVED_PROPOSED"
     assert appeal_row(admin_conn, app_id)[:2] == (other, "OVERTURNED")
@@ -322,7 +324,7 @@ def test_overturning_an_appeal_proposes_it_again_rather_than_approving_it(app_cl
 
 
 def test_rejected_final_is_reachable_only_from_an_appeal(app_client, admin_conn):
-    """It is the appeal's ending, not a shortcut past the ordinary rejection a student may appeal."""
+    """The appeal's ending — not a shortcut past a rejection the student may still appeal."""
     app_id, _student = ready_application(app_client, admin_conn)
     token, _reviewer = make_reviewer(app_client, admin_conn)
     assert review(app_client, token, app_id, "UNDER_REVIEW").status_code == 200
