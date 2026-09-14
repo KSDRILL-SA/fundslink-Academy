@@ -53,9 +53,11 @@ since closed each gap, and what each fix deliberately did **not** claim.
 | G2 | Review-queue triage | The queue reads `priority`, its rank, `needed_by` and the seeded SLA config; a reviewer can see a breach coming instead of inferring it. |
 | G3 | #298/#299 → return reminders | A returned application is reminded before and after `respond_by`. It still never punishes: no status changes, no penalty — D-006's second half was the easy half to keep while nothing happened at all. |
 | G4 | #300/#303 → recusal | The table became an endpoint, a rule and a screen: a recused reviewer's actions are refused and the case leaves their queue. |
-| G5 | **Open** | `lk_theme_tag` / `motivation_theme_tag` are still written by nothing, so the quarterly theme clustering in §5.6 has no data and Category D cannot evolve. |
+| G5 | #317 → theme tags | A reviewer records what an out-of-category case was about; the next reviewer sees it; `adminThemeClusters` counts it over a quarter and the admin overview shows what keeps recurring. Tags are added and never removed — the table has a staff INSERT policy and no DELETE, and the screen says so rather than letting a reviewer discover it. |
 | G6 | #315 → preferred language | Asked on the profile, stored, returned, and used: notification templates are keyed by language with a per-trigger fallback to English. **English is the only complete set** — the other ten are a translation task, and the interface itself is not translated and does not claim to be. |
 | G7 | #305/#306, #307/#308 | MFA status, disable and recovery-code replacement. #307 was found by creating a real reviewer and signing in: the status endpoint refused the first-sign-in token, so a new reviewer could not enrol through the product at all. |
+
+**Every gap in the register is now closed.**
 
 Two things outside the original register were found while closing it, both by using the product
 rather than reading it, and both fixed: **no application could be approved** (the authorise step

@@ -194,6 +194,12 @@ export const ERROR_PRESENTATION: Readonly<Record<string, ErrorPresentation>> = {
       'You proposed this decision, so someone else signs it off. That is how every funding decision is made here.',
     retryable: false,
   },
+  motivation_required: {
+    title: 'This case has nothing to characterise',
+    message:
+      'A theme describes what the applicant wrote about their situation. This application has no motivation, so there is nothing to tag.',
+    retryable: false,
+  },
   appeal_reviewer_conflict: {
     title: 'This appeal needs a different reviewer',
     message:

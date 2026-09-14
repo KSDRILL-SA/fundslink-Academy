@@ -302,3 +302,108 @@ describe('A02 — which half of the decision is yours', () => {
     expect(text()).toContain('You stepped aside from this application');
   });
 });
+
+describe('A02 — what an out-of-category case was about (MASTER-SPEC §5.6 · D-018)', () => {
+  let fixture: ComponentFixture<AdminApplicationComponent>;
+  let http: HttpTestingController;
+  const el = () => fixture.nativeElement as HTMLElement;
+  const text = () => el().textContent?.replace(/\s+/g, ' ') ?? '';
+  const checkbox = (value: string) =>
+    el().querySelector(`#theme-${value}`) as HTMLInputElement | null;
+  const addButton = () =>
+    Array.from(el().querySelectorAll('button')).find((b) => b.textContent?.includes('Add'));
+
+  const MOTIVATION = {
+    situation: 'My bursary provider closed its South African office.',
+    why_not_categories: 'I was never with NSFAS.',
+    support_needed: 'R22 000 in outstanding fees.',
+  };
+
+  function load(overrides: Record<string, unknown>) {
+    ({ fixture, http } = setup(AdminApplicationComponent, { id: 'a1' }));
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === DETAIL).flush({
+      id: 'a1',
+      application_type: 'OTHER',
+      academic_year: '2026',
+      status: 'READY_FOR_REVIEW',
+      created_at: '2026-02-01T00:00:00Z',
+      recused_by_me: false,
+      can_authorize: false,
+      motivation: MOTIVATION,
+      theme_tags: [],
+      ...overrides,
+    });
+    fixture.detectChanges();
+  }
+
+  it('asks only about a case that has no category to fit into', () => {
+    // A theme describes what the applicant wrote. There is nothing to characterise without it,
+    // and a theme on a categorised application would pollute the report it feeds.
+    load({ application_type: 'UG_CAT_C', motivation: null });
+    expect(text()).not.toContain('What is this case about?');
+
+    load({});
+    expect(text()).toContain('What is this case about?');
+    expect(text()).toContain('when a theme recurs often enough it becomes a category of its own');
+  });
+
+  it('records the themes a reviewer ticks, and re-reads from the server', () => {
+    load({});
+    checkbox('FINANCIAL_GAP')!.click();
+    checkbox('INSTITUTIONAL')!.click();
+    fixture.detectChanges();
+    addButton()!.click();
+
+    const request = http.expectOne(
+      (r) => r.url === '/api/v1/admin/applications/a1/themes' && r.method === 'POST',
+    );
+    expect(request.request.body).toEqual({ tags: ['FINANCIAL_GAP', 'INSTITUTIONAL'] });
+    request.flush({});
+    // The server decides which themes the case now carries.
+    http.expectOne((r) => r.url === DETAIL).flush({
+      id: 'a1',
+      application_type: 'OTHER',
+      academic_year: '2026',
+      status: 'READY_FOR_REVIEW',
+      created_at: '2026-02-01T00:00:00Z',
+      recused_by_me: false,
+      motivation: MOTIVATION,
+      theme_tags: ['FINANCIAL_GAP', 'INSTITUTIONAL'],
+    });
+    fixture.detectChanges();
+    expect(text()).toContain('A funding gap no category covers');
+  });
+
+  it('sends nothing when nothing is ticked', () => {
+    load({});
+    expect((addButton() as HTMLButtonElement).disabled).toBe(true);
+    addButton()!.click();
+    http.expectNone((r) => r.url.includes('/themes'));
+  });
+
+  it('will not invite a reviewer to re-add a theme the case already carries', () => {
+    load({ theme_tags: ['HEALTH'] });
+    expect(checkbox('HEALTH')!.disabled).toBe(true);
+    expect(checkbox('FAMILY_CRISIS')!.disabled).toBe(false);
+  });
+
+  it('says a theme cannot be taken back, and that the student never sees it', () => {
+    // The table has a staff INSERT policy and no DELETE. A control whose permanence is a surprise
+    // is a control people use carelessly and then regret.
+    load({});
+    expect(text()).toContain('cannot be removed once added');
+    expect(text()).toContain('never shown to the student');
+  });
+
+  it('offers nothing to a reviewer who stepped aside', () => {
+    load({ recused_by_me: true });
+    expect(text()).not.toContain('What is this case about?');
+  });
+
+  it('has no serious or critical accessibility violations', async () => {
+    load({});
+    const failures = await findA11yViolations(el());
+    expect(failures, describeViolations(failures)).toEqual([]);
+  });
+});

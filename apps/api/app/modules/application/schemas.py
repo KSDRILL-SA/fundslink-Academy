@@ -47,6 +47,21 @@ class ReviewDecision(StrEnum):
     REJECTED_FINAL = "REJECTED_FINAL"
 
 
+class ThemeTag(StrEnum):
+    """The six seeded themes (lk_theme_tag) — MASTER-SPEC §5.6, D-018.
+
+    A deliberately short list. §5.6 promotes a recurring theme to a real funding category; a long
+    tag vocabulary would let every case be its own theme and nothing would ever recur.
+    """
+
+    FINANCIAL_GAP = "FINANCIAL_GAP"
+    FAMILY_CRISIS = "FAMILY_CRISIS"
+    HEALTH = "HEALTH"
+    DOCUMENTATION = "DOCUMENTATION"
+    INSTITUTIONAL = "INSTITUTIONAL"
+    OTHER = "OTHER"
+
+
 class AuthorizeDecision(StrEnum):
     """What a second person may do with a proposed decision (contract adminAuthorize enum)."""
 
@@ -159,6 +174,10 @@ class Application(BaseModel):
     # screen, so the authorise step is offered to the person who holds the power and not to the
     # reviewer who proposed it. The endpoint still authorises every call itself.
     can_authorize: bool | None = None
+    # Admin reads only (A02): the themes a reviewer recorded on this OTHER-category case (§5.6,
+    # D-018). None on a student read — a theme is the reviewer's characterisation of someone's
+    # circumstances, written for a quarterly count and not addressed to the applicant.
+    theme_tags: list[str] | None = None
     created_at: datetime
 
 
@@ -196,6 +215,26 @@ class Recusal(BaseModel):
 class ReviewRequest(BaseModel):
     decision: ReviewDecision
     note: str | None = Field(default=None, max_length=4000)
+
+
+class ThemeRequest(BaseModel):
+    """Themes to record on an OTHER-category case. Added, never replaced (§5.6)."""
+
+    tags: list[ThemeTag] = Field(min_length=1, max_length=6)
+
+
+class ThemeCount(BaseModel):
+    tag: str
+    applications: int
+
+
+class ThemeClusters(BaseModel):
+    """The quarterly report §5.6 promises the Founder (D-018)."""
+
+    generated_at: datetime
+    window_days: int
+    tagged_applications: int
+    themes: list[ThemeCount]
 
 
 class AuthorizeRequest(BaseModel):

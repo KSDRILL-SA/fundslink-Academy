@@ -405,6 +405,81 @@ class MotivationRepository(BaseRepository):
             app=application_id,
         )
 
+    async def id_for(self, application_id: str) -> str | None:
+        """The motivation row a theme tag hangs off — None when the application has none."""
+        row = await sql.fetch_one(
+            self.session,
+            "SELECT id FROM application_motivation WHERE application_id = :app",
+            app=application_id,
+        )
+        return row[0] if row else None
+
+
+class ThemeTagRepository(BaseRepository):
+    """MASTER-SPEC §5.6 / D-018 — the reviewer's characterisation of an OTHER-category case.
+
+    Staff-only by RLS (rls_mtt_read / rls_mtt_insert, migration 0009), with no DELETE policy: a
+    theme is a record of a reviewer's judgement, not a working note, and the quarterly cluster it
+    feeds would be a different number if tags could be quietly withdrawn.
+    """
+
+    async def tags_for(self, application_id: str) -> list[str]:
+        rows = await sql.fetch_all(
+            self.session,
+            "SELECT t.tag FROM motivation_theme_tag t"
+            " JOIN application_motivation m ON m.id = t.motivation_id"
+            " WHERE m.application_id = :app ORDER BY t.tag",
+            app=application_id,
+        )
+        return [row[0] for row in rows]
+
+    async def add(self, *, motivation_id: str, tags: list[str], tagged_by: str) -> None:
+        """Add tags, ignoring any the case already carries.
+
+        ``ON CONFLICT DO NOTHING`` against uq_motiv_tag rather than a read-then-write: a reviewer
+        adding a second theme should not have to remember the first, and two reviewers tagging the
+        same case at once must not turn into a 500. The original ``tagged_by`` is kept — the first
+        person to see the theme is the one who saw it.
+        """
+        for tag in tags:
+            await sql.execute(
+                self.session,
+                "INSERT INTO motivation_theme_tag (id, motivation_id, tag, tagged_by)"
+                " VALUES (:id, :mid, :tag, :by) ON CONFLICT (motivation_id, tag) DO NOTHING",
+                id=cuid(),
+                mid=motivation_id,
+                tag=tag,
+                by=tagged_by,
+            )
+
+    async def clusters(self, window_days: int):
+        """Theme counts over the window, most frequent first — the §5.6 quarterly report.
+
+        Counts DISTINCT applications, not tag rows: one case carrying three themes is one case,
+        and counting rows would make a thorough reviewer look like a trend. The tie-break on tag
+        keeps the report stable between runs when two themes are level.
+        """
+        return await sql.fetch_all(
+            self.session,
+            "SELECT t.tag, count(DISTINCT m.application_id) AS applications"
+            " FROM motivation_theme_tag t"
+            " JOIN application_motivation m ON m.id = t.motivation_id"
+            " WHERE t.created_at >= now() - make_interval(days => :days)"
+            " GROUP BY t.tag ORDER BY applications DESC, t.tag",
+            days=window_days,
+        )
+
+    async def tagged_applications(self, window_days: int) -> int:
+        """The denominator: a theme on 4 of 5 cases means something a theme on 4 of 400 does not."""
+        row = await sql.fetch_one(
+            self.session,
+            "SELECT count(DISTINCT m.application_id) FROM motivation_theme_tag t"
+            " JOIN application_motivation m ON m.id = t.motivation_id"
+            " WHERE t.created_at >= now() - make_interval(days => :days)",
+            days=window_days,
+        )
+        return int(row[0]) if row else 0
+
 
 class PreScreenReadRepository(BaseRepository):
     async def latest(self, application_id: str):

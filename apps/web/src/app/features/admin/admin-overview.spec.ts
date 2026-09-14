@@ -10,6 +10,14 @@ import { AdminOverviewComponent } from './admin-overview.component';
 
 const OVERVIEW = '/api/v1/admin/overview';
 const ACTIVITY = '/api/v1/admin/activity';
+const THEMES = '/api/v1/admin/themes';
+
+const NO_THEMES = {
+  generated_at: '2026-09-13T08:00:00Z',
+  window_days: 90,
+  tagged_applications: 0,
+  themes: [] as { tag: string; applications: number }[],
+};
 
 function figures(window = 7, overdue = 2) {
   return {
@@ -34,9 +42,10 @@ describe('A00 operations overview', () => {
   const stats = () =>
     Array.from(el().querySelectorAll('ui-stat .tabular')).map((v) => v.textContent?.trim());
 
-  function render(body: object = figures(), items: object[] = []) {
+  function render(body: object = figures(), items: object[] = [], themes: object = NO_THEMES) {
     http.expectOne((r) => r.url === OVERVIEW).flush(body);
     http.expectOne((r) => r.url === ACTIVITY).flush({ items, meta: { next_cursor: null } });
+    http.expectOne((r) => r.url === THEMES).flush(themes);
     fixture.detectChanges();
   }
 
@@ -110,5 +119,44 @@ describe('A00 operations overview', () => {
     render();
     const failures = await findA11yViolations(el());
     expect(failures, describeViolations(failures)).toEqual([]);
+  });
+
+  // --- the quarterly theme report (MASTER-SPEC §5.6, D-018, #317) ---
+
+  it('shows what the categories keep missing, in the reviewer’s words', () => {
+    render(figures(), [], {
+      generated_at: '2026-09-13T08:00:00Z',
+      window_days: 90,
+      tagged_applications: 7,
+      themes: [
+        { tag: 'FINANCIAL_GAP', applications: 5 },
+        { tag: 'INSTITUTIONAL', applications: 2 },
+      ],
+    });
+
+    expect(text()).toContain('What the categories keep missing');
+    expect(text()).toContain('7 cases outside our categories were given a theme in the last 90 days');
+    // The label a reviewer ticked, never the database code.
+    expect(text()).toContain('A funding gap no category covers');
+    expect(text()).not.toContain('FINANCIAL_GAP');
+  });
+
+  it('says plainly when nothing has been recorded yet, instead of an empty chart', () => {
+    render();
+    expect(text()).toContain('No themes recorded yet');
+  });
+
+  it('counts one case once, however many themes it carries', () => {
+    // The report exists to spot a recurring edge. A thorough reviewer must not look like a trend.
+    render(figures(), [], {
+      generated_at: '2026-09-13T08:00:00Z',
+      window_days: 90,
+      tagged_applications: 1,
+      themes: [
+        { tag: 'HEALTH', applications: 1 },
+        { tag: 'FAMILY_CRISIS', applications: 1 },
+      ],
+    });
+    expect(text()).toContain('1 case outside our categories was given a theme');
   });
 });
