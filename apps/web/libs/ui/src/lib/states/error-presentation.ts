@@ -167,6 +167,12 @@ export const ERROR_PRESENTATION: Readonly<Record<string, ErrorPresentation>> = {
     message: 'Try one under 5 MB — a photo taken on a phone usually needs to be reduced first.',
     retryable: true,
   },
+  mfa_required_for_role: {
+    title: 'Two-step sign-in stays on for this account',
+    message:
+      'Accounts that review applications or handle money must keep two-step sign-in. You can replace your recovery codes instead.',
+    retryable: false,
+  },
   already_recused: {
     title: 'You have already stepped aside',
     message: 'Another reviewer will take this application. There is nothing more to do here.',

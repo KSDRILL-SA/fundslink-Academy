@@ -52,6 +52,8 @@ STUDENT_AUDIT_ACTIONS: dict[str, ActivityCategory] = {
     "AUTH_PASSWORD_CHANGED": ActivityCategory.SECURITY,
     "AUTH_PASSWORD_RESET": ActivityCategory.SECURITY,
     "AUTH_MFA_ACTIVATED": ActivityCategory.SECURITY,
+    "AUTH_MFA_DISABLED": ActivityCategory.SECURITY,
+    "AUTH_MFA_RECOVERY_REGENERATED": ActivityCategory.SECURITY,
     "AUTH_EMAIL_VERIFIED": ActivityCategory.SECURITY,
     "AUTH_TOKEN_REUSE_DETECTED": ActivityCategory.SECURITY,
     "AUTH_REGISTER": ActivityCategory.ACCOUNT,

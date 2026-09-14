@@ -21,6 +21,9 @@ from app.modules.auth.schemas import (
     LoginRequest,
     MfaActivateRequest,
     MfaEnrollResponse,
+    MfaRecoveryCodes,
+    MfaSensitiveRequest,
+    MfaStatus,
     RegisterRequest,
     ResetPasswordRequest,
     VerifyEmailRequest,
@@ -128,6 +131,53 @@ async def logout(
         request_id=get_request_id(request),
     )
     response.delete_cookie(REFRESH_COOKIE, path=COOKIE_PATH)
+
+
+@router.get("/mfa", operation_id="authMfaStatus")
+async def mfa_status(
+    current: CurrentUser = Depends(authenticated_only),
+    session=Depends(get_session),
+    redis=Depends(get_redis_client),
+) -> MfaStatus:
+    """The account's real two-step state, so the screen never offers "set up" to someone who
+    already has it on, and can say how many recovery codes are left."""
+    return MfaStatus(
+        **await AuthService(session, redis).mfa_status(user_id=current.id, role=current.role)
+    )
+
+
+@router.post("/mfa/disable", status_code=204, operation_id="authMfaDisable")
+async def mfa_disable(
+    body: MfaSensitiveRequest,
+    request: Request,
+    current: CurrentUser = Depends(authenticated_only),
+    session=Depends(get_session),
+    redis=Depends(get_redis_client),
+) -> None:
+    await AuthService(session, redis).disable_mfa(
+        user_id=current.id,
+        role=current.role,
+        password=body.password,
+        code=body.code,
+        request_id=get_request_id(request),
+    )
+
+
+@router.post("/mfa/recovery-codes", operation_id="authMfaRegenerateRecoveryCodes")
+async def mfa_recovery_codes(
+    body: MfaSensitiveRequest,
+    request: Request,
+    current: CurrentUser = Depends(authenticated_only),
+    session=Depends(get_session),
+    redis=Depends(get_redis_client),
+) -> MfaRecoveryCodes:
+    codes = await AuthService(session, redis).regenerate_recovery_codes(
+        user_id=current.id,
+        password=body.password,
+        code=body.code,
+        request_id=get_request_id(request),
+    )
+    return MfaRecoveryCodes(recovery_codes=codes)
 
 
 @router.post("/mfa/enroll", operation_id="authMfaEnroll")

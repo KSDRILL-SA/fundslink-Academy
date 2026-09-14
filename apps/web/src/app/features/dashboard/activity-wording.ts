@@ -44,6 +44,11 @@ const AUDIT_WORDING: Readonly<Record<string, Wording>> = {
   AUTH_PASSWORD_CHANGED: { text: 'You changed your password', icon: KeyRound as IconNode },
   AUTH_PASSWORD_RESET: { text: 'Your password was reset', icon: KeyRound as IconNode },
   AUTH_MFA_ACTIVATED: { text: 'You turned on two-step verification', icon: ShieldCheck as IconNode },
+  AUTH_MFA_DISABLED: { text: 'You turned off two-step verification', icon: ShieldAlert as IconNode },
+  AUTH_MFA_RECOVERY_REGENERATED: {
+    text: 'You replaced your recovery codes',
+    icon: KeyRound as IconNode,
+  },
   AUTH_EMAIL_VERIFIED: { text: 'You confirmed your email address', icon: MailCheck as IconNode },
   // A refresh token was replayed: the platform ended every session to protect the account.
   AUTH_TOKEN_REUSE_DETECTED: {
