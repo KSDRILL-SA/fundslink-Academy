@@ -389,6 +389,73 @@ class AuthService:
             "recovery_codes": recovery,
         }
 
+    async def mfa_status(self, *, user_id: str, role: str) -> dict:
+        """The real state of two-step sign-in. The account screen used to keep this in a local
+        flag, so a reload offered "set up" to someone who already had it on (#305)."""
+        row = await self.users.get_mfa(user_id)
+        secret_enc, enabled, recovery_enc = row if row else (None, False, None)
+        remaining = 0
+        if recovery_enc:
+            try:
+                remaining = len(json.loads(crypto.decrypt(recovery_enc)))
+            except Exception:  # a codes blob we cannot read is not a count we can claim
+                remaining = 0
+        return {
+            "enrolled": bool(secret_enc),
+            "enabled": bool(enabled),
+            "recovery_codes_remaining": remaining,
+            "required_for_role": mfa.role_requires_mfa(role),
+        }
+
+    async def _confirm_mfa_owner(self, *, user_id: str, password: str, code: str):
+        """Both factors, for an action that weakens the account: the password AND a current code
+        (authenticator or a single-use recovery code). Returns the current MFA row."""
+        user = await self.users.get_by_id(user_id)
+        if user is None or not passwords.verify_password(password, user[2]):
+            raise self._invalid_credentials()
+        row = await self.users.get_mfa(user_id)
+        secret_enc, enabled, _recovery = row if row else (None, False, None)
+        if not secret_enc or not enabled:
+            raise AppError(
+                "mfa_not_enrolled", "Two-step sign-in is not on for this account", status_code=409
+            )
+        if not await self._verify_mfa(user_id, secret_enc, code):
+            raise AppError("mfa_invalid_code", "Invalid authenticator code", status_code=401)
+        return row
+
+    async def disable_mfa(
+        self, *, user_id: str, role: str, password: str, code: str, request_id: str
+    ) -> None:
+        """Turn two-step sign-in off (ST-2.1) — never for a role that must have it (TAD §3.1)."""
+        if mfa.role_requires_mfa(role):
+            raise AppError(
+                "mfa_required_for_role",
+                "Two-step sign-in cannot be turned off for this kind of account",
+                status_code=409,
+            )
+        await self._confirm_mfa_owner(user_id=user_id, password=password, code=code)
+        await self.users.clear_mfa(user_id)
+        await self.audit.write(
+            actor_user_id=user_id, action="AUTH_MFA_DISABLED", resource_type="user",
+            resource_id=user_id, request_id=request_id,
+        )
+
+    async def regenerate_recovery_codes(
+        self, *, user_id: str, password: str, code: str, request_id: str
+    ) -> list[str]:
+        """Replace every recovery code with a fresh set, shown once. The old ones stop working
+        the moment this returns — that is the point of asking for them back (ST-2.1)."""
+        await self._confirm_mfa_owner(user_id=user_id, password=password, code=code)
+        recovery = mfa.generate_recovery_codes()
+        await self.users.set_mfa_recovery(
+            user_id, crypto.encrypt(json.dumps([mfa.hash_recovery_code(c) for c in recovery]))
+        )
+        await self.audit.write(
+            actor_user_id=user_id, action="AUTH_MFA_RECOVERY_REGENERATED", resource_type="user",
+            resource_id=user_id, request_id=request_id,
+        )
+        return recovery
+
     async def activate_mfa(self, *, user_id: str, code: str, request_id: str) -> None:
         """Confirm enrolment by verifying a first TOTP, then turn MFA on (TAD §3.1)."""
         row = await self.users.get_mfa(user_id)

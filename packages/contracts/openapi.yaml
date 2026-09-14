@@ -56,6 +56,52 @@ paths:
       responses:
         '204': { description: Logged out }
 
+  /auth/mfa:
+    get:
+      operationId: authMfaStatus
+      summary: Is two-step sign-in on for my account, and how many recovery codes are left
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/MfaStatus' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/mfa/disable:
+    post:
+      operationId: authMfaDisable
+      summary: Turn two-step sign-in off — password AND a current code; never for a privileged role
+      description: >-
+        Weakening an account needs both factors, so a stolen session alone cannot strip the second
+        one. The code may be an authenticator code or one recovery code. MFA is mandatory for
+        privileged roles (TAD §3.1), so those accounts are refused with `mfa_required_for_role`.
+        The TOTP secret and the recovery codes are cleared, not just the flag.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MfaSensitiveRequest' }
+      responses:
+        '204': { description: Two-step sign-in turned off }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Validation' }
+
+  /auth/mfa/recovery-codes:
+    post:
+      operationId: authMfaRegenerateRecoveryCodes
+      summary: Replace the recovery codes — password AND a current code; shown once
+      description: >-
+        Returns a fresh set and invalidates every previous code immediately. The response is the
+        only time they are readable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MfaSensitiveRequest' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/MfaRecoveryCodes' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/Validation' }
+
   /auth/mfa/enroll:
     post:
       operationId: authMfaEnroll
@@ -647,6 +693,28 @@ components:
         secret: { type: string, description: Base32 TOTP secret (shown once) }
         provisioning_uri: { type: string, description: otpauth:// URI for the QR code }
         recovery_codes: { type: array, items: { type: string }, description: Single-use backup codes (shown once) }
+
+    MfaStatus:
+      type: object
+      required: [enrolled, enabled, recovery_codes_remaining, required_for_role]
+      properties:
+        enrolled: { type: boolean, description: A TOTP secret exists (enrolment started) }
+        enabled: { type: boolean, description: Two-step sign-in is on }
+        recovery_codes_remaining: { type: integer, minimum: 0 }
+        required_for_role: { type: boolean, description: This role must keep MFA on (TAD §3.1) }
+
+    MfaSensitiveRequest:
+      type: object
+      required: [password, code]
+      properties:
+        password: { type: string }
+        code: { type: string, description: An authenticator code, or one recovery code }
+
+    MfaRecoveryCodes:
+      type: object
+      required: [recovery_codes]
+      properties:
+        recovery_codes: { type: array, items: { type: string } }
 
     MfaActivateRequest:
       type: object

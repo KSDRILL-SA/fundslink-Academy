@@ -53,6 +53,28 @@ class MfaActivateRequest(BaseModel):
     code: str
 
 
+class MfaStatus(BaseModel):
+    """What the account screen needs to tell the truth about two-step sign-in (ST-2.1)."""
+
+    enrolled: bool
+    enabled: bool
+    recovery_codes_remaining: int
+    required_for_role: bool
+
+
+class MfaSensitiveRequest(BaseModel):
+    """Turning MFA off, or replacing recovery codes, needs BOTH factors: the password and a
+    current code (authenticator or one recovery code). A stolen session alone must not be able to
+    strip the second factor off an account."""
+
+    password: str
+    code: str
+
+
+class MfaRecoveryCodes(BaseModel):
+    recovery_codes: list[str]
+
+
 class VerifyEmailRequest(BaseModel):
     token: str
 

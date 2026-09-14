@@ -28,6 +28,7 @@ Every business error is an `AppError(code, message, status_code)` rendered as a 
 | `mfa_required` | 401 | Step-up required for a privileged action |
 | `mfa_invalid_code` | 401 | TOTP code wrong / replayed |
 | `mfa_not_enrolled` | 409 | MFA action attempted before enrolment |
+| `mfa_required_for_role` | 409 | Two-step sign-in cannot be turned off for a privileged role (TAD §3.1) |
 | `forbidden` | 403 | Authenticated but lacks the required permission |
 | `password_breached` | 422 | HIBP k-anonymity match on the chosen password |
 | `email_taken` | 409 | Registration: email already registered |

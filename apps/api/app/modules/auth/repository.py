@@ -130,6 +130,19 @@ class UserRepository(BaseRepository):
             self.session, 'UPDATE "user" SET mfa_enabled = true WHERE id = :id', id=user_id
         )
 
+    async def clear_mfa(self, user_id: str) -> None:
+        """Turn MFA off and forget the secret and the recovery codes (ST-2.1).
+
+        The secret is cleared, not just the flag: leaving a live TOTP secret on a disabled account
+        keeps a credential nobody is watching. Re-enabling starts a fresh enrolment.
+        """
+        await sql.execute(
+            self.session,
+            'UPDATE "user" SET mfa_enabled = false, mfa_secret_enc = NULL,'
+            " mfa_recovery_enc = NULL WHERE id = :id",
+            id=user_id,
+        )
+
     async def set_mfa_recovery(self, user_id: str, recovery_enc: str) -> None:
         """Persist the remaining recovery codes after one is consumed."""
         await sql.execute(

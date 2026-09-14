@@ -72,6 +72,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Is two-step sign-in on for my account, and how many recovery codes are left */
+        get: operations["authMfaStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/mfa/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Turn two-step sign-in off — password AND a current code; never for a privileged role
+         * @description Weakening an account needs both factors, so a stolen session alone cannot strip the second one. The code may be an authenticator code or one recovery code. MFA is mandatory for privileged roles (TAD §3.1), so those accounts are refused with `mfa_required_for_role`. The TOTP secret and the recovery codes are cleared, not just the flag.
+         */
+        post: operations["authMfaDisable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/mfa/recovery-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace the recovery codes — password AND a current code; shown once
+         * @description Returns a fresh set and invalidates every previous code immediately. The response is the only time they are readable.
+         */
+        post: operations["authMfaRegenerateRecoveryCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/mfa/enroll": {
         parameters: {
             query?: never;
@@ -673,6 +730,23 @@ export interface components {
             /** @description Single-use backup codes (shown once) */
             recovery_codes: string[];
         };
+        MfaStatus: {
+            /** @description A TOTP secret exists (enrolment started) */
+            enrolled: boolean;
+            /** @description Two-step sign-in is on */
+            enabled: boolean;
+            recovery_codes_remaining: number;
+            /** @description This role must keep MFA on (TAD §3.1) */
+            required_for_role: boolean;
+        };
+        MfaSensitiveRequest: {
+            password: string;
+            /** @description An authenticator code */
+            code: string;
+        };
+        MfaRecoveryCodes: {
+            recovery_codes: string[];
+        };
         MfaActivateRequest: {
             /** @description A current 6-digit TOTP from the authenticator */
             code: string;
@@ -1163,6 +1237,79 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    authMfaStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    authMfaDisable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaSensitiveRequest"];
+            };
+        };
+        responses: {
+            /** @description Two-step sign-in turned off */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Validation"];
+        };
+    };
+    authMfaRegenerateRecoveryCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaSensitiveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaRecoveryCodes"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Validation"];
         };
     };
     authMfaEnroll: {
