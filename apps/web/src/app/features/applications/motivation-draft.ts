@@ -23,6 +23,8 @@ export interface MotivationDraft {
 
 const KEY = 'fl-motivation-draft';
 
+export { SA_LANGUAGES } from '../../shared/sa-languages';
+
 export const EMPTY_DRAFT: MotivationDraft = {
   situation: '',
   why_not_categories: '',
@@ -68,18 +70,3 @@ export function clearDraft(storage: Storage | undefined): void {
     // Nothing to do. A leftover draft is harmless; a thrown error here is not.
   }
 }
-
-/** Any of the official South African languages (E11, P7). */
-export const SA_LANGUAGES: readonly { value: string; label: string }[] = [
-  { value: 'en', label: 'English' },
-  { value: 'af', label: 'Afrikaans' },
-  { value: 'nr', label: 'isiNdebele' },
-  { value: 'xh', label: 'isiXhosa' },
-  { value: 'zu', label: 'isiZulu' },
-  { value: 'nso', label: 'Sepedi' },
-  { value: 'st', label: 'Sesotho' },
-  { value: 'tn', label: 'Setswana' },
-  { value: 'ss', label: 'siSwati' },
-  { value: 've', label: 'Tshivenda' },
-  { value: 'ts', label: 'Xitsonga' },
-];

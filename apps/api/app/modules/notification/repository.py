@@ -79,6 +79,20 @@ class NotificationRepository(BaseRepository):
         )
         return row[0] if row else None
 
+    async def user_language(self, user_id: str) -> str:
+        """The language this student asked to be written to in (D-008).
+
+        Falls back to English for a recipient with no profile — staff accounts have none, and a
+        notification to one must still go out rather than fail on a missing row.
+        """
+        row = await sql.fetch_one(
+            self.session,
+            "SELECT preferred_language FROM student_profile"
+            " WHERE id = :id AND deleted_at IS NULL",
+            id=user_id,
+        )
+        return (row[0] if row and row[0] else None) or "en"
+
     async def dead_count(self) -> int:
         row = await sql.fetch_one(
             self.session, "SELECT count(*) FROM notification_outbox WHERE state = 'DEAD'"

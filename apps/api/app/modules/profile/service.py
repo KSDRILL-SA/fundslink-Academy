@@ -34,8 +34,9 @@ def _to_profile(row) -> StudentProfile:
         level=row[4],
         field_of_study=row[5],
         hardship_narrative=row[6],
-        verification_level=row[7],
-        created_at=row[8],
+        preferred_language=row[7],
+        verification_level=row[8],
+        created_at=row[9],
     )
 
 
@@ -90,8 +91,9 @@ class ProfileService:
                 "level": profile_row[4],
                 "field_of_study": profile_row[5],
                 "hardship_narrative": profile_row[6],
-                "verification_level": profile_row[7],
-                "created_at": profile_row[8],
+                "preferred_language": profile_row[7],
+                "verification_level": profile_row[8],
+                "created_at": profile_row[9],
             },
             "applications": [
                 {
@@ -140,6 +142,7 @@ class ProfileService:
             level=data.level.value,
             field_of_study=data.field_of_study,
             hardship_narrative=data.hardship_narrative,
+            preferred_language=data.preferred_language.value,
         )
 
         if data.id_number:

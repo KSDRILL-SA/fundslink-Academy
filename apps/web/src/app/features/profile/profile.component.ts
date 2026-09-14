@@ -14,6 +14,7 @@ import {
   presentError,
   type IconNode,
 } from 'ui';
+import { SA_LANGUAGES, type SaLanguage } from '../../shared/sa-languages';
 import { ProfileStore } from './profile.store';
 import { PageHeaderComponent } from '../../shared/page-header.component';
 
@@ -33,6 +34,14 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
  *
  * The hardship narrative is optional and stays optional. Someone should not
  * have to describe the hardest thing in their life to create a profile.
+ *
+ * **The language question says what it actually does.** D-008 gives a student the right to be
+ * addressed in their own language, and the column recording that choice existed from the first
+ * migration with nothing reading or writing it — so everyone was written to in English by
+ * default rather than by their own choice. This asks. What it does not do is claim the whole
+ * product is translated, because it is not: the field says it is the language of the messages we
+ * send, and that English is what we can write today. Promising a translated interface here would
+ * be a lie a student only discovers after trusting us with their year.
  */
 @Component({
   selector: 'fl-profile',
@@ -125,6 +134,21 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
           </fieldset>
 
           <fieldset class="flex flex-col gap-5">
+            <legend class="text-lg font-semibold">How we talk to you</legend>
+
+            <ui-form-field
+              label="Which language should we write to you in?"
+              hint="This is the language of the emails and messages we send you. We write in English today and are adding the others — until then, anything we have not translated yet arrives in English."
+            >
+              <select uiSelect formControlName="preferred_language">
+                @for (option of languages; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </ui-form-field>
+          </fieldset>
+
+          <fieldset class="flex flex-col gap-5">
             <legend class="text-lg font-semibold">For your application</legend>
 
             <ui-form-field
@@ -176,6 +200,8 @@ export class ProfileComponent {
     return code ? presentError(code) : null;
   });
 
+  protected readonly languages = SA_LANGUAGES;
+
   protected readonly levels = [
     { value: 'UG', label: 'Undergraduate' },
     { value: 'HONOURS', label: 'Honours' },
@@ -200,6 +226,9 @@ export class ProfileComponent {
     field_of_study: ['', { validators: [Validators.required], updateOn: 'blur' }],
     id_number: [''],
     hardship_narrative: [''],
+    // A select commits on change, like `level` above. English is the starting value because the
+    // column's default is English, not because it is assumed — the question is asked either way.
+    preferred_language: ['en'],
   });
 
   constructor() {
@@ -223,6 +252,7 @@ export class ProfileComponent {
           // The API never returns the raw ID number (TAD §4.4), so this stays
           // blank on an edit. Leaving it blank means "unchanged".
           hardship_narrative: profile.hardship_narrative ?? '',
+          preferred_language: profile.preferred_language ?? 'en',
         },
         { emitEvent: false },
       );
@@ -264,6 +294,9 @@ export class ProfileComponent {
         ...(value.phone ? { phone: value.phone } : {}),
         ...(value.id_number ? { id_number: value.id_number } : {}),
         ...(value.hardship_narrative ? { hardship_narrative: value.hardship_narrative } : {}),
+        // Always sent, never omitted: PUT is a full replace (BR-A03), so leaving it out would
+        // quietly reset a student's choice to English every time they edited anything else.
+        preferred_language: value.preferred_language as SaLanguage,
       })
       .subscribe({
         next: () => {

@@ -7,6 +7,7 @@ import { describeViolations, findA11yViolations } from 'ui/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ProfileComponent } from './profile/profile.component';
+import { SA_LANGUAGES } from '../shared/sa-languages';
 
 function setup<T>(component: Type<T>) {
   TestBed.configureTestingModule({
@@ -224,8 +225,41 @@ describe('S09 profile', () => {
       last_name: 'Mokoena',
       level: 'HONOURS',
       field_of_study: 'BCom Accounting',
+      // Language is the exception, and deliberately so — see the next test.
+      preferred_language: 'en',
     });
     expect(Object.keys(request.request.body)).not.toContain('phone');
+  });
+
+  it('asks which language to write in, and says what that actually changes (D-008)', () => {
+    // The column has existed since the first migration with nothing reading or writing it, so
+    // everyone was written to in English by default rather than by their own choice (#315).
+    loadProfile(null);
+    const selects = Array.from(el().querySelectorAll('select'));
+    const language = selects.find((s) => s.getAttribute('formcontrolname') === 'preferred_language');
+    expect(language).toBeTruthy();
+    expect(Array.from(language!.options).map((o) => o.value)).toEqual(
+      SA_LANGUAGES.map((l) => l.value),
+    );
+
+    expect(text()).toContain('Which language should we write to you in?');
+    // Honest about what it is: the messages we send, not a translated product.
+    expect(text()).toContain('the language of the emails and messages we send you');
+    expect(text()).toContain('We write in English today');
+  });
+
+  it('never quietly resets a language choice when something else is edited', () => {
+    // PUT is a full replace (BR-A03). Omitting the field the way the other optionals are omitted
+    // would set a student back to English every time they corrected a typo in their surname.
+    loadProfile({ ...PROFILE, preferred_language: 'nso' });
+    expect(fixture.componentInstance.form.getRawValue().preferred_language).toBe('nso');
+
+    fixture.componentInstance.form.patchValue({ last_name: 'Mokoena-Ndlovu' });
+    fixture.componentInstance.submit();
+    const request = http.expectOne(
+      (r) => r.url === '/api/v1/students/me/profile' && r.method === 'PUT',
+    );
+    expect(request.request.body.preferred_language).toBe('nso');
   });
 
   it('has no serious or critical accessibility violations', async () => {

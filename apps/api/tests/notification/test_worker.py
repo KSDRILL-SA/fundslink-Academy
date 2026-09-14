@@ -15,7 +15,12 @@ from app.db.context import set_system_context
 from app.modules.auth.email import EmailAdapter
 from app.modules.notification import channels as channels_mod
 from app.modules.notification.channels import ChannelAdapter
-from app.modules.notification.worker import MAX_ATTEMPTS, NotificationWorker
+from app.modules.notification.worker import (
+    _TEMPLATES,
+    _TEMPLATES_BY_LANGUAGE,
+    MAX_ATTEMPTS,
+    NotificationWorker,
+)
 from tests.notification.conftest import seed_outbox, seed_user
 
 
@@ -114,3 +119,67 @@ async def test_worker_marks_dead_after_max_attempts(outbox, monkeypatch):
     counts = await _run_worker()
     assert counts["dead"] == 1
     assert _state(outbox, nid)[0] == "DEAD"
+
+
+# ------------------ the language the student asked for reaches them (D-008) ------------------
+
+
+class _CaptureCopy(EmailAdapter):
+    """Keeps the words, not just the recipient — this is a test about what was written."""
+
+    def __init__(self):
+        self.sent: list[tuple[str, str]] = []
+
+    async def send(self, *, to, subject, body):
+        self.sent.append((subject, body))
+
+
+def _give_profile(conn, uid: str, language: str) -> None:
+    conn.execute(
+        "INSERT INTO student_profile"
+        " (id, first_name, last_name, level, field_of_study, preferred_language, created_by)"
+        " VALUES (%s, 'A', 'B', 'UG', 'Law', %s, %s)",
+        (uid, language, uid),
+    )
+
+
+async def test_a_student_is_written_to_in_the_language_they_chose(outbox, monkeypatch):
+    """The field stops being decorative: the worker looks it up and the copy follows (#315).
+
+    The Afrikaans copy is injected, not shipped — the ten remaining translations are a
+    translation task, and inventing them would be worse than the gap (see the catalogue note).
+    """
+    cap = _CaptureCopy()
+    monkeypatch.setattr("app.modules.auth.email._adapter", cap)
+    translated = (
+        "Onderwerp in Afrikaans",
+        "Die hele boodskap in Afrikaans, lank genoeg om te tel.",
+    )
+    monkeypatch.setitem(_TEMPLATES_BY_LANGUAGE, "af", {"DECISION_APPROVED": translated})
+
+    uid, _email = seed_user(outbox, consents=("TERMS_OF_SERVICE",))
+    _give_profile(outbox, uid, "af")
+    seed_outbox(outbox, uid, trigger="DECISION_APPROVED")
+
+    assert (await _run_worker())["sent"] == 1
+    assert cap.sent == [translated]
+
+
+async def test_english_is_what_goes_out_when_nothing_says_otherwise(outbox, monkeypatch):
+    """Two negative controls in one: a student who chose a language we have no copy for, and a
+    recipient with no profile at all (staff have none). Both are written to, in English."""
+    cap = _CaptureCopy()
+    monkeypatch.setattr("app.modules.auth.email._adapter", cap)
+    english = _TEMPLATES["DECISION_APPROVED"]
+
+    chose_zulu, _ = seed_user(outbox, consents=("TERMS_OF_SERVICE",))
+    _give_profile(outbox, chose_zulu, "zu")
+    seed_outbox(outbox, chose_zulu, trigger="DECISION_APPROVED")
+    assert (await _run_worker())["sent"] == 1
+    assert cap.sent == [english]
+
+    cap.sent.clear()
+    no_profile, _ = seed_user(outbox, consents=("TERMS_OF_SERVICE",))
+    seed_outbox(outbox, no_profile, trigger="DECISION_APPROVED")
+    assert (await _run_worker())["sent"] == 1
+    assert cap.sent == [english]

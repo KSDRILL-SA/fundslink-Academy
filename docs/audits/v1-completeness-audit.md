@@ -41,6 +41,27 @@ no application code reads it. The product therefore *stores* promises it does no
 | G6 | **D-008** | 11 SA official languages; student chooses | `student_profile.preferred_language` exists; **not in the API or the profile screen**. | A student cannot say which language they think in; every message defaults to English. |
 | G7 | **ST-2.1** (launch blocking) | MFA enforced on every ADMIN_* account | Enrol + activate only. **No status, no disable, no regenerate-recovery-codes.** | An admin cannot tell whether MFA is on, and a lost device has no recovery path short of the database. |
 
+## Closure log
+
+The register above is the audit as it stood on 2026-09-13 and is left exactly as written — a
+finding that quietly edits itself into "resolved" is not a record of anything. This is what has
+since closed each gap, and what each fix deliberately did **not** claim.
+
+| # | Closed by | What it took, and what it did not claim |
+|---|---|---|
+| G1 | #244 → waitlist ordering | `fn_waitlist_position` now orders by postgraduate priority then need severity, from `lk_income_band.rank` — the rank the schema already carried. |
+| G2 | Review-queue triage | The queue reads `priority`, its rank, `needed_by` and the seeded SLA config; a reviewer can see a breach coming instead of inferring it. |
+| G3 | #298/#299 → return reminders | A returned application is reminded before and after `respond_by`. It still never punishes: no status changes, no penalty — D-006's second half was the easy half to keep while nothing happened at all. |
+| G4 | #300/#303 → recusal | The table became an endpoint, a rule and a screen: a recused reviewer's actions are refused and the case leaves their queue. |
+| G5 | **Open** | `lk_theme_tag` / `motivation_theme_tag` are still written by nothing, so the quarterly theme clustering in §5.6 has no data and Category D cannot evolve. |
+| G6 | #315 → preferred language | Asked on the profile, stored, returned, and used: notification templates are keyed by language with a per-trigger fallback to English. **English is the only complete set** — the other ten are a translation task, and the interface itself is not translated and does not claim to be. |
+| G7 | #305/#306, #307/#308 | MFA status, disable and recovery-code replacement. #307 was found by creating a real reviewer and signing in: the status endpoint refused the first-sign-in token, so a new reviewer could not enrol through the product at all. |
+
+Two things outside the original register were found while closing it, both by using the product
+rather than reading it, and both fixed: **no application could be approved** (the authorise step
+and the appeal ruling were never built — #309), and the runtime least-privilege guard **passed a
+role that bypasses every RLS policy** (#313).
+
 **Verified as delivered** (no gap): D-001 open intake · D-004 one active application per year ·
 D-005 expired document → return, never reject · D-007 SA ID before submit · D-010 the machine
 never decides (DB trigger) · D-014 no edits under review (no update endpoint exists) · D-016/D-017
